@@ -1,0 +1,271 @@
+@(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
+@import play.twirl.api.Html
+
+@scripts = {
+    <script src="@routes.Assets.at("js/depositwithdraw.js")"></script>
+}
+
+@drawer(collapsed: Boolean = true)(deposit:Html)(withdraw:Html) = {
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h4 class="panel-title clickable" data-toggle="collapse" data-parent="#depositwithdraw" href="#panel-{{currency}}">
+                {{currency}} - Available: <span class="money">{{balance.available}}</span>
+            </h4>
+        </div>
+        @if(collapsed){
+        <div id="panel-{{currency}}" class="panel-collapse collapse">
+        }else{
+        <div id="panel-{{currency}}" class="panel-collapse collapse in">
+        }
+            <div class="panel-body">
+                <div class="col-md-6">
+                    @deposit
+                </div>
+                <div class="col-md-6">
+                    @withdraw
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@exchange._chrome(Messages("chrome.exchange.navigation.depositwithdraw.title"), "credit-card", scripts) {
+
+    <div class="row">
+        <div class="col-sm-12">
+            <div id="depositwithdraw" class="panel-group">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="withdraw-confirm-modal" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            <h4 class="modal-title">Confirm withdrawal</h4>
+          </div>
+          <div class="modal-body">
+            <!-- TODO: translate! -->
+            <p>Are you sure that you want to withdraw
+                <span id="withdraw-confirm-amount"></span>
+                <span id="withdraw-confirm-currency1"></span>
+                to
+                <span id="withdraw-confirm-address"></span>
+                and receive
+                <span id="withdraw-confirm-value"></span>
+                <span id="withdraw-confirm-currency2"></span>
+                after the withdrawal fee of
+                <span id="withdraw-confirm-fee"></span>
+                <span id="withdraw-confirm-currency3"></span>?
+            </p>
+            <form class="form-horizontal" role="form" id="withdraw-confirm-tfa-form">
+                <label for="tfa" class="col-sm-12">@Messages("terminology.code")</label>
+                <div class="col-sm-12">
+                    <input class="form-control" placeholder="000000" id="withdraw-confirm-tfa" name="tfa" type="text">
+                </div>
+            </form>
+            <div class="clearfix"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="withdraw-confirm-cancel" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" id="withdraw-confirm-submit" class="btn btn-primary">Request Withdrawal</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    <script id="crypto-withdraw-form-template" type="text/x-handlebars-template">
+        <h3>@Messages("depositwithdraw.withdraw.title")</h3>
+        <form class="form-horizontal" role="form" id="withdraw-{{currency}}">
+            <div class="form-group">
+                <label for="address" class="col-sm-12">@Messages("depositwithdraw.withdraw.address")</label>
+                <div class="col-sm-12">
+                    <input class="form-control address" name="address" type="text">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="available" class="col-sm-4 control-label">@Messages("terminology.available")</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control available" name="available" type="text" value="{{balance.available}}" disabled>
+                        <span class="input-group-addon">{{currency}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="amount" class="col-sm-4 control-label">@Messages("terminology.amount")</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control amount" name="amount" type="text">
+                        <span class="input-group-addon">{{currency}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fee" class="col-sm-4 control-label">@Messages("terminology.fee")</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control fee" name="fee" type="text" disabled>
+                        <span class="input-group-addon">{{currency}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="value" class="col-sm-4 control-label">@Messages("terminology.value")</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control value" name="value" type="text" disabled>
+                        <span class="input-group-addon">{{currency}}</span>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn withdraw btn-default">@Messages("depositwithdraw.withdraw.button")</button>
+        </form>
+        <p>@Messages("depositwithdraw.withdraw.info")</p>
+        <p>@Messages("depositwithdraw.withdraw.fees"): {{withdraw_linear}}% + {{withdraw_constant}} {{currency}}</p>
+        <p>@Messages("depositwithdraw.withdraw.limit.min"): {{limit_min}} {{currency}}</p>
+        <p>@Messages("depositwithdraw.withdraw.limit.max"): {{limit_max}} {{currency}}</p>
+    </script>
+
+    <script id="pending-w-template" type="text/x-handlebars-template">
+        {{#each pending_w}}
+        <tr>
+            <td>{{created}}</td>
+            <td>{{amount}}</td>
+            <td>{{fee}}</td>
+            <td>{{info}}</td>
+        </tr>
+        {{/each}}
+    </script>
+
+    <script id="pending-w-crypto-template" type="text/x-handlebars-template">
+        <h3>@Messages("depositwithdraw.pending.withdraw.title")</h3>
+        <table class="table table-striped responsive">
+            <thead>
+                <tr>
+                    <th>@Messages("terminology.requested")</th>
+                    <th class="money-heading">@Messages("terminology.amount")</th>
+                    <th class="money-heading">@Messages("terminology.fee")</th>
+                    <th>@Messages("terminology.address")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{> pending-w}}
+            </tbody>
+        </table>
+    </script>
+
+    <script id="pending-d-template" type="text/x-handlebars-template">
+        {{#each pending_d}}
+        <tr>
+            <td>{{created}}</td>
+            <td>{{amount}}</td>
+            <td>{{fee}}</td>
+            <td>{{info}}</td>
+        </tr>
+        {{/each}}
+    </script>
+
+    <script id="pending-d-crypto-template" type="text/x-handlebars-template">
+        <h3>@Messages("depositwithdraw.pending.deposit.title")</h3>
+        <table class="table table-striped responsive">
+            <thead>
+                <tr>
+                    <th>@Messages("terminology.requested")</th>
+                    <th class="money-heading">@Messages("terminology.amount")</th>
+                    <th class="money-heading">@Messages("terminology.fee")</th>
+                    <th>@Messages("terminology.address")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{> pending-d}}
+            </tbody>
+        </table>
+    </script>
+
+    <script id="pending-w-fiat-template" type="text/x-handlebars-template">
+        {{#if pending_w}}
+        <h3>@Messages("depositwithdraw.pending.withdraw.title")</h3>
+        <table class="table table-striped responsive">
+            <thead>
+                <tr>
+                    <th>@Messages("terminology.requested")</th>
+                    <th>@Messages("terminology.amount")</th>
+                    <th>@Messages("terminology.fee")</th>
+                    <th>@Messages("terminology.account")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{> pending-w}}
+            </tbody>
+        </table>
+        {{/if}}
+    </script>
+
+    <script id="crypto-deposit-template" type="text/x-handlebars-template">
+        <h3>@Messages("depositwithdraw.deposit.title")</h3>
+        <div id="deposit-addresses">
+            <p>@Messages("depositwithdraw.deposit.current_address")</p>
+            <div class="center-block qr-code" id="deposit-{{currency}}-qr"></div>
+            <div class="text-center crypto-address">{{main_address}}</div>
+            {{#if addresses}}
+            <p>@Messages("depositwithdraw.deposit.past_addresses")</p>
+            <ul>
+                {{#each addresses}}
+                <li><span class="crypto-address">{{.}}</span></li>
+                {{/each}}
+            </ul>
+            {{/if}}
+        </div>
+        <p>@Messages("depositwithdraw.deposit.info")</p>
+        <p>@Messages("depositwithdraw.deposit.fees"): {{deposit_linear}}% + {{deposit_constant}} {{currency}}</p>
+        <p>@{Messages("depositwithdraw.deposit.requiredConfirms")} {{required_confirms}} @Messages("depositwithdraw.deposit.confirms")</p>
+    </script>
+
+    <script id="dw-ltc-template" type="text/x-handlebars-template">
+        @drawer(collapsed = true) {
+            {{> crypto-deposit}}
+            {{> pending-d-crypto}}
+        } {
+            {{> crypto-withdraw-form}}
+            {{> pending-w-crypto}}
+        }
+    </script>
+
+    <script id="dw-btc-template" type="text/x-handlebars-template">
+        @drawer(collapsed = false) {
+            {{> crypto-deposit}}
+            {{> pending-d-crypto}}
+        } {
+            {{> crypto-withdraw-form}}
+            {{> pending-w-crypto}}
+        }
+    </script>
+
+    <script id="dw-cad-template" type="text/x-handlebars-template">
+        @drawer(collapsed = true) {
+            <h3>@Messages("depositwithdraw.deposit.title")</h3>
+            <div id="deposit-cad">@Messages("depositwithdraw.deposit.cad.instructions")</div>
+        } {
+            <h3>@Messages("depositwithdraw.withdraw.title")</h3>
+            <div id="withdraw-cad">@Messages("depositwithdraw.withdraw.cad.instructions")</div>
+            <p>@Messages("depositwithdraw.withdraw.limit.min"): {{limit_min}}</p>
+            <p>@Messages("depositwithdraw.withdraw.limit.max"): {{limit_max}}</p>
+            {{> pending-w-fiat}}
+        }
+    </script>
+
+    <script id="dw-usd-template" type="text/x-handlebars-template">
+        @drawer(collapsed = true) {
+            <h3>@Messages("depositwithdraw.deposit.title")</h3>
+            <div id="deposit-usd">@Messages("depositwithdraw.deposit.usd.instructions")</div>
+        } {
+            <h3>@Messages("depositwithdraw.withdraw.title")</h3>
+            <div id="withdraw-cad">@Messages("depositwithdraw.withdraw.usd.instructions")</div>
+            <p>@Messages("depositwithdraw.withdraw.limit.min"): {{limit_min}}</p>
+            <p>@Messages("depositwithdraw.withdraw.limit.max"): {{limit_max}}</p>
+            {{> pending-w-fiat}}
+        }
+    </script>
+}

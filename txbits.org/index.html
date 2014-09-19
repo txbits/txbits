@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" type="image/png" href="./img/favicon-32px.png">
+
+            <title>TxBits</title>
+
+        <!-- bootstrap 3.0.2 -->
+        <link href="./css/bootstrap.css" rel="stylesheet" type="text/css">
+        <!-- Bootstrap theme -->
+        <link href="./css/bootstrap-theme.css" rel="stylesheet" type="text/css">
+
+        <!-- non-theme styles -->
+        <link rel="stylesheet" media="screen" href="./css/main.css">
+
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+          <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+          <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+    <body role="document" data-spy="scroll" data-target="#navspy">
+
+    <!-- Fixed navbar -->
+    <nav id="navspy" class="navbar navbar-exchange navbar-fixed-top" role="navigation">
+        <div class="container">
+                <a class="navbar-brand" href="./index.html#">
+                  <img src="./img/logo-50px.png" height="20px">
+                </a>
+
+                <ul class="nav navbar-nav">
+                    <li><a href="#goal-wrap">Goal</a></li>
+                    <li><a href="#design-wrap">Design</a></li>
+                    <li><a href="#security-wrap">Security</a></li>
+                    <li><a href="#about-wrap">About Us</a></li>
+                    <li><a href="#contact-wrap">Contact Us</a></li>
+                    <li><a href="#license-wrap">License</a></li>
+                </ul>
+
+                <ul class="nav navbar-nav navbar-right pull-right">
+                    <li style="font-weight:bold;"><a href="https://github.com/txbits/txbits">Fork us on github!</i></a></li>
+                </ul>
+
+        </div>
+    </nav>
+
+    <div class="marketing">
+        <div class="jumbotron intro-image">
+            <div class="container">
+                <h1>TxBits</h1>
+                <p class="subtitle">An open-source Bitcoin exchange</p>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="signup-wrap">
+                <div class="text-center">
+                    <h3>Try our beta on the testnet:
+                    <a href="https://testnet.txbits.com">https://testnet.txbits.com</a></h3>
+                </div>
+            </div>
+
+            <div id="goal-wrap" class="linkable">
+                <div class="container" id="beta">
+                    <div class="row detailed-points">
+                        <div class="col-md-12">
+                            <h2>Our Goal</h2>
+                            <p>TxBits aims to be the first commercial-grade open source Bitcoin/cryptocurrency
+                            exchange. We hope to be able to leverage the power of open source to
+                            build the exchange with the <b>lowest fees</b>, <b>highest security</b>
+                            and greatest <b>transparency</b>. In case the .com/.org domains are confusing:
+                            We are following the WordPress model where .org is about the open source
+                            project and .com is one instance of it.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="design-wrap" class="linkable">
+                <div class="container" id="beta">
+                    <div class="row detailed-points">
+                        <div class="col-md-12">
+                            <h2>Technical Design</h2>
+                            <p>Our stack is: <b>Scala</b>, <b>Play</b>, <b>PostgreSQL</b>, <b>Bitcoin Core</b> and <b>Litecoin Core</b>.
+                                The software can support other Bitcoin-based cryptocurrencies such as Peercoin and Primecoin. We are
+                                currently using <b>nginx</b> as our frontend webserver. There are many different
+                                possible ways to deploy the exchange so we plan to show you how we do it. We will open source
+                                our <b>ansible</b> configs later on as an example of how to do it securely.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="security-wrap" class="linkable">
+                <div class="container" id="beta">
+                    <div class="row detailed-points">
+                        <div class="col-md-12">
+                            <h2>Security</h2>
+                            <p>We have taken a defense in depth approach to software design
+                                with security in mind. This means that it is possible
+                                to lock everything down to a very high degree so that if an attacker
+                                is able to get through one layer of defense, there will still be more
+                                before they can reach the money.</p>
+                            <p>There are four main components:
+                                the frontend, the database, the wallet actor and the individual
+                                wallets (bitcoind, litecoind). The frontend does not have direct access
+                                to the wallets. Only the wallet actor does. The wallet actor periodically
+                                looks at the database and processes deposits and withdrawals. In the event
+                                of an attacker compromising the frontend, we (or whoever is hosting the exchange)
+                                will have the opportunity of
+                                detecting them and preventing them from stealing any coins. We are gradually
+                                moving all of our database accesses to a model where the frontend
+                                has very few permissions on the database, which will further
+                                limit what an attacker can do.</p>
+                            <p>Our initial release includes automatic wallet backups and transfers to cold storage as well as a strong
+                                password policy and two factor authentication.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="about-wrap" class="linkable">
+                <div class="container" id="beta">
+                    <div class="row">
+                        <div class="col-sm-12">
+                        <h2>About Us</h2>
+                        </div>
+                    </div>
+                    <div class="row detailed-points">
+                        <div class="col-sm-4">
+                            <div class="thumbnail">
+                                <img class="img-circle" width="300px" height="300px" src="./img/viktor.jpg">
+                                <div class="caption">
+                                    <h2>Viktor Stanchev</h2>
+                                    <p>Core Developer</p>
+                                    <p></p><a href="" id="viktor-email">Turn on javascript to show.</a></p>
+                                    <script>(function(){var at = String.fromCharCode(64);var e = "me"+at+"viktorstanchev.com"; var c = document.getElementById("viktor-email"); c.innerHTML = e; c.href = "mailto:"+e;})();</script>
+                                    <p><a href="http://viktor.land">http://viktor.land</a></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="thumbnail">
+                                <img class="img-circle" width="300px" height="300px" src="./img/kirk.jpg">
+                                <div class="caption">
+                                    <h2>Kirk Zathey</h2>
+                                    <p>Core Developer</p>
+                                     <p></p><a href="" id="kirk-email">Turn on javascript to show.</a></p>
+                                    <script>(function(){var at = String.fromCharCode(64);var e = "zathey"+at+"gmail.com"; var c = document.getElementById("kirk-email"); c.innerHTML = e; c.href = "mailto:"+e;})();</script>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="contact-wrap" class="linkable">
+                <div class="container" id="beta">
+                    <div class="row detailed-points">
+                        <div class="col-md-12">
+                            <h2>Contact Us</h2>
+                            <p><a href="https://github.com/txbits">github</a>, <a href="https://www.reddit.com/r/txbits">reddit</a>, <a href="https://twitter.com/txbits">twitter</a>,
+                                <a href="" id="contact-email2">Turn on javascript to show email.</a>
+                                <script>(function(){var at = String.fromCharCode(64);var e = "contact"+at+"txbits.com"; var c = document.getElementById("contact-email2"); c.innerHTML = e; c.href = "mailto:"+e;})();</script>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="license-wrap" class="linkable">
+                <div class="container" id="beta">
+                    <div class="row detailed-points">
+                        <div class="col-md-12">
+                            <h2>Open Source License</h2>
+                            <p>For our license we have chosen AGPLv3, which (among other things) means that anyone who uses the
+                                TxBits software has to publish any changes they make to the source code.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="footerwrap">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <address>
+                                <strong>TxBits</strong><br>
+                                <a href="" id="contact-email">Turn on javascript to show email.</a>
+                                <script>(function(){var at = String.fromCharCode(64);var e = "contact"+at+"txbits.com"; var c = document.getElementById("contact-email"); c.innerHTML = e; c.href = "mailto:"+e;})();</script>
+                            </address>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-right">
+                            Copyright &copy; 2014<br>
+                            All rights reserved
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <script src="./js/vendor/jquery-2.1.1.js"></script>
+        <script src="./js/vendor/jquery-migrate-1.2.1.js"></script>
+        <script src="./js/vendor/bootstrap.js"></script>
+        <script src="./js/vendor/handlebars-v2.0.0.js"></script>
+
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-54524343-2', 'auto');
+          ga('send', 'pageview');
+
+        </script>
+
+
+</body>
+</html>

@@ -1,0 +1,186 @@
+/*
+Document   : jquery.pnotify.default.css
+Created on : Nov 23, 2009, 3:14:10 PM
+Author     : Hunter Perrin
+Version    : 1.2.2
+Link       : http://pinesframework.org/pnotify/
+Description:
+        Default styling for Pines Notify jQuery plugin.
+*/
+/* -- Notice */
+.ui-pnotify {
+    top: 25px;
+    right: 25px;
+    position: absolute;
+    height: auto;
+    /* Ensures notices are above everything */
+    z-index: 9999;
+    font-size: .9em;
+}
+/* Hides position: fixed from IE6 */
+html > body .ui-pnotify {
+    position: fixed;
+}
+.ui-pnotify .ui-pnotify-shadow {
+    -webkit-box-shadow: 0px 2px 10px rgba(50, 50, 50, 0.5);
+    -moz-box-shadow: 0px 2px 10px rgba(50, 50, 50, 0.5);
+    box-shadow: 0px 2px 10px rgba(50, 50, 50, 0.5);
+}
+.ui-pnotify-container {
+    background-position: 0 0;
+    padding: .8em;
+    height: 100%;
+    margin: 0;
+}
+.ui-pnotify-sharp {
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0;
+}
+.ui-pnotify-closer, .ui-pnotify-sticker {
+    float: right;
+    margin-left: .2em;
+}
+.ui-pnotify-title {
+    display: block;
+    font-size: 1.2em;
+    margin-bottom: .4em;
+}
+.ui-pnotify-text {
+    display: block;
+}
+.ui-pnotify-icon, .ui-pnotify-icon span {
+    display: block;
+    float: left;
+    margin-right: .2em;
+}
+/* -- History Pulldown */
+.ui-pnotify-history-container {
+    position: absolute;
+    top: 0;
+    right: 18px;
+    width: 70px;
+    border-top: none;
+    padding: 0;
+    -webkit-border-top-left-radius: 0;
+    -moz-border-top-left-radius: 0;
+    border-top-left-radius: 0;
+    -webkit-border-top-right-radius: 0;
+    -moz-border-top-right-radius: 0;
+    border-top-right-radius: 0;
+    /* Ensures history container is above notices. */
+    z-index: 10000;
+}
+.ui-pnotify-history-container .ui-pnotify-history-header {
+    padding: 2px;
+}
+.ui-pnotify-history-container button {
+    cursor: pointer;
+    display: block;
+    width: 100%;
+}
+.ui-pnotify-history-container .ui-pnotify-history-pulldown {
+    display: block;
+    margin: 0 auto;
+}
+/* Alternate stack initial positioning. */
+.ui-pnotify.stack-topleft, .ui-pnotify.stack-bottomleft {
+    left: 25px;
+    right: auto;
+}
+.ui-pnotify.stack-bottomright, .ui-pnotify.stack-bottomleft {
+    bottom: 25px;
+    top: auto;
+}
+
+
+/*
+Document   : jquery.pnotify.default.icons.css
+Created on : Nov 24, 2009, 2:58:21 PM
+Author     : Hunter Perrin
+Version    : 1.2.2
+Link       : http://pinesframework.org/pnotify/
+Description:
+        Pines Icon styling for Pines Notify.
+*/
+
+.ui-pnotify .picon {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: center center;
+    width: 17px;
+    height: 17px;
+}
+.ui-pnotify-title {
+    line-height: 17px;
+    min-height: 17px;
+}
+
+
+/* Custom styled notice CSS */
+.ui-pnotify.custom .ui-pnotify-container {
+        background-color: #404040 !important;
+        background-image: none !important;
+        border: none !important;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        border-radius: 10px;
+}
+.ui-pnotify.custom .ui-pnotify-title, .ui-pnotify.custom .ui-pnotify-text {
+        font-family: Arial, Helvetica, sans-serif !important;
+        text-shadow: 2px 2px 3px black !important;
+        font-size: 10pt !important;
+        color: #FFF !important;
+        padding-left: 50px !important;
+        line-height: 1 !important;
+        text-rendering: geometricPrecision !important;
+}
+.ui-pnotify.custom .ui-pnotify-title {
+        font-weight: bold;
+}
+.ui-pnotify.custom .ui-pnotify-icon {
+        float: left;
+}
+.ui-pnotify.custom .picon {
+        margin: 3px;
+        width: 33px;
+        height: 33px;
+}
+
+/** 
+    Alternate stack initial positioning. This one is done through code,
+    to show how it is done. Look down at the stack_bottomright variable 
+    in the JavaScript below. 
+**/
+.ui-pnotify.stack-bottomright {
+    /* These are just CSS default values to reset the pnotify CSS. */
+    right: auto;
+    top: auto;
+    left: auto;
+    bottom: auto;
+}
+.ui-pnotify.stack-custom {
+    /* Custom values have to be in pixels, because the code parses them. */
+    top: 200px;
+    left: 200px;
+    right: auto;
+}
+.ui-pnotify.stack-custom2 {
+    top: auto;
+    left: auto;
+    bottom: 200px;
+    right: 200px;
+}
+/* This one is totally different. It stacks at the top and looks
+        like a Microsoft-esque browser notice bar. */
+.ui-pnotify.stack-bar-top {
+    right: 0;
+    top: 0;
+}
+.ui-pnotify.stack-bar-bottom {
+    margin-left: 15%;
+    right: auto;
+    bottom: 0;
+    top: auto;
+    left: auto;
+}

@@ -1,0 +1,82 @@
+@(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
+
+@scripts = {
+    <script src="@routes.Assets.at("js/exchange_index.js")"></script>
+}
+
+@exchange._chrome(Messages("chrome.exchange.navigation.dashboard.title"), "dashboard", scripts) {
+
+    <div class="row">
+        <div id="big-tickers">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-8 col-md-8 col-lg-6">
+            <div class="panel panel-default">
+                <div class="panel-heading"><span>@Messages("terminology.balance")</div>
+                <div class="panel-body">
+                    <div id="balance"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="big-tickers-template" type="text/x-handlebars-template">
+        {{#each this}}
+            <div class="col-sm-3 col-md-2">
+                <dl class="dl-horizontal dl-small">
+                    <dt><i class="glyphicon glyphicon-{{icon}}" style="color: {{color}};"></i></dt><dd class="big-ticker-pair">{{base}}/{{counter}}</dd>
+                    <dt>Last:</dt> <dd class="money">{{last}}</dd>
+                    <dt>Low:</dt> <dd class="money">{{low}}</dd>
+                    <dt>High:</dt> <dd class="money">{{high}}</dd>
+                    <dt>Vol:</dt> <dd class="money">{{volume}}</dd>
+                </dl>
+            </div>
+        {{/each}}
+    </script>
+
+    <script id="balance-template" type="text/x-handlebars-template">
+        <table class="table table-striped responsive">
+            <thead>
+                <tr>
+                    <th>@Messages("terminology.currency")</th>
+                    <th class="money-heading">@Messages("terminology.total")</th>
+                    <th class="money-heading">@Messages("terminology.hold")</th>
+                    <th class="money-heading">@Messages("terminology.available")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each this}}
+                <tr>
+                    <td>{{currency}}</td>
+                    <td class="money">{{amount}}</td>
+                    <td class="money">{{hold}}</td>
+                    <td class="money">{{available}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </script>
+
+    @*
+    <script id="fake-money-form-template" type="text/x-handlebars-template">
+        <form role="form">
+            <div class="form-group">
+                <label class="control-label" for="currency">@Messages("terminology.currency")</label>
+                <select class="form-control" id="currency" name="currency">
+                    {{#each .}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{/each}}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="control-label" for="amount">@Messages("terminology.amount")</label>
+                <input class="form-control" name="amount" id="amount" type="text">
+            </div>
+            <button type="submit" class="add btn btn-primary">@Messages("account.fakemoney.add")</button>
+            <button type="submit" class="subtract btn btn-primary">@Messages("account.fakemoney.subtract")</button>
+        </form>
+    </script>
+    *@
+}

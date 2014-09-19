@@ -1,0 +1,6 @@
+
+Yours truly,
+
+The @play.api.Play.current.configuration.getString("application.name") team
+
+@play.api.Play.current.configuration.getString("application.name") will never send HTML in emails. If you see any images, colours or stylized text in an email that claims to be from us, forward it to our security team: @play.api.Play.current.configuration.getString("email.security").

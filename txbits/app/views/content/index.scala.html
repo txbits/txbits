@@ -1,0 +1,135 @@
+@()(implicit request: RequestHeader, lang: Lang)
+@import securesocial.core.UsernamePasswordProvider
+@import helper._
+@import securesocial.core.UsernamePasswordProvider
+@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
+
+@scripts = {
+    <script src="@routes.Assets.at("js/vendor/handlebars-v2.0.0.js")"></script>
+    <script src="@routes.Assets.at("js/api1.js")"></script>
+    <script src="@routes.Assets.at("js/common.js")"></script>
+    <script src="@routes.Assets.at("js/content_index.js")"></script>
+}
+
+@content._chrome("", scripts) {
+    <div class="marketing">
+        <div class="jumbotron intro-image">
+            <div class="container">
+                <h1>TxBits</h1>
+                <p class="subtitle">An open-source Bitcoin exchange</p>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="signup-wrap">
+                <div class="text-center">
+                    <form class="form-inline" action="@controllers.routes.Registration.handleStartSignUp().absoluteURL(UsernamePasswordProvider.sslEnabled)" autocomplete="off" method="post">
+                        <div class="form-group sign-up-text">Sign up for our beta:</div>
+                        <div class="form-group" id="email_field">
+                            <label class="sr-only" for="email">Email</label>
+                            <div class="controls">
+                                <input id="email" name="email" value="" class="form-control" type="text" placeholder="Email">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-default" title="@Messages("securesocial.signup.createAccount")"><i class="glyphicon glyphicon-chevron-right"></i></button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="ticker-wrap">
+                <div class="container">
+                    <div class="row">
+                        <div id="big-tickers">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="login-wrap">
+                <div class="text-center">
+                    <div class="form-inline">
+                        <form action = "@routes.ProviderController.loginPost().url" autocomplete="off" method="POST">
+                            <div class="form-group sign-up-text">@Messages("securesocial.login.title"):</div>
+                            <div class="form-group" id="username_field">
+                                <div class="controls">
+                                    <input type="text" id="username" name="username" value="" placeholder="@Messages("securesocial.signup.email1")" class="form-control" autocomplete="off"/>
+                                </div>
+                            </div>
+                            <div class="form-group" id="password_field">
+                                <div class="controls">
+                                    <input type="password" id="password" name="password" placeholder="@Messages("terminology.password")" class="form-control" autocomplete="off"/>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-default"><i class="glyphicon glyphicon-chevron-right"></i></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div id="beta-wrap">
+                <div class="container" id="beta">
+                    <div class="row detailed-points">
+                        <div class="col-md-12">
+                            <p>We are currently in a beta testing period. There is no fiat money or bitcoin on TxBits.
+                                Instead, we are using testnet coins. When you create an account you will be given 100 fake USD.
+                                You can use that to get started with testing the functionality of TxBits. You can deposit and withdraw
+                                testnet coins. We are running a full reserve but in the testing period, testnet coins deposited to this
+                                exchange may be lost or stolen. We would like
+                                to hear any feedback you have for us. Please tell us what you think at <a href="#" id="feedback-email">(Turn on javascript to show email address)</a>
+                                or using the little UserVoice button in the bottom right corner of every page.
+                                Feel free to tell your frends about our beta :)
+                                <script>(function(){var at = String.fromCharCode(64);var e = "feedback"+at+"txbits.com"; var c = document.getElementById("feedback-email"); c.innerHTML = e; c.href = "mailto:"+e;})();</script></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div id="beta-wrap">
+                <div class="container" id="beta">
+                    <div class="row detailed-points">
+                        <div class="col-md-12">
+                            <p>For more information, visit our open source project's webpage at <a href="https://txbits.org">https://txbits.org</a>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footerwrap">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <address>
+                                <strong>TxBits</strong><br>
+                                <a href="" id="contact-email">Turn on javascript to show email.</a>
+                                <script>(function(){var at = String.fromCharCode(64);var e = "contact"+at+"txbits.com"; var c = document.getElementById("contact-email"); c.innerHTML = e; c.href = "mailto:"+e;})();</script>
+                            </address>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-right">
+                            Copyright &copy; 2014<br>
+                            Powered by TxBits
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="big-tickers-template" type="text/x-handlebars-template">
+        {{#each this}}
+        <div class="col-sm-3 col-md-2">
+            <dl class="dl-horizontal dl-small">
+                <dt><i class="glyphicon glyphicon-{{icon}}" style="color: {{color}};"></i></dt><dd class="big-ticker-pair">{{base}}/{{counter}}</dd>
+                <dt>Last:</dt> <dd class="money">{{last}}</dd>
+                <dt>Low:</dt> <dd class="money">{{low}}</dd>
+                <dt>High:</dt> <dd class="money">{{high}}</dd>
+                <dt>Vol:</dt> <dd class="money">{{volume}}</dd>
+            </dl>
+        </div>
+        {{/each}}
+    </script>
+}

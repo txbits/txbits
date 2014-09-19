@@ -1,0 +1,12 @@
+@(path:String)(implicit request: RequestHeader, lang: Lang)
+
+@scripts = {
+}
+
+@content._chrome(Messages("chrome.exchange.navigation.exchange.title"), scripts) {
+    <div class="container" role="main">
+        <div class="row-fluid">
+            Error: Not Found @path
+        </div>
+    </div>
+}

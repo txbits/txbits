@@ -1,0 +1,3 @@
+hello=Bienvenue, {0}
+guest=invité
+about.text=Nous somme awesome.

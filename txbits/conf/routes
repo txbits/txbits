@@ -1,0 +1,83 @@
+# Copyright (c) 2014 Viktor Stanchev & Kirk Zathey.
+# This file is licensed under the Affero General Public License version 3 or later,
+# see the accompanying file COPYING or http://www.gnu.org/licenses/agpl.html.
+
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET         /                                          controllers.Application.index
+
+# Exchange pages
+GET         /dashboard                                 controllers.Application.dashboard
+GET         /exchange                                  controllers.Application.exchange
+GET         /depositwithdraw                           controllers.Application.depositwithdraw
+GET         /history                                   controllers.Application.history
+GET         /account                                   controllers.Application.account
+
+# This is our ticker API which should be completely separable from our main one
+# This api uses no authentication
+GET         /api/1/ws/ticker                           controllers.StatsAPI.APIv1.websocketTicker
+GET         /api/1/ticker                              controllers.StatsAPI.APIv1.ticker
+GET         /api/1/chart/:base/:counter                controllers.StatsAPI.APIv1.chart(base, counter)
+
+# Route for changing the language cookie
+GET         /chlang/:lang                              controllers.Application.chlang(lang)
+
+# Map static resources from the /public folder to the /assets URL path
+GET         /assets/*file                              controllers.Assets.at(path="/public", file)
+
+# APIv1
+GET         /api/1                                     controllers.API.APIv1.index
+GET         /api/1/trade_fees                          controllers.API.APIv1.tradeFees
+GET         /api/1/balance                             controllers.API.APIv1.balance
+GET         /api/1/dw_fees                             controllers.API.APIv1.dwFees
+GET         /api/1/dw_limits                           controllers.API.APIv1.dwLimits
+GET         /api/1/required_confirms                   controllers.API.APIv1.requiredConfirms
+POST        /api/1/bid                                 controllers.API.APIv1.bid
+POST        /api/1/ask                                 controllers.API.APIv1.ask
+POST        /api/1/cancel                              controllers.API.APIv1.cancel
+POST        /api/1/withdraw                            controllers.API.APIv1.withdraw
+GET         /api/1/pending_withdrawals_all             controllers.API.APIv1.pendingWithdrawalsAll
+GET         /api/1/pending_deposits_all                controllers.API.APIv1.pendingDepositsAll
+GET         /api/1/deposit_crypto_all                  controllers.API.APIv1.depositCryptoAll
+GET         /api/1/deposit_crypto/:currency            controllers.API.APIv1.depositCrypto(currency)
+GET         /api/1/pairs                               controllers.API.APIv1.pairs
+GET         /api/1/currencies                          controllers.API.APIv1.currencies
+GET         /api/1/open_trades/:first/:second          controllers.API.APIv1.openTrades(first, second)
+GET         /api/1/recent_trades/:first/:second        controllers.API.APIv1.recentTrades(first, second)
+GET         /api/1/deposit_withdraw_history            controllers.API.APIv1.depositWithdrawHistory
+GET         /api/1/trade_history                       controllers.API.APIv1.tradeHistory
+GET         /api/1/pending_trades                      controllers.API.APIv1.pendingTrades
+#POST        /api/1/add_fake_money                      controllers.API.APIv1.addFakeMoney
+#POST        /api/1/subtract_fake_money                 controllers.API.APIv1.subtractFakeMoney
+GET         /api/1/login_history                       controllers.API.APIv1.loginHistory
+GET         /api/1/user                                controllers.API.APIv1.user
+POST        /api/1/turnoff_tfa                         controllers.API.APIv1.turnOffTFA
+POST        /api/1/turnon_tfa                          controllers.API.APIv1.turnOnTFA
+POST        /api/1/turnoff_emails                      controllers.API.APIv1.turnOffEmails
+POST        /api/1/turnon_emails                       controllers.API.APIv1.turnOnEmails
+POST        /api/1/gen_totp_secret                     controllers.API.APIv1.genTOTPSecret
+
+# Login page
+GET         /login                                     controllers.LoginPage.login
+GET         /tfa_totp                                  controllers.LoginPage.tfaTOTP
+GET         /logout                                    controllers.LoginPage.logout
+
+# User Registration and password handling 
+GET         /signup                                    controllers.Registration.startSignUp
+POST        /signup                                    controllers.Registration.handleStartSignUp
+GET         /signup/:token                             controllers.Registration.signUp(token)
+POST        /signup/:token                             controllers.Registration.handleSignUp(token)
+GET         /reset                                     controllers.Registration.startResetPassword
+POST        /reset                                     controllers.Registration.handleStartResetPassword
+GET         /reset/:token                              controllers.Registration.resetPassword(token)
+POST        /reset/:token                              controllers.Registration.handleResetPassword(token)
+GET         /password                                  controllers.PasswordChange.page
+POST        /password                                  controllers.PasswordChange.handlePasswordChange
+
+# Providers entry points
+POST        /authenticate                              controllers.ProviderController.loginPost
+POST        /tfa                                       controllers.ProviderController.tfaPost
+GET         /not-authorized                            controllers.ProviderController.notAuthorized

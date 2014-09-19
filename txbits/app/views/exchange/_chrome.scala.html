@@ -1,0 +1,95 @@
+@(title: String, icon: String= "", scripts: Html = Html(""), styles: Html = Html(""))(content: Html)(implicit request: RequestHeader, lang: Lang)
+@import securesocial.core.UsernamePasswordProvider
+
+@navItem(url: String, icon: String, title:String) = {
+@if(request.path==url) {
+    <li class="active">
+    } else {
+    <li>
+    }
+    <a href="@url" title="@title">
+        <span class="sidebar-text">
+        @if(request.path==url){
+            <i class="glyphicon glyphicon-@icon"></i>
+            @title
+        } else {
+            <span class="visible-xs visible-lg">
+                <i class="glyphicon glyphicon-@icon"></i>
+                @title
+            </span>
+
+            <span class="hidden-xs hidden-lg">
+                <i class="glyphicon glyphicon-@icon"></i>
+            </span>
+        }
+        </span>
+    </a>
+</li>
+}
+
+@exchangeStyles = {
+    <link rel="stylesheet" media="screen" href="@routes.Assets.at("css/jquery.pnotify.default.css")">
+}
+
+@exchangeScripts = {
+    <script src="@routes.Assets.at("js/vendor/handlebars-v2.0.0.js")"></script>
+    <script src="@routes.Assets.at("js/api1.js")"></script>
+    <script src="@routes.Assets.at("js/common.js")"></script>
+    <script src="@routes.Assets.at("js/vendor/jquery.pnotify.js")"></script>
+    <script src="@routes.Assets.at("js/vendor/jquery.qrcode-0.10.1.js")"></script>
+    <script src="@routes.Assets.at("js/vendor/moment.js")"></script>
+}
+
+@_global_chrome(title, Html(scripts + exchangeScripts.body), Html(styles + exchangeStyles.body)) {
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-exchange navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                    <!-- Sidebar toggle button-->
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+
+                <a class="navbar-brand" href="@routes.Application.index()"><img src="@routes.Assets.at("img/logo-50px.png")" height="20px"/></a>
+            </div>
+
+            <div class="navbar-collapse collapse">
+                <!-- exchange links -->
+                <ul class="nav navbar-nav">
+                    @navItem(routes.Application.dashboard().url, "dashboard", Messages("chrome.exchange.navigation.dashboard.title"))
+                    @navItem(routes.Application.exchange().url, "random", Messages("chrome.exchange.navigation.exchange.title"))
+                    @navItem(routes.Application.depositwithdraw().url, "credit-card", Messages("chrome.exchange.navigation.depositwithdraw.title"))
+                    @navItem(routes.Application.history().url, "list", Messages("chrome.exchange.navigation.history.title"))
+                    @navItem(routes.Application.account().url, "user", Messages("chrome.exchange.navigation.account.title"))
+                </ul>
+
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="@controllers.routes.LoginPage.logout().absoluteURL(UsernamePasswordProvider.sslEnabled)">@Messages("chrome.logout")</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" role="main">
+        @if(request.path != routes.Application.dashboard().url){
+            <div class="row ticker-row">
+                <div id="ticker" class="breadcrumb col-xs-12">
+                </div>
+            </div>
+            <script id="tickers-template" type="text/x-handlebars-template">
+                {{#each this}}
+                <span>
+                    <i class="glyphicon glyphicon-{{icon}}" style="color: {{color}};"></i> {{last}} {{base}}/{{counter}}
+                </span>
+                {{/each}}
+            </script>
+        }
+
+        @content
+    </div>
+}
+

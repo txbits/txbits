@@ -1,0 +1,8 @@
+@(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
+@import securesocial.core.UsernamePasswordProvider
+Hello,
+
+You tried to sign up but you already have an account with us. If you don't remember your password please go here to reset it.
+@controllers.routes.Registration.startResetPassword().absoluteURL(UsernamePasswordProvider.sslEnabled)
+
+@_footer()

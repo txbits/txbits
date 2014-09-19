@@ -1,0 +1,20 @@
+Trades per second
+---
+
+local http server (play)  (suchcpuwowmuchram):
+22.2
+
+local http server (play + nginx http) (beta.newgox.com) - just redirects:
+50
+
+local http server (play + nginx https DHE?) (beta.newgox.com):
+7.4
+
+local http server (play) (beta.newgox.com):
+50
+
+remote http server (play + nginx http) (beta.newgox.com) from one machine over okay connection - just redirects:
+3.3
+
+remote http server (play + nginx https DHE?) (beta.newgox.com) from one machine over okay connection:
+1.9

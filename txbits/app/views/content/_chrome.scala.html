@@ -1,0 +1,62 @@
+@(title: String, scripts: Html = Html(""), styles: Html = Html(""))(content: Html)(implicit request: RequestHeader, lang: Lang)
+@import securesocial.core.UsernamePasswordProvider
+
+@navItem(url: String, title:String) = {
+@if(request.path==url) {
+    <li class="active">
+    } else {
+    <li>
+    }
+    <a href="@url" title="@title">
+        <span class="sidebar-text">
+            @title
+        </span>
+    </a>
+</li>
+}
+
+@extraScripts = {
+    <script src="@routes.Assets.at("js/static.js")"></script>
+}
+
+@extraStyles = {
+}
+
+@_global_chrome(title, Html(scripts + extraScripts.body), Html(styles + extraStyles.body)) {
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-exchange navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                    <!-- Sidebar toggle button-->
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+
+                <a class="navbar-brand" href="@routes.Application.index()"><img src="@routes.Assets.at("img/logo-50px.png")" height="20px"/></a>
+            </div>
+
+            <div class="navbar-collapse collapse">
+                <!-- marketing links -->
+                <ul class="nav navbar-nav">
+                    @*
+                    @navItem(routes.Application.compliance().url, Messages("chrome.navigation.compliance.title"))
+                    @navItem(routes.Application.security().url, Messages("chrome.navigation.security.title"))
+                    @navItem(routes.Application.privacy().url, Messages("chrome.navigation.privacy.title"))
+                    *@
+                </ul>
+
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="loggedin" style="display: none"><a href="@routes.Application.dashboard()">@Messages("chrome.gotodashboard") <i class="glyphicon glyphicon-user"></i></a></li>
+                    <li class="loggedout"><a href="@controllers.routes.Registration.startSignUp().absoluteURL(UsernamePasswordProvider.sslEnabled)">@Messages("chrome.signup")</a></li>
+                    <li class="loggedout"><a href="@controllers.routes.LoginPage.login().absoluteURL(UsernamePasswordProvider.sslEnabled)">@Messages("chrome.login") <i class="glyphicon glyphicon-user"></i></a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    @content
+}

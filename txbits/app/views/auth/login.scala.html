@@ -1,0 +1,60 @@
+@(loginForm: Form[(String,String)], errorMsg: Option[String] = None)(implicit request: RequestHeader, lang: Lang)
+@import securesocial.core.UsernamePasswordProvider
+@import securesocial.core.UsernamePasswordProvider
+
+@import helper._
+@import securesocial.core.Registry
+@import securesocial.core.AuthenticationMethod._
+
+@scripts = {
+    <script type="text/javascript">
+        $(function(){$('form input[name=username]' ).focus()})
+    </script>
+}
+
+@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
+
+@auth._chrome(Messages("securesocial.login.title"), scripts) {
+
+    @errorMsg.map { msg =>
+        <div class="alert alert-danger">
+            @Messages(msg)
+        </div>
+    }
+
+    @request.flash.get("success").map { msg =>
+        <div class="alert alert-info">
+            @msg
+        </div>
+    }
+
+    @request.flash.get("error").map { msg =>
+        <div class="alert alert-danger">
+            @msg
+        </div>
+    }
+
+    <div class="clearfix">
+        <form action = "@routes.ProviderController.loginPost().url"
+        autocomplete="off" method="POST">
+
+            @helper.inputText(
+                loginForm("username"),
+                '_label -> Messages("terminology.email"),
+                'class -> "form-control"
+            )
+
+            @helper.inputPassword(
+                loginForm("password"),
+                '_label -> Messages("terminology.password"),
+                'class -> "form-control"
+            )
+
+            <button type="submit" class="btn btn-primary">@Messages("securesocial.login.title")</button>
+
+            <div class="pull-right">
+                <a href="@controllers.routes.Registration.startResetPassword()" class="btn">@Messages("securesocial.login.forgotPassword") </a>
+            </div>
+        </form>
+    </div>
+}

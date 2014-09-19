@@ -1,0 +1,20 @@
+@(title: String, scripts: Html = Html(""), styles: Html = Html(""), exchangeChrome:Boolean = false)(contentHtml: Html)(implicit request: RequestHeader, lang: Lang)
+
+@body = {
+    <div class="col-lg-12">
+        <div class="center-block modal-sm">
+            <div class="panel panel-default">
+                <div class="panel-heading">@title</div>
+                <div class="panel-body">
+                @contentHtml
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if(exchangeChrome){
+    @exchange._chrome(title, "", scripts, styles)(body)
+} else {
+    @content._chrome(title, scripts, styles)(body)
+}

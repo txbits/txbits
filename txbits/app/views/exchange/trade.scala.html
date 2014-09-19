@@ -1,0 +1,248 @@
+@(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
+
+@scripts = {
+    <script src="@routes.Assets.at("js/vendor/flotr2.js")"></script>
+    <script src="@routes.Assets.at("js/exchange.js")"></script>
+}
+
+@exchange._chrome(Messages("chrome.exchange.navigation.exchange.title"), "random", scripts) {
+
+    <div class="row">
+        <div class="box corner-all col-md-12">
+            <div id="chart_div">
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div id="pending-trades">
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="box corner-all col-md-12">
+            <div id="pair-picker">
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div id="bid">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div id="ask">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div id="graph">
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <h4>@Messages("exchange.openasks.title")</h4>
+            <div id="open-asks">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <h4>@Messages("exchange.openbids.title")</h4>
+            <div id="open-bids">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <h4>@Messages("exchange.recenttrades.title")</h4>
+            <div id="recent-trades">
+            </div>
+        </div>
+    </div>
+
+    <script id="bid-template" type="text/x-handlebars-template">
+        <h4>{{counter}} &rarr; {{base}}</h4>
+        <form class="form-horizontal" role="form">
+            <div class="form-group">
+                <label for="balance" class="col-sm-4 control-label">@{Messages("terminology.balance")}</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control balance" name="balance" type="text" value={{balance}} disabled>
+                        <span class="input-group-addon">{{counter}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="counter" class="col-sm-4 control-label">@{Messages("terminology.value")}</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control counter" name="counter" type="text" disabled>
+                        <span class="input-group-addon">{{counter}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="price" class="col-sm-4 control-label">@{Messages("terminology.price")}</label>
+                <div class="col-sm-8">
+                    <input class="form-control price" name="price" type="text" value="{{price}}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="amount" class="col-sm-4 control-label">@{Messages("terminology.amount")}</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control amount" name="amount" type="text">
+                        <span class="input-group-addon">{{base}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fee" class="col-sm-4 control-label">@{Messages("terminology.fee")}</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control fee" name="fee" type="text" disabled>
+                        <span class="input-group-addon">{{base}}</span>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" id="bid-submit" class="bid btn btn-default btn-block">@{Messages("terminology.bid")} {{base}}</button>
+        </form>
+    </script>
+
+    <script id="ask-template" type="text/x-handlebars-template">
+        <h4>{{base}} &rarr; {{counter}}</h4>
+        <form class="form-horizontal" role="form">
+            <div class="form-group">
+                <label for="balance" class="col-sm-4 control-label">@{Messages("terminology.balance")}</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control balance" name="balance" type="text" value={{balance}} disabled>
+                        <span class="input-group-addon">{{base}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="amount" class="col-sm-4 control-label">@{Messages("terminology.amount")}</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control amount" name="amount" type="text">
+                        <span class="input-group-addon">{{base}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="price" class="col-sm-4 control-label">@{Messages("terminology.price")}</label>
+                <div class="col-sm-8">
+                    <input class="form-control price" name="price" type="text" value="{{price}}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="counter" class="col-sm-4 control-label">@{Messages("terminology.value")}</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control counter" name="counter" type="text" disabled>
+                        <span class="input-group-addon">{{counter}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fee" class="col-sm-4 control-label">@{Messages("terminology.fee")}</label>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input class="form-control fee" name="fee" type="text" disabled>
+                        <span class="input-group-addon">{{counter}}</span>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" id="ask-submit" class="ask btn btn-default btn-block">@{Messages("terminology.ask")} {{base}}</button>
+        </form>
+    </script>
+
+
+    <script id="pair-picker-template" type="text/x-handlebars-template">
+        <ul class="nav nav-pills">
+            {{#each this}}
+                <li {{#if @@index}}{{else}} class="active" {{/if}} ><a href="#" exchange-base="{{base}}" exchange-counter="{{counter}}">{{base}}/{{counter}}</a></li>
+            {{/each}}
+        </ul>
+    </script>
+
+    <script id="open-trades-template" type="text/x-handlebars-template">
+        <table class="table table-striped table-condensed responsive">
+            <thead>
+                <tr>
+                    <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
+                    <th class="money-heading">@{Messages("terminology.value")} {{counter}}</th>
+                    <th class="money-heading">@Messages("terminology.price")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each orders}}
+                <tr>
+                    <td class="money">{{amount}}</td>
+                    <td class="money">{{value}}</td>
+                    <td class="money">{{price}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </script>
+
+    <script id="recent-trades-template" type="text/x-handlebars-template">
+        <table class="table table-striped table-condensed responsive">
+            <thead>
+                <tr>
+                    <th>@Messages("terminology.time")</th>
+                    <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
+                    <th class="money-heading">@{Messages("terminology.value")} {{counter}}</th>
+                    <th class="money-heading">@Messages("terminology.price")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each orders}}
+                <tr>
+                    <td>{{created}}</td>
+                    <td class="money">{{amount}}</td>
+                    <td class="money">{{value}}</td>
+                    <td class="money">{{price}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </script>
+
+    <script id="pending-trades-template" type="text/x-handlebars-template">
+        {{#if .}}
+        <h4>@Messages("exchange.pendingtrades.title")</h4>
+        <table class="table table-striped table-condensed responsive">
+            <thead>
+                <tr>
+                    <th>@Messages("terminology.time")</th>
+                    <th class="money-heading">@Messages("terminology.sold") @Messages("terminology.value")</th>
+                    <th>@Messages("terminology.sold") @Messages("terminology.currency")</th>
+                    <th class="money-heading">@Messages("terminology.bought") @Messages("terminology.amount")</th>
+                    <th>@Messages("terminology.bought") @Messages("terminology.currency")</th>
+                    <th class="money-heading">@Messages("terminology.price")</th>
+                    <th>@Messages("terminology.price_units")</th>
+                    <th class="money-heading">@Messages("terminology.cancel")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each .}}
+                <tr>
+                    <td>{{created}}</td>
+                    <td class="money">{{sold_amount}}</td>
+                    <td>{{sold}}</td>
+                    <td class="money">{{bought_amount}}</td>
+                    <td>{{bought}}</td>
+                    <td class="money">{{price}}</td>
+                    <td>{{sold}} for 1 {{bought}}</td>
+                    <td><a class="btn btn-danger btn-xs pull-right" exchange-trade-id="{{id}}">Cancel</a></td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        {{/if}}
+    </script>
+}

@@ -1,0 +1,47 @@
+@(signUpForm:Form[controllers.Registration.RegistrationInfo], token: String)(implicit request: RequestHeader, lang: Lang)
+@import securesocial.core.UsernamePasswordProvider
+@import helper._
+@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
+
+@scripts = {
+    <script src="@routes.Assets.at("js/vendor/zxcvbn-async.js")"></script>
+    <script src="@routes.Assets.at("js/zxcvbn-indicator.js")"></script>
+}
+
+@auth._chrome( Messages("securesocial.signup.title"), scripts ) {
+
+    @request.flash.get("error").map { msg =>
+        <div class="alert alert-danger">
+            @msg
+        </div>
+    }
+
+    <form action="@controllers.routes.Registration.handleSignUp(token).absoluteURL(UsernamePasswordProvider.sslEnabled)"
+          autocomplete= "off"
+          method="POST"
+    >
+        @*TODO: make this prettier*@
+        <div>Crack time: <span id="crack_time">...</span></div>
+
+        @helper.inputPassword(
+            signUpForm("password.password1"),
+            '_label -> Messages("securesocial.signup.password1"),
+            'class -> "form-control"
+        )
+
+        @helper.inputPassword(
+            signUpForm("password.password2"),
+            '_label -> Messages("securesocial.signup.password2"),
+            '_error -> signUpForm.error("password"),
+            'class -> "form-control"
+        )
+
+        @helper.checkbox(
+            signUpForm("mailinglist"),
+            '_label -> Messages("securesocial.signup.mailinglist"),
+            'class -> "form-control"
+        )
+
+        <button type="submit" class="btn btn-primary">@Messages("securesocial.signup.createAccount")</button>
+    </form>
+}

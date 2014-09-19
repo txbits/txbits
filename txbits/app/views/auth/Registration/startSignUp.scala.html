@@ -1,0 +1,26 @@
+@(startForm:Form[String])(implicit request: RequestHeader, lang: Lang)
+@import helper._
+@import securesocial.core.UsernamePasswordProvider
+@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
+
+@auth._chrome( Messages("securesocial.signup.title") ) {
+
+    @request.flash.get("error").map { msg =>
+    <div class="alert alert-danger">
+        @Messages(msg)
+    </div>
+    }
+
+    <form action="@controllers.routes.Registration.handleStartSignUp().absoluteURL(UsernamePasswordProvider.sslEnabled)"
+          autocomplete="off" method="post"
+    >
+        @helper.inputText(
+        startForm("email"),
+        '_label -> Messages("securesocial.signup.email1"),
+        'class -> "form-control"
+        )
+
+        <button type="submit" class="btn btn-primary">@Messages("securesocial.signup.createAccount")</button>
+
+    </form>
+}

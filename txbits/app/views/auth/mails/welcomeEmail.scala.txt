@@ -1,0 +1,9 @@
+@(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
+@import securesocial.core.UsernamePasswordProvider
+Welcome,
+
+Your new account is ready. Click here to log in:
+
+@controllers.routes.LoginPage.login.absoluteURL(UsernamePasswordProvider.sslEnabled)
+
+@_footer()

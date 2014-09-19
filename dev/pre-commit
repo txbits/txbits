@@ -1,0 +1,27 @@
+#!/bin/sh
+
+
+
+if ! git diff --quiet --cached --diff-filter="CDMRTUXB" txbits/conf/evolutions/default/*.sql; then
+  echo "Don not edit .sql files in the evolutions directory because they will cause the prod database to roll back and delete everything."
+  exit 1
+fi
+
+pushd $(dirname $0)/../../txbits
+
+echo Looks good. Running tests...
+
+date1=$(date +"%s")
+if ../txbits.sh test 2>/dev/null >/dev/null; then
+  date2=$(date +"%s")
+  diff=$(($date2-$date1))
+  echo "tests pass in " $diff "seconds"
+else
+  date2=$(date +"%s")
+  diff=$(($date2-$date1))
+  popd
+  echo "tests fail in " $diff "seconds"
+  exit 1
+fi
+popd
+

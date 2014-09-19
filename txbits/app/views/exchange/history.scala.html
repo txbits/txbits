@@ -1,0 +1,117 @@
+@(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
+
+@scripts = {
+    <script src="@routes.Assets.at("js/history.js")"></script>
+}
+
+@exchange._chrome(Messages("chrome.exchange.navigation.history.title"), "list", scripts) {
+
+    <div class="row">
+        <div class="box corner-all col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">@Messages("history.tradehistory.title")</div>
+                <div id="trade-history">
+                </div>
+            </div>
+        </div>
+
+        <div class="box corner-all col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">@Messages("history.depositwithdrawhistory.title")</div>
+                <div id="deposit-withdraw-history">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="box corner-all col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">@Messages("history.login.title")</div>
+                <div id="login-history">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="login-history-template" type="text/x-handlebars-template">
+        <table class="table table-striped responsive">
+            <thead>
+                <tr>
+                    <th>@Messages("terminology.time")</th>
+                    <th>@Messages("terminology.log_type")</th>
+                    <th>@Messages("terminology.ip")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each .}}
+                <tr>
+                    <td>{{created}}</td>
+                    <td>{{typ}}</td>
+                    <td>{{ip}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </script>
+
+    <script id="trade-history-template" type="text/x-handlebars-template">
+        <table class="table table-striped responsive">
+            <thead>
+                <tr>
+                    <th>@Messages("terminology.time")</th>
+                    <th class="money-heading">@Messages("terminology.sold") @Messages("terminology.value")</th>
+                    <th>@Messages("terminology.sold") @Messages("terminology.currency")</th>
+                    <th class="money-heading">@Messages("terminology.bought") @Messages("terminology.amount")</th>
+                    <th>@Messages("terminology.bought") @Messages("terminology.currency")</th>
+                    <th class="money-heading">@Messages("terminology.fee")</th>
+                    <th>@Messages("terminology.fee") @Messages("terminology.currency")</th>
+                    <th class="money-heading">@Messages("terminology.price")</th>
+                    <th>@Messages("terminology.price_units")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each .}}
+                <tr>
+                    <td>{{created}}</td>
+                    <td class="money">{{sold_amount}}</td>
+                    <td>{{sold}}</td>
+                    <td class="money">{{bought_amount}}</td>
+                    <td>{{bought}}</td>
+                    <td class="money">{{fee}}</td>
+                    <td>{{bought}}</td>
+                    <td class="money">{{price}}</td>
+                    <td>{{sold}} for 1 {{bought}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </script>
+
+    <script id="deposit-withdraw-history-template" type="text/x-handlebars-template">
+        <table class="table table-striped responsive">
+            <thead>
+                <tr>
+                    <th>@Messages("terminology.time")</th>
+                    <th>@Messages("terminology.type")</th>
+                    <th>@Messages("terminology.currency")</th>
+                    <th class="money-heading">@Messages("terminology.amount")</th>
+                    <th class="money-heading">@Messages("terminology.fee")</th>
+                    <th>@Messages("terminology.address")</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each .}}
+                <tr>
+                    <td>{{created}}</td>
+                    <td>{{typ}}</td>
+                    <td>{{currency}}</td>
+                    <td class="money">{{amount}}</td>
+                    <td class="money">{{fee}}</td>
+                    <td>{{address}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </script>
+}

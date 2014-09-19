@@ -1,0 +1,105 @@
+@(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
+
+@import securesocial.core.UsernamePasswordProvider
+@import helper._
+
+@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
+
+@scripts = {
+    <script src="@routes.Assets.at("js/account.js")"></script>
+}
+
+@exchange._chrome(Messages("chrome.exchange.navigation.account.title"), "user", scripts) {
+
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">@Messages("exchange.account.info.title")</div>
+                <div class="panel-body">
+                    <p id="acct-info"></p>
+                    <p>
+                        <a href="@controllers.routes.PasswordChange.page().absoluteURL(UsernamePasswordProvider.sslEnabled)" class="btn btn-default">
+                            @Messages("securesocial.passwordChange.title")
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="tfa-enable-modal" tabindex="-1" role="dialog" aria-labelledby="tfa-enable-modal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="tfa-enable-modal">@Messages("tfa.on.title")</h4>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
+                    <button type="button" class="btn btn-primary">@Messages("tfa.on.title")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="tfa-disable-modal" tabindex="-1" role="dialog" aria-labelledby="tfa-disable-modal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="tfa-disable-modal">@Messages("tfa.off.title")</h4>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
+                    <button type="button" class="btn btn-primary">@Messages("tfa.off.title")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="totp-secret-template" type="text/x-handlebars-template">
+        <p class="text-justify">@Messages("tfa.google.explanation")</p>
+        <div class="center-block qr-code" id="tfa-enable-qr"></div>
+        <div class="small text-center">{{secret}}</div>
+        <form role="form">
+            <label for="code" class="control-label">@Messages("terminology.code")</label>
+            <input class="form-control code" name="code" type="text"/>
+        </form>
+    </script>
+
+    <script id="turn-off-tfa-template" type="text/x-handlebars-template">
+        <p class="text-justify">@Messages("tfa.off.explanation")</p>
+        <form role="form">
+            <label for="code" class="control-label">@Messages("terminology.code")</label>
+            <input class="form-control code" name="code" type="text"/>
+        </form>
+    </script>
+
+
+    <script id="acct-info-template" type="text/x-handlebars-template">
+        <p>@Messages("terminology.email"): {{email}}</p>
+        <!--<p>@Messages("terminology.verificationLevel"): {{verification}}</p>-->
+        {{#onMailingList}}
+        <p>@Messages("exchange.account.mailinglist"): on</p>
+        <button type="submit" class="btn btn-default" id="turnoff-emails">@Messages("emails.off.title")</button>
+        {{/onMailingList}}
+        {{^onMailingList}}
+        <p>@Messages("exchange.account.mailinglist"): off</p>
+        <button type="submit" class="btn btn-default" id="turnon-emails">@Messages("emails.on.title")</button>
+        {{/onMailingList}}
+        <p>@Messages("exchange.account.tfa_type"): {{TFAType}}</p>
+        {{#TFALogin}}
+            <p>@Messages("exchange.account.tfa_login"): on</p>
+            <button type="submit" class="btn btn-danger" id="turnoff-tfa">@Messages("tfa.off.title")</button>
+        {{/TFALogin}}
+        {{^TFALogin}}
+            <p>@Messages("exchange.account.tfa_login"): off</p>
+            <button type="submit" class="btn btn-primary" id="turnon-tfa">@Messages("tfa.on.title")</button>
+        {{/TFALogin}}
+    </script>
+
+}
