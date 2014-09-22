@@ -18,7 +18,7 @@ $(function(){
                         tickers[i].color = "gray";
                         tickers[i].icon = "minus";
                     }
-                    tickers[i].last = zerosToSpaces(tickers[i].last);
+                    tickers[i].last = zerosTrim(tickers[i].last);
                 }
                 $('#ticker').html(template(tickers));
             }).error(function(){
