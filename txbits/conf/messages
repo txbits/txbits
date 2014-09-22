@@ -46,8 +46,8 @@ form.zip=Zip/Postal Code
 form.country=Country
 form.telephone=Telephone Number
 error.date=Please enter a valid date.
-emails.off.title=Unsubsrcibe from mailing list
-emails.on.title=Subsrcibe to mailing list
+emails.off.title=Unsubscribe from mailing list
+emails.on.title=Subscribe to mailing list
 
 terminology.verificationLevel=Verification Level
 

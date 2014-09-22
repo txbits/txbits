@@ -43,14 +43,18 @@ $(function(){
                         var pending_d = data.result;
                         for (var currency in pending_d) {
                             for (var i in pending_d[currency]) {
-                                pending_d[currency][i].created = (new Date(pending_d[currency][i].created)).toLocaleString();
+                                pending_d[currency][i].created = moment(Number(pending_d[currency][i].created)).format("YYYY-MM-DD HH:mm:ss");
+                                pending_d[currency][i].amount = zerosToSpaces(pending_d[currency][i].amount);
+                                pending_d[currency][i].fee = zerosToSpaces(pending_d[currency][i].fee);
                             }
                         }
                         API.pending_withdrawals().success(function(data){
                             var pending_w = data.result;
                             for (var currency in pending_w) {
                                 for (var i in pending_w[currency]) {
-                                    pending_w[currency][i].created = (new Date(pending_w[currency][i].created)).toLocaleString();
+                                    pending_w[currency][i].created = moment(Number(pending_w[currency][i].created)).format("YYYY-MM-DD HH:mm:ss");
+                                    pending_w[currency][i].amount = zerosToSpaces(pending_w[currency][i].amount);
+                                    pending_w[currency][i].fee = zerosToSpaces(pending_w[currency][i].fee);
                                 }
                             }
                             API.deposit_crypto_all().success(function(res) {

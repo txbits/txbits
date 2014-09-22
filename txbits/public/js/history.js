@@ -7,6 +7,8 @@ $(function(){
         for (i = 0; i < data.result.length; i++){
             data.result[i].created = moment(Number(data.result[i].created)).format("YYYY-MM-DD HH:mm:ss");
             data.result[i].typ = data.result[i].typ == 'd' ? "Deposit" : "Withdrawal";
+            data.result[i].amount = zerosToSpaces(data.result[i].amount);
+            data.result[i].fee = zerosToSpaces(data.result[i].fee);
             data.result[i].address = data.result[i].address ? data.result[i].address : "N/A";
         }
         var html = dw_template(data.result);
