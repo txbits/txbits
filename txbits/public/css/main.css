@@ -161,3 +161,14 @@ body {
     margin-top: -60px;
     padding-top: 60px;
 }
+
+#open-bids .table > thead > tr > th, #open-bids .table > thead > tr > th, 
+#open-bids .table > tbody > tr > th, #open-bids .table > tfoot > tr > th, 
+#open-bids .table > thead > tr > td, #open-bids .table > tbody > tr > td, 
+#open-bids .table > tfoot > tr > td,
+#open-asks .table > thead > tr > th, #open-asks .table > thead > tr > th,
+#open-asks .table > tbody > tr > th, #open-asks .table > tfoot > tr > th,
+#open-asks .table > thead > tr > td, #open-asks .table > tbody > tr > td,
+#open-asks .table > tfoot > tr > td {
+    border-color: #ffffff;
+}

@@ -64,7 +64,8 @@ $(function(){
 
         //XXX: Not the best way to do things... these calls should either be done in parallel or as one call
 
-        var ot_template = Handlebars.compile($("#open-trades-template").html());
+        var ob_template = Handlebars.compile($("#open-bids-template").html());
+        var oa_template = Handlebars.compile($("#open-asks-template").html());
         API.balance().success(function(data){
             var balances = data.result;
 
@@ -105,8 +106,8 @@ $(function(){
                         asks.orders[i].price = zerosToSpaces(asks.orders[i].price);
                     }
 
-                    $('#open-bids').html(ot_template(bids));
-                    $('#open-asks').html(ot_template(asks));
+                    $('#open-bids').html(ob_template(bids));
+                    $('#open-asks').html(oa_template(asks));
 
 
                     var bid_price = asks.orders.length > 0 ? asks.orders[0].price.trim() : "";
