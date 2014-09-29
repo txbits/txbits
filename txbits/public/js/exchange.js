@@ -201,7 +201,7 @@ $(function(){
 
         });
         API.chart(base, counter).success(function(data){
-            $(document.getElementById("graph")).height("300px");
+            $(document.getElementById("graph")).height("375px");
 
             var d2 = [];
             var d3 = [];

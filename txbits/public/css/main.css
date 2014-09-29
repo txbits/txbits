@@ -162,6 +162,23 @@ body {
     padding-top: 60px;
 }
 
+#pair-picker {
+    margin-bottom: 10px;
+}
+
+#bid, #ask {
+    margin-bottom: 20px;
+}
+
+.tablescroller {
+    max-height: 300px;
+    overflow: auto;
+}
+
+.tablescroller>table {
+    margin-bottom: 0;
+}
+
 #open-bids .table > thead > tr > th, #open-bids .table > thead > tr > th, 
 #open-bids .table > tbody > tr > th, #open-bids .table > tfoot > tr > th, 
 #open-bids .table > thead > tr > td, #open-bids .table > tbody > tr > td, 
