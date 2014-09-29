@@ -10,6 +10,7 @@ import com.googlecode.jsonrpc4j.JsonRpcHttpClient
 import controllers.API.CryptoAddress
 import java.net.{ PasswordAuthentication, Authenticator, URL }
 import play.api.mvc.Result
+import play.filters.headers.SecurityHeadersFilter
 import scala.concurrent.duration._
 import models._
 import org.joda.time.DateTime
@@ -108,7 +109,7 @@ package object globals {
 
 }
 
-object Global extends GlobalSettings {
+object Global extends WithFilters(SecurityHeadersFilter()) with GlobalSettings {
 
   override def onError(request: RequestHeader, ex: Throwable): Future[Result] = {
     implicit val r = request

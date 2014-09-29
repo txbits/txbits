@@ -10,6 +10,7 @@ libraryDependencies ++= Seq(
   ws,
   jdbc,
   anorm,
+  filters,
   play.PlayImport.cache,
   "com.typesafe.play.plugins" %% "play-plugins-util" % "2.3.0",
   "org.mindrot" % "jbcrypt" % "0.3m",

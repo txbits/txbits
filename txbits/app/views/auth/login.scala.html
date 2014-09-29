@@ -7,9 +7,7 @@
 @import securesocial.core.AuthenticationMethod._
 
 @scripts = {
-    <script type="text/javascript">
-        $(function(){$('form input[name=username]' ).focus()})
-    </script>
+    <script src="@routes.Assets.at("js/login.js")"></script>
 }
 
 @implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
