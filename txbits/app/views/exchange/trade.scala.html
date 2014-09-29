@@ -29,30 +29,38 @@
     </div>
 
     <div class="row">
-        <div class="col-md-4">
-            <div id="bid">
+        <div class="col-md-6">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="active"><a href="#bid" role="tab" data-toggle="tab">@Messages("terminology.bid")</a></li>
+                <li><a href="#ask" role="tab" data-toggle="tab">@Messages("terminology.ask")</a></li>
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="bid">
+                </div>
+                <div class="tab-pane" id="ask">
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div id="ask">
-            </div>
-        </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div id="graph">
             </div>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div id="open-asks">
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div id="open-bids">
             </div>
         </div>
-        <div class="col-md-4">
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
             <div id="recent-trades">
             </div>
         </div>
@@ -167,70 +175,76 @@
 
     <script id="open-bids-template" type="text/x-handlebars-template">
         <h4>@Messages("exchange.openbids.title")</h4>
-        <table class="table table-condensed responsive">
-            <thead>
-                <tr>
-                    <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
-                    <th class="money-heading">@{Messages("terminology.value")} {{counter}}</th>
-                    <th class="money-heading">@Messages("terminology.price")</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{#each orders}}
-                <tr class="success">
-                    <td class="money">{{amount}}</td>
-                    <td class="money">{{value}}</td>
-                    <td class="money">{{price}}</td>
-                </tr>
-                {{/each}}
-            </tbody>
-        </table>
+        <div class="tablescroller">
+            <table class="table table-condensed responsive">
+                <thead>
+                    <tr>
+                        <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
+                        <th class="money-heading">@{Messages("terminology.value")} {{counter}}</th>
+                        <th class="money-heading">@Messages("terminology.price")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each orders}}
+                    <tr class="success">
+                        <td class="money">{{amount}}</td>
+                        <td class="money">{{value}}</td>
+                        <td class="money">{{price}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
     </script>
 
     <script id="open-asks-template" type="text/x-handlebars-template">
         <h4>@Messages("exchange.openasks.title")</h4>
-        <table class="table table-condensed responsive">
-            <thead>
-                <tr>
-                    <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
-                    <th class="money-heading">@{Messages("terminology.value")} {{counter}}</th>
-                    <th class="money-heading">@Messages("terminology.price")</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{#each orders}}
-                <tr class="danger">
-                    <td class="money">{{amount}}</td>
-                    <td class="money">{{value}}</td>
-                    <td class="money">{{price}}</td>
-                </tr>
-                {{/each}}
-            </tbody>
-        </table>
+        <div class="tablescroller">
+            <table class="table table-condensed responsive tablescroller-head">
+                <thead>
+                    <tr>
+                        <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
+                        <th class="money-heading">@{Messages("terminology.value")} {{counter}}</th>
+                        <th class="money-heading">@Messages("terminology.price")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each orders}}
+                    <tr class="danger">
+                        <td class="money">{{amount}}</td>
+                        <td class="money">{{value}}</td>
+                        <td class="money">{{price}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
     </script>
 
     <script id="recent-trades-template" type="text/x-handlebars-template">
         <h4>@Messages("exchange.recenttrades.title")</h4>
-        <table class="table table-striped table-condensed responsive">
-            <thead>
-                <tr>
-                    <th>@Messages("terminology.time")</th>
-                    <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
-                    <th class="money-heading">@{Messages("terminology.value")} {{counter}}</th>
-                    <th class="money-heading">@Messages("terminology.price")</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{#each orders}}
-                <tr class="{{klass}}">
-                    <td>{{created}}</td>
-                    <td class="money">{{amount}}</td>
-                    <td class="money">{{value}}</td>
-                    <td class="money">{{price}}</td>
-                </tr>
-                {{/each}}
-            </tbody>
-        </table>
+        <div class="tablescroller">
+            <table class="table table-striped table-condensed responsive tablescroller-head">
+                <thead>
+                    <tr>
+                        <th>@Messages("terminology.time")</th>
+                        <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
+                        <th class="money-heading">@{Messages("terminology.value")} {{counter}}</th>
+                        <th class="money-heading">@Messages("terminology.price")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each orders}}
+                    <tr class="{{klass}}">
+                        <td>{{created}}</td>
+                        <td class="money">{{amount}}</td>
+                        <td class="money">{{value}}</td>
+                        <td class="money">{{price}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
     </script>
 
     <script id="pending-trades-template" type="text/x-handlebars-template">
