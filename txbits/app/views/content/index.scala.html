@@ -5,9 +5,6 @@
 @implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
 
 @scripts = {
-    <script src="@routes.Assets.at("js/vendor/handlebars-v2.0.0.js")"></script>
-    <script src="@routes.Assets.at("js/api1.js")"></script>
-    <script src="@routes.Assets.at("js/common.js")"></script>
     <script src="@routes.Assets.at("js/content_index.js")"></script>
 }
 
@@ -76,10 +73,9 @@
                                 You can use that to get started with testing the functionality of TxBits. You can deposit and withdraw
                                 testnet coins. We are running a full reserve but in the testing period, testnet coins deposited to this
                                 exchange may be lost or stolen. We would like
-                                to hear any feedback you have for us. Please tell us what you think at <a href="#" id="feedback-email">(Turn on javascript to show email address)</a>
+                                to hear any feedback you have for us. Please tell us what you think at <a href="#" class="hidden-email" data-name="feedback" data-domain="txbits.com">(Turn on javascript to show email address)</a>
                                 or using the little UserVoice button in the bottom right corner of every page.
                                 Feel free to tell your frends about our beta :)
-                                <script>(function(){var at = String.fromCharCode(64);var e = "feedback"+at+"txbits.com"; var c = document.getElementById("feedback-email"); c.innerHTML = e; c.href = "mailto:"+e;})();</script></p>
                         </div>
                     </div>
                 </div>
@@ -103,8 +99,7 @@
                         <div class="col-sm-6">
                             <address>
                                 <strong>TxBits</strong><br>
-                                <a href="" id="contact-email">Turn on javascript to show email.</a>
-                                <script>(function(){var at = String.fromCharCode(64);var e = "contact"+at+"txbits.com"; var c = document.getElementById("contact-email"); c.innerHTML = e; c.href = "mailto:"+e;})();</script>
+                                <a href="#" class="hidden-email" data-name="contact" data-domain="txbits.com">(Turn on javascript to show email address)</a>
                             </address>
                         </div>
                         <div class="col-sm-6">
