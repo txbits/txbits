@@ -167,7 +167,7 @@
 
     <script id="open-bids-template" type="text/x-handlebars-template">
         <h4>@Messages("exchange.openbids.title")</h4>
-        <table class="table bg-success table-condensed responsive">
+        <table class="table table-condensed responsive">
             <thead>
                 <tr>
                     <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
@@ -177,7 +177,7 @@
             </thead>
             <tbody>
                 {{#each orders}}
-                <tr>
+                <tr class="success">
                     <td class="money">{{amount}}</td>
                     <td class="money">{{value}}</td>
                     <td class="money">{{price}}</td>
@@ -189,7 +189,7 @@
 
     <script id="open-asks-template" type="text/x-handlebars-template">
         <h4>@Messages("exchange.openasks.title")</h4>
-        <table class="table bg-danger table-condensed responsive">
+        <table class="table table-condensed responsive">
             <thead>
                 <tr>
                     <th class="money-heading">@{Messages("terminology.amount")} {{base}}</th>
@@ -199,7 +199,7 @@
             </thead>
             <tbody>
                 {{#each orders}}
-                <tr>
+                <tr class="danger">
                     <td class="money">{{amount}}</td>
                     <td class="money">{{value}}</td>
                     <td class="money">{{price}}</td>
@@ -222,7 +222,7 @@
             </thead>
             <tbody>
                 {{#each orders}}
-                <tr>
+                <tr class="{{klass}}">
                     <td>{{created}}</td>
                     <td class="money">{{amount}}</td>
                     <td class="money">{{value}}</td>

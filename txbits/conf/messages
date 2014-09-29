@@ -96,8 +96,8 @@ chrome.navigation.compliance.title=Compliance
 chrome.navigation.security.title=Security
 chrome.navigation.privacy.title=Privacy
 
-exchange.openbids.title=Buying
-exchange.openasks.title=Selling
+exchange.openbids.title=Buy Orders
+exchange.openasks.title=Sell Orders
 exchange.recenttrades.title=Recent Trades
 exchange.pendingtrades.title=Pending Trades
 

@@ -195,6 +195,7 @@ $(function(){
                 trades.orders[i].amount = zerosToSpaces(trades.orders[i].amount);
                 trades.orders[i].price = zerosToSpaces(trades.orders[i].price);
                 trades.orders[i].created = moment(Number(trades.orders[i].created)).format("YYYY-MM-DD HH:mm:ss");
+                trades.orders[i].klass = trades.orders[i].typ == "ask" ? "danger" : "success";
             }
             $('#recent-trades').html(rt_template(trades));
 
