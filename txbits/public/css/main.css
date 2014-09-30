@@ -178,18 +178,3 @@ body {
 .tablescroller>table {
     margin-bottom: 0;
 }
-
-#open-bids .table > thead > tr > th, #open-bids .table > thead > tr > th, 
-#open-bids .table > tbody > tr > th, #open-bids .table > tfoot > tr > th, 
-#open-bids .table > thead > tr > td, #open-bids .table > tbody > tr > td, 
-#open-bids .table > tfoot > tr > td,
-#open-asks .table > thead > tr > th, #open-asks .table > thead > tr > th,
-#open-asks .table > tbody > tr > th, #open-asks .table > tfoot > tr > th,
-#open-asks .table > thead > tr > td, #open-asks .table > tbody > tr > td,
-#open-asks .table > tfoot > tr > td,
-#recent-trades .table > thead > tr > th, #recent-trades .table > thead > tr > th,
-#recent-trades .table > tbody > tr > th, #recent-trades .table > tfoot > tr > th,
-#recent-trades .table > thead > tr > td, #recent-trades .table > tbody > tr > td,
-#recent-trades .table > tfoot > tr > td {
-    border-color: #ffffff;
-}
