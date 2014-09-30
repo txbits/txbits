@@ -39,10 +39,13 @@ $(function(){
                 trades[i].amount = zerosToSpaces(trades[i].amount);
                 trades[i].price = zerosToSpaces(trades[i].price);
                 trades[i].created = moment(Number(trades[i].created)).format("YYYY-MM-DD HH:mm:ss");
-                trades[i].bought = trades[i].typ == 'bid' ? trades[i].base : trades[i].counter;
-                trades[i].bought_amount = trades[i].typ == 'bid' ? trades[i].amount : trades[i].value;
-                trades[i].sold = trades[i].typ == 'ask' ? trades[i].base : trades[i].counter;
-                trades[i].sold_amount = trades[i].typ == 'ask' ? trades[i].amount : trades[i].value;
+                if (trades[i].typ == "ask") {
+                    trades[i].order_type = "Sell";
+                    trades[i].klass = "danger";
+                } else {
+                    trades[i].order_type = "Buy";
+                    trades[i].klass = "success";
+                }
             }
             $('#pending-trades').html(pt_template(trades)).find('a').click(function(){
                 var $this = $(this);
@@ -195,7 +198,13 @@ $(function(){
                 trades.orders[i].amount = zerosToSpaces(trades.orders[i].amount);
                 trades.orders[i].price = zerosToSpaces(trades.orders[i].price);
                 trades.orders[i].created = moment(Number(trades.orders[i].created)).format("YYYY-MM-DD HH:mm:ss");
-                trades.orders[i].klass = trades.orders[i].typ == "ask" ? "danger" : "success";
+                if (trades.orders[i].typ == "ask") {
+                    trades.orders[i].order_type = "Sell";
+                    trades.orders[i].klass = "danger";
+                } else {
+                    trades.orders[i].order_type = "Buy";
+                    trades.orders[i].klass = "success";
+                }
             }
             $('#recent-trades').html(rt_template(trades));
 
