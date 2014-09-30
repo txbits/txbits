@@ -38,9 +38,9 @@ $(function(){
 });
 
 function showEmails() {
-    $('hidden-email').each(function(el){
+    $('.hidden-email').each(function(idx, el) {
         var $el = $(el);
-        $el.text($el.attr('name') + '@' + $el.attr('domain'));
+        $el.text($el.attr('data-name') + '@' + $el.attr('data-domain'));
         $el.attr('href', 'mailto:' + $el.text());
     });
 }
