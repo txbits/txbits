@@ -6,10 +6,16 @@ $(function(){
         var i;
         for (i = 0; i < data.result.length; i++){
             data.result[i].created = moment(Number(data.result[i].created)).format("YYYY-MM-DD HH:mm:ss");
-            data.result[i].typ = data.result[i].typ == 'd' ? "Deposit" : "Withdrawal";
             data.result[i].amount = zerosToSpaces(data.result[i].amount);
             data.result[i].fee = zerosToSpaces(data.result[i].fee);
             data.result[i].address = data.result[i].address ? data.result[i].address : "N/A";
+            if (data.result[i].typ == 'd') {
+                data.result[i].typ = "Deposit";
+                data.result[i].klass = "success";
+            } else {
+                data.result[i].typ = "Withdrawal";
+                data.result[i].klass = "danger";
+            }
         }
         var html = dw_template(data.result);
         $('#deposit-withdraw-history').html(html);
@@ -21,10 +27,16 @@ $(function(){
             data.result[i].amount = zerosToSpaces(data.result[i].amount);
             data.result[i].price = zerosToSpaces(data.result[i].price);
             data.result[i].created = moment(Number(data.result[i].created)).format("YYYY-MM-DD HH:mm:ss");
-            data.result[i].bought = data.result[i].typ == 'bid' ? data.result[i].base : data.result[i].counter;
-            data.result[i].bought_amount = data.result[i].typ == 'bid' ? data.result[i].amount : data.result[i].value;
-            data.result[i].sold = data.result[i].typ == 'ask' ? data.result[i].base : data.result[i].counter;
-            data.result[i].sold_amount = data.result[i].typ == 'ask' ? data.result[i].amount : data.result[i].value;
+            data.result[i].fee = zerosToSpaces(data.result[i].fee);
+            if (data.result[i].typ == "ask") {
+                data.result[i].fee_currency = data.result[i].counter;
+                data.result[i].order_type = "Sell";
+                data.result[i].klass = "danger";
+            } else {
+                data.result[i].fee_currency = data.result[i].base;
+                data.result[i].order_type = "Buy";
+                data.result[i].klass = "success";
+            }
         }
         var html = trade_template(data.result);
         $('#trade-history').html(html);
