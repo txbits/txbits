@@ -151,6 +151,7 @@ securesocial.login.invalidCredentials=The credentials you entered are not valid
 # Sign up page
 securesocial.signup.title=Sign Up
 securesocial.signup.email1=Email
+securesocial.signup.email2=Re-enter email
 securesocial.signup.password1=Password (12 characters minimum)
 securesocial.signup.password2=Password confirmation
 securesocial.signup.createAccount=Create Account
