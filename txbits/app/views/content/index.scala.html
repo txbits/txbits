@@ -1,4 +1,4 @@
-@()(implicit request: RequestHeader, lang: Lang)
+@(loggedIn: Boolean)(implicit request: RequestHeader, lang: Lang)
 @import securesocial.core.UsernamePasswordProvider
 @import helper._
 @import securesocial.core.UsernamePasswordProvider
@@ -9,7 +9,7 @@
     <script src="@routes.Assets.at("js/signup.js")"></script>
 }
 
-@content._chrome("", scripts) {
+@content._chrome("", scripts, loggedIn = loggedIn) {
     <div class="marketing">
         <div class="jumbotron intro-image">
             <div class="container">
@@ -19,6 +19,7 @@
         </div>
 
         <div class="content">
+        @if(!loggedIn){
             <div id="signup-wrap">
                 <div class="text-center">
                     <form id="signup-form" class="form-inline" action="@controllers.routes.Registration.handleStartSignUp().absoluteURL(UsernamePasswordProvider.sslEnabled)" autocomplete="off" method="post">
@@ -39,6 +40,7 @@
                     </form>
                 </div>
             </div>
+        }
 
             <div id="ticker-wrap">
                 <div class="container">
@@ -49,6 +51,7 @@
                 </div>
             </div>
 
+        @if(!loggedIn){
             <div id="login-wrap">
                 <div class="text-center">
                     <div class="form-inline">
@@ -70,6 +73,7 @@
                     </div>
                 </div>
             </div>
+        }
 
             <div id="beta-wrap">
                 <div class="container" id="beta">
