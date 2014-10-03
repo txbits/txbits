@@ -11,8 +11,8 @@ import scala.language.postfixOps
 
 object Application extends Controller with securesocial.core.SecureSocial {
 
-  def index = Action { implicit request =>
-    Ok(views.html.content.index())
+  def index = UserAwareAction { implicit request =>
+    Ok(views.html.content.index(request.user.isDefined))
   }
 
   def dashboard = SecuredAction { implicit request =>
