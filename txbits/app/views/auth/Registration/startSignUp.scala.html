@@ -3,7 +3,11 @@
 @import securesocial.core.UsernamePasswordProvider
 @implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
 
-@auth._chrome( Messages("securesocial.signup.title") ) {
+@scripts = {
+    <script src="@routes.Assets.at("js/signup.js")"></script>
+}
+
+@auth._chrome( Messages("securesocial.signup.title"), scripts ) {
 
     @request.flash.get("error").map { msg =>
     <div class="alert alert-danger">
@@ -11,7 +15,7 @@
     </div>
     }
 
-    <form action="@controllers.routes.Registration.handleStartSignUp().absoluteURL(UsernamePasswordProvider.sslEnabled)"
+    <form id="signup-form" action="@controllers.routes.Registration.handleStartSignUp().absoluteURL(UsernamePasswordProvider.sslEnabled)"
           autocomplete="off" method="post"
     >
         @helper.inputText(
@@ -19,6 +23,14 @@
         '_label -> Messages("securesocial.signup.email1"),
         'class -> "form-control"
         )
+
+        <div class="form-group" id="email2_field">
+            <label class="control-label" for="email2">@Messages("securesocial.signup.email2")</label>
+            <div class="controls">
+                <input type="text" id="email2" name="email2" value="" class="form-control"/>
+                <span id="email2_error" class="help-block" style="display:none">Emails do not match</span>
+            </div>
+        </div>
 
         <button type="submit" class="btn btn-primary">@Messages("securesocial.signup.createAccount")</button>
 
