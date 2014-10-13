@@ -25,6 +25,7 @@ import play.api.mvc.{ Result, _ }
 import play.api.{ Logger, Play }
 import securesocial.core.{ AccessDeniedException, SocialUser, _ }
 import service.{ TOTPAuthenticator, TOTPSecret }
+import play.filters.csrf._
 
 /**
  * A controller to provide the authentication entry point
@@ -115,19 +116,21 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
     )
   }
 
-  def loginPost() = Action { implicit request =>
-    try {
-      Registry.provider.authenticate().fold(result => result, {
-        user => completeAuthentication(user, request2session)
-      })
-    } catch {
-      case ex: AccessDeniedException => {
-        Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("securesocial.login.accessDenied"))
-      }
+  def loginPost() = CSRFCheck {
+    Action { implicit request =>
+      try {
+        Registry.provider.authenticate().fold(result => result, {
+          user => completeAuthentication(user, request2session)
+        })
+      } catch {
+        case ex: AccessDeniedException => {
+          Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("securesocial.login.accessDenied"))
+        }
 
-      case other: Throwable => {
-        Logger.error("Unable to log user in. An exception was thrown", other)
-        Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("securesocial.login.errorLoggingIn"))
+        case other: Throwable => {
+          Logger.error("Unable to log user in. An exception was thrown", other)
+          Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("securesocial.login.errorLoggingIn"))
+        }
       }
     }
   }

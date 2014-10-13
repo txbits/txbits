@@ -35,7 +35,7 @@
     <div class="clearfix">
         <form action = "@routes.ProviderController.loginPost().url"
         autocomplete="off" method="POST">
-
+            @CSRF.formField
             @helper.inputText(
                 loginForm("username"),
                 '_label -> Messages("terminology.email"),
