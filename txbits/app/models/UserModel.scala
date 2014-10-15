@@ -147,7 +147,7 @@ class UserModel(val db: String = "default") {
         'token -> token.uuid,
         'creation -> new Timestamp(token.creationTime.getMillis),
         'expiration -> new Timestamp(token.expirationTime.getMillis),
-        'is_signup -> (if (token.isSignUp) 1 else 0)
+        'is_signup -> token.isSignUp
       ).execute
     }
 
@@ -164,7 +164,7 @@ class UserModel(val db: String = "default") {
     SQLText.findToken.on(
       'token -> token
     )().map(row =>
-        Token(token, row[String]("email"), row[DateTime]("creation"), row[DateTime]("expiration"), row[Int]("is_signup") != 0)
+        Token(token, row[String]("email"), row[DateTime]("creation"), row[DateTime]("expiration"), row[Boolean]("is_signup"))
       ).headOption
   }
 

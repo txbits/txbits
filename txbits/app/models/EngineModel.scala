@@ -52,7 +52,7 @@ class EngineModel(val db: String = "default") {
       'counter -> counter,
       'amount -> amount.bigDecimal,
       'price -> price.bigDecimal,
-      'type -> "bid"
+      'is_bid -> true
     ).executeInsert[Option[Long]]()
   }
 
@@ -63,25 +63,25 @@ class EngineModel(val db: String = "default") {
       'counter -> counter,
       'amount -> amount.bigDecimal,
       'price -> price.bigDecimal,
-      'type -> "ask"
+      'is_bid -> false
     ).executeInsert[Option[Long]]()
   }
 
   def userPendingTrades(uid: Long) = DB.withConnection(db) { implicit c =>
     SQLText.userPendingTrades.on('uid -> uid)().map(row =>
-      Trade(row[Long]("id"), row[String]("type"), row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"), row[DateTime]("created"))
+      Trade(row[Long]("id"), if (row[Boolean]("is_bid")) "bid" else "ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"), row[DateTime]("created"))
     ).toList
   }
 
   def openAsks(base: String, counter: String) = DB.withConnection(db) { implicit c =>
     SQLText.openAsks.on('base -> base, 'counter -> counter)().map(row =>
-      OpenOrder(row[String]("type"), row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
+      OpenOrder("ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
     ).toList
   }
 
   def openBids(base: String, counter: String) = DB.withConnection(db) { implicit c =>
     SQLText.openBids.on('base -> base, 'counter -> counter)().map(row =>
-      OpenOrder(row[String]("type"), row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
+      OpenOrder("bid", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
     ).toList
   }
 
@@ -143,7 +143,7 @@ class EngineModel(val db: String = "default") {
           row[BigDecimal]("price").bigDecimal.toPlainString,
           row[String]("base"),
           row[String]("counter"),
-          row[String]("type"))
+          if (row[Boolean]("is_bid")) "bid" else "ask")
       ).toList
   }
 
@@ -175,7 +175,7 @@ object Match {
     Json.obj(
       "amount" -> m.amount.bigDecimal.toPlainString,
       "price" -> m.price.bigDecimal.toPlainString,
-      "created" -> m.created.toString(),
+      "created" -> m.created.toString,
       "pair" -> "%s/%s".format(m.base, m.counter),
       "base" -> m.base,
       "counter" -> m.counter
