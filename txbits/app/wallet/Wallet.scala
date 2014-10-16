@@ -152,11 +152,11 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
                   None
                 } else {
                   val withdrawalsJava = (
-                    if (balanceLowerBound > balanceMax) {
+                    if (balanceLowerBound > balanceMax && params.coldAddress.isDefined) {
                       // Transfer to cold storage
                       val coldStorageValue = balanceLowerBound - balanceTarget
-                      walletModel.createColdStorageTransfer(withdrawalId, params.coldAddress, coldStorageValue)
-                      withdrawals + (params.coldAddress -> coldStorageValue)
+                      walletModel.createColdStorageTransfer(withdrawalId, params.coldAddress.get, coldStorageValue)
+                      withdrawals + (params.coldAddress.get -> coldStorageValue)
                     } else {
                       withdrawals
                     }).asJava
@@ -194,8 +194,11 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       walletModel.addNewAddressBatch(currency, nodeId, addresses)
       // Refill the key pool before backing up the wallet
       keyPoolRefill()
-      //TODO: backup hot wallet
-      //backupWallet("%s%s-%s.dat".format(params.backupPath, currency.toString, scala.compat.Platform.currentTime))
+      // back up the wallet only after we've generated new keys
+      if (params.backupPath.isDefined) {
+        backupWallet(params.backupPath.get)
+        Logger.info("Backed up wallet to %s".format(params.backupPath.get))
+      }
     }
   }
 
@@ -254,7 +257,7 @@ object Wallet {
     addressDelay: FiniteDuration,
     addressInterval: FiniteDuration,
     addressPool: Int,
-    backupPath: String,
-    coldAddress: String)
+    backupPath: Option[String],
+    coldAddress: Option[String])
 }
 
