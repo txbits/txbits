@@ -56,6 +56,7 @@
                 <div class="text-center">
                     <div class="form-inline">
                         <form action = "@routes.ProviderController.loginPost().url" autocomplete="off" method="POST">
+                            @views.html.helper.CSRF.formField
                             <div class="form-group sign-up-text">@Messages("securesocial.login.title"):</div>
                             <div class="form-group" id="username_field">
                                 <div class="controls">

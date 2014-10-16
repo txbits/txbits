@@ -36,11 +36,12 @@
             'class -> "form-control"
         )
 
-        @helper.checkbox(
-            signUpForm("mailinglist"),
-            '_label -> Messages("securesocial.signup.mailinglist"),
-            'class -> "form-control"
-        )
+
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" name="mailinglist"> @Messages("securesocial.signup.mailinglist")
+            </label>
+        </div>
 
         <button type="submit" class="btn btn-primary">@Messages("securesocial.signup.createAccount")</button>
     </form>
