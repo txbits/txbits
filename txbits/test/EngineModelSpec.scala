@@ -67,15 +67,14 @@ class EngineModelSpec extends Specification with Mockito {
     "no money = no bid" in new WithCleanTestDbApplication {
       val uid = globals.userModel.create("test@test.test", "", "", false).get
 
-      //TODO: maybe we should fail more elegantly
-      globals.engineModel.bid(uid, "LTC", "USD", 1, 1) must throwA[PSQLException]
+      globals.engineModel.askBid(uid, "LTC", "USD", 1, 1, true) must beFalse
     }
 
     "be able to place a bid" in new WithCleanTestDbApplication {
       val uid = globals.userModel.create("test@test.test", "", "", false).get
 
       globals.userModel.addFakeMoney(uid, "USD", 1)
-      globals.engineModel.bid(uid, "LTC", "USD", 1, 1)
+      globals.engineModel.askBid(uid, "LTC", "USD", 1, 1, true)
 
       val result = globals.engineModel.balance(uid)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (1, 1))
@@ -84,7 +83,7 @@ class EngineModelSpec extends Specification with Mockito {
     "be able to place an ask" in new WithCleanTestDbApplication {
       val uid = globals.userModel.create("test@test.test", "", "", false).get
       globals.userModel.addFakeMoney(uid, "LTC", 1)
-      globals.engineModel.ask(uid, "LTC", "USD", 1, 1)
+      globals.engineModel.askBid(uid, "LTC", "USD", 1, 1, false)
 
       val result = globals.engineModel.balance(uid)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1, 1))
@@ -97,8 +96,8 @@ class EngineModelSpec extends Specification with Mockito {
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 1)
 
-      globals.engineModel.ask(asker, "LTC", "USD", 1, 1)
-      globals.engineModel.bid(bidder, "LTC", "USD", 1, 1)
+      globals.engineModel.askBid(asker, "LTC", "USD", 1, 1, false)
+      globals.engineModel.askBid(bidder, "LTC", "USD", 1, 1, true)
 
       val asker_res = globals.engineModel.balance(asker)
       val bidder_res = globals.engineModel.balance(bidder)
@@ -113,9 +112,9 @@ class EngineModelSpec extends Specification with Mockito {
       globals.userModel.addFakeMoney(asker, "LTC", 2)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
 
-      globals.engineModel.ask(asker, "LTC", "USD", 1, 1)
-      globals.engineModel.ask(asker, "LTC", "USD", 1, 1)
-      globals.engineModel.bid(bidder, "LTC", "USD", 1.5, 1)
+      globals.engineModel.askBid(asker, "LTC", "USD", 1, 1, false)
+      globals.engineModel.askBid(asker, "LTC", "USD", 1, 1, false)
+      globals.engineModel.askBid(bidder, "LTC", "USD", 1.5, 1, true)
 
       val asker_res = globals.engineModel.balance(asker)
       val bidder_res = globals.engineModel.balance(bidder)
@@ -134,8 +133,8 @@ class EngineModelSpec extends Specification with Mockito {
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
 
-      globals.engineModel.ask(asker, "LTC", "USD", 1, 2)
-      globals.engineModel.bid(bidder, "LTC", "USD", 1, 2)
+      globals.engineModel.askBid(asker, "LTC", "USD", 1, 2, false)
+      globals.engineModel.askBid(bidder, "LTC", "USD", 1, 2, true)
 
       val asker_res = globals.engineModel.balance(asker)
       val bidder_res = globals.engineModel.balance(bidder)
@@ -150,8 +149,8 @@ class EngineModelSpec extends Specification with Mockito {
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
 
-      globals.engineModel.bid(bidder, "LTC", "USD", 1, 2)
-      globals.engineModel.ask(asker, "LTC", "USD", 1, 2)
+      globals.engineModel.askBid(bidder, "LTC", "USD", 1, 2, true)
+      globals.engineModel.askBid(asker, "LTC", "USD", 1, 2, false)
 
       val asker_res = globals.engineModel.balance(asker)
       val bidder_res = globals.engineModel.balance(bidder)
@@ -166,8 +165,8 @@ class EngineModelSpec extends Specification with Mockito {
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
 
-      globals.engineModel.ask(asker, "LTC", "USD", 1, 2)
-      globals.engineModel.bid(bidder, "LTC", "USD", 1, 2)
+      globals.engineModel.askBid(asker, "LTC", "USD", 1, 2, false)
+      globals.engineModel.askBid(bidder, "LTC", "USD", 1, 2, true)
 
       val asker_res = globals.userModel.tradeHistory(asker)
       val bidder_res = globals.userModel.tradeHistory(bidder)
@@ -181,8 +180,8 @@ class EngineModelSpec extends Specification with Mockito {
       globals.userModel.addFakeMoney(uid, "LTC", 1)
       globals.userModel.addFakeMoney(uid, "USD", 2)
 
-      globals.engineModel.ask(uid, "LTC", "USD", 1, 2)
-      globals.engineModel.bid(uid, "LTC", "USD", 1, 2)
+      globals.engineModel.askBid(uid, "LTC", "USD", 1, 2, false)
+      globals.engineModel.askBid(uid, "LTC", "USD", 1, 2, true)
 
       val balance_res = globals.engineModel.balance(uid)
       val trade_res = globals.userModel.tradeHistory(uid)
@@ -203,9 +202,10 @@ class EngineModelSpec extends Specification with Mockito {
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
 
-      val id = globals.engineModel.bid(bidder, "LTC", "USD", 1, 2)
-      val cancel_res = globals.engineModel.cancel(bidder, id.get)
-      globals.engineModel.ask(asker, "LTC", "USD", 1, 2)
+      globals.engineModel.askBid(bidder, "LTC", "USD", 1, 2, true)
+      val id = globals.engineModel.userPendingTrades(bidder).head.id
+      val cancel_res = globals.engineModel.cancel(bidder, id)
+      globals.engineModel.askBid(asker, "LTC", "USD", 1, 2, false)
 
       val asker_res = globals.engineModel.balance(asker)
       val bidder_res = globals.engineModel.balance(bidder)

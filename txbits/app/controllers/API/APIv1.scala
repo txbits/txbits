@@ -72,11 +72,11 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.ask(request.user.id, base, counter, amount, price)
-              if (res.isDefined) {
+              val res = globals.engineModel.askBid(request.user.id, base, counter, amount, price, isBid = false)
+              if (res) {
                 Ok(Json.obj("status" -> "ok"))
               } else {
-                BadRequest(Json.obj("error" -> "Failed to place ask."))
+                BadRequest(Json.obj("error" -> "Non-sufficient funds."))
               }
             case Some((active, minAmount)) if active =>
               BadRequest(Json.obj("error" -> "Amount must be at least %s.".format(minAmount)))
@@ -92,15 +92,8 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         BadRequest(Json.obj("error" -> "Failed to parse input."))
       )
     } catch {
-      case e: PSQLException => {
-        BadRequest(Json.obj("error" -> (e.getServerErrorMessage.getMessage match {
-          case "new row for relation \"balances\" violates check constraint \"no_hold_above_balance\"" => "Non-sufficient funds."
-          case _: String => {
-            Logger.error(e.toString + e.getStackTrace)
-            e.getServerErrorMessage.getMessage
-          }
-        })))
-      }
+      case _: Throwable =>
+        BadRequest(Json.obj("error" -> "Failed to place ask."))
     }
   }
 
@@ -116,11 +109,11 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.bid(request.user.id, base, counter, amount, price)
-              if (res.isDefined) {
+              val res = globals.engineModel.askBid(request.user.id, base, counter, amount, price, isBid = true)
+              if (res) {
                 Ok(Json.obj("status" -> "ok"))
               } else {
-                BadRequest(Json.obj("error" -> "Failed to place bid."))
+                BadRequest(Json.obj("error" -> "Non-sufficient funds."))
               }
             case Some((active, minAmount)) if active =>
               BadRequest(Json.obj("error" -> "Amount must be at least %s.".format(minAmount)))
@@ -136,15 +129,8 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         BadRequest(Json.obj("error" -> "Failed to parse input."))
       )
     } catch {
-      case e: PSQLException => {
-        BadRequest(Json.obj("error" -> (e.getServerErrorMessage.getMessage match {
-          case "new row for relation \"balances\" violates check constraint \"no_hold_above_balance\"" => "Non-sufficient funds."
-          case _: String => {
-            Logger.error(e.toString + e.getStackTrace)
-            e.getServerErrorMessage.getMessage
-          }
-        })))
-      }
+      case _: Throwable =>
+        BadRequest(Json.obj("error" -> "Failed to place bid."))
     }
   }
 

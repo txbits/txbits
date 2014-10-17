@@ -22,7 +22,7 @@ CREATE TABLE dw_fees (
 );
 
 CREATE TABLE trade_fees (
-    linear numeric(23,8) NOT NULL
+    linear numeric(23,8) NOT NULL check(linear >= 0)
 );
 
 CREATE SEQUENCE users_id_seq;
@@ -124,8 +124,8 @@ CREATE TABLE orders (
     FOREIGN KEY (base, counter) REFERENCES markets(base, counter),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
-CREATE INDEX bid_idx ON orders(base, counter, price DESC, created ASC) WHERE closed = false AND remains > 0 AND is_bid;
-CREATE INDEX ask_idx ON orders(base, counter, price ASC, created ASC) WHERE closed = false AND remains > 0 AND NOT is_bid;
+CREATE INDEX bid_idx ON orders(base, counter, price DESC, created ASC) WHERE closed = false AND remains > 0 AND is_bid = true;
+CREATE INDEX ask_idx ON orders(base, counter, price ASC, created ASC) WHERE closed = false AND remains > 0 AND is_bid = false;
 CREATE INDEX user_pending_trades_idx ON orders(user_id, created DESC) WHERE closed = false AND remains > 0;
 
 CREATE TABLE matches (

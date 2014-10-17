@@ -273,8 +273,7 @@ object SQLText {
 
   val askBid = SQL(
     """
-      |insert into orders(user_id, base, counter, original, remains, price, is_bid)
-      |values ({uid}, {base}, {counter}, {amount}, {amount}, {price}, {is_bid})
+      |select order_new({uid}, {base}, {counter}, {amount}, {price}, {is_bid})
       |""".stripMargin)
 
   val cancelTrade = SQL(

@@ -7,7 +7,15 @@
 # --- !Ups
 
 -- when a new order is placed we try to match it
-CREATE OR REPLACE FUNCTION order_insert_match() returns trigger AS $$
+CREATE OR REPLACE FUNCTION 
+    order_new(
+      new_user_id bigint,
+      new_base varchar(4),
+      new_counter varchar(4),
+      new_amount numeric(23,8),
+      new_price numeric(23,8),
+      new_is_bid boolean)
+    RETURNS boolean AS $$
 DECLARE
     o orders%ROWTYPE;; -- first order (chronologically)
     o2 orders%ROWTYPE;; -- second order (chronologically)
@@ -15,28 +23,40 @@ DECLARE
     fee numeric(23,8);; -- fee % to be paid
 BEGIN
     -- increase holds
-    IF NEW.is_bid THEN
-      UPDATE balances SET hold = hold + NEW.original * NEW.price WHERE currency = NEW.counter AND user_id = NEW.user_id;; --TODO: precision
+    IF new_is_bid THEN
+      UPDATE balances SET hold = hold + new_amount * new_price
+      WHERE currency = new_counter AND user_id = new_user_id AND
+      balance >= hold + new_amount * new_price;; --TODO: precision
     ELSE
-      UPDATE balances SET hold = hold + NEW.original WHERE currency = NEW.base AND user_id = NEW.user_id;;
+      UPDATE balances SET hold = hold + new_amount
+      WHERE currency = new_base AND user_id = new_user_id AND
+      balance >= hold + new_amount;;
+    END IF;;
+
+    -- insufficient funds
+    IF NOT FOUND THEN
+      RETURN false;;
     END IF;;
 
     -- trade fees
     SELECT linear INTO STRICT fee FROM trade_fees;;
 
-    PERFORM pg_advisory_xact_lock(id) FROM markets WHERE base = NEW.base AND counter = NEW.counter;;
+    PERFORM pg_advisory_xact_lock(id) FROM markets WHERE base = new_base AND counter = new_counter;;
 
-    o2 := NEW;;
+    INSERT INTO orders(user_id, base, counter, original, remains, price, is_bid)
+    VALUES (new_user_id, new_base, new_counter, new_amount, new_amount, new_price, new_is_bid)
+    RETURNING id, created, original, closed, remains, price, user_id, base, counter, is_bid
+    INTO STRICT o2;;
 
-    IF NEW.is_bid THEN
+    IF new_is_bid THEN
       FOR o IN SELECT * FROM orders oo
         WHERE
           oo.remains > 0 AND
           closed = false AND
-          oo.base = NEW.base AND
-          oo.counter = NEW.counter AND
-          NOT oo.is_bid AND
-          oo.price <= NEW.price
+          oo.base = new_base AND
+          oo.counter = new_counter AND
+          oo.is_bid = false AND
+          oo.price <= new_price
         ORDER BY
           oo.price ASC,
           oo.created ASC
@@ -48,7 +68,7 @@ BEGIN
         VALUES (o2.user_id, o.user_id, o2.id, o.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price, o.base, o.counter);; --TODO: precision
 
         -- if order was completely filled, stop matching
-        SELECT * INTO STRICT o2 FROM orders WHERE id = NEW.id;;
+        SELECT * INTO STRICT o2 FROM orders WHERE id = o2.id;;
         IF o2.remains = 0 THEN
           EXIT;;
         END IF;;
@@ -58,10 +78,10 @@ BEGIN
         WHERE
           oo.remains > 0 AND
           closed = false AND
-          oo.base = NEW.base AND
-          oo.counter = NEW.counter AND
-          oo.is_bid AND
-          oo.price >= NEW.price
+          oo.base = new_base AND
+          oo.counter = new_counter AND
+          oo.is_bid = true AND
+          oo.price >= new_price
         ORDER BY
           oo.price DESC,
           oo.created ASC
@@ -73,21 +93,16 @@ BEGIN
         VALUES (o.user_id, o2.user_id, o.id, o2.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price, o.base, o.counter);; --TODO: precision
 
         -- if order was completely filled, stop matching
-        SELECT * INTO STRICT o2 FROM orders WHERE id = NEW.id;;
+        SELECT * INTO STRICT o2 FROM orders WHERE id = o2.id;;
         IF o2.remains = 0 THEN
           EXIT;;
         END IF;;
       END LOOP;;
     END IF;;
 
-    RETURN NULL;;
+    RETURN true;;
 END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
-
-CREATE TRIGGER order_insert_match
-    AFTER INSERT ON orders
-    FOR EACH ROW
-    EXECUTE PROCEDURE order_insert_match();
+$$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER COST 100;
 
 -- cancel an order and release any holds left open
 CREATE OR REPLACE FUNCTION order_cancel(o_id bigint, o_user_id bigint) returns boolean AS $$
@@ -149,7 +164,7 @@ BEGIN
     END IF;;
 
     -- make sure the ask order is of type ask and the bid order is of type bid
-    IF NOT (bid.is_bid AND NOT ask.is_bid) THEN
+    IF bid.is_bid <> true OR ask.is_bid <> false THEN
       RAISE 'Tried to match orders of wrong types! bid: % ask: %', NEW.amount, bid.order_id, ask.order_id;;
     END IF;;
 
@@ -467,8 +482,8 @@ CREATE AGGREGATE public.last (
 
 # --- !Downs
 
-DROP FUNCTION IF EXISTS order_insert_match() CASCADE;
-DROP FUNCTION IF EXISTS order_cancel() CASCADE;
+DROP FUNCTION IF EXISTS order_new(bigint, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) CASCADE;
+DROP FUNCTION IF EXISTS order_cancel(bigint, bigint) CASCADE;
 DROP FUNCTION IF EXISTS match_insert() CASCADE;
 DROP FUNCTION IF EXISTS transaction_insert() CASCADE;
 DROP FUNCTION IF EXISTS transaction_update() CASCADE;
@@ -481,7 +496,6 @@ DROP FUNCTION IF EXISTS first_agg() CASCADE;
 DROP FUNCTION IF EXISTS last_agg() CASCADE;
 DROP AGGREGATE IF EXISTS first(anyelement);
 DROP AGGREGATE IF EXISTS last(anyelement);
-DROP TRIGGER IF EXISTS order_insert_match ON orders CASCADE;
 DROP TRIGGER IF EXISTS match_insert ON matches CASCADE;
 DROP TRIGGER IF EXISTS transaction_insert ON transactions CASCADE;
 DROP TRIGGER IF EXISTS transaction_update ON transactions CASCADE;

@@ -45,26 +45,15 @@ class EngineModel(val db: String = "default") {
     ).toMap
   }
 
-  def bid(uid: Long, base: String, counter: String, amount: BigDecimal, price: BigDecimal) = DB.withConnection(db) { implicit c =>
+  def askBid(uid: Long, base: String, counter: String, amount: BigDecimal, price: BigDecimal, isBid: Boolean) = DB.withConnection(db) { implicit c =>
     SQLText.askBid.on(
       'uid -> uid,
       'base -> base,
       'counter -> counter,
       'amount -> amount.bigDecimal,
       'price -> price.bigDecimal,
-      'is_bid -> true
-    ).executeInsert[Option[Long]]()
-  }
-
-  def ask(uid: Long, base: String, counter: String, amount: BigDecimal, price: BigDecimal) = DB.withConnection(db) { implicit c =>
-    SQLText.askBid.on(
-      'uid -> uid,
-      'base -> base,
-      'counter -> counter,
-      'amount -> amount.bigDecimal,
-      'price -> price.bigDecimal,
-      'is_bid -> false
-    ).executeInsert[Option[Long]]()
+      'is_bid -> isBid
+    )().map(_[Boolean]("order_new")).head
   }
 
   def userPendingTrades(uid: Long) = DB.withConnection(db) { implicit c =>
