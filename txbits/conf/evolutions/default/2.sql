@@ -52,7 +52,7 @@ BEGIN
       FOR o IN SELECT * FROM orders oo
         WHERE
           oo.remains > 0 AND
-          closed = false AND
+          oo.closed = false AND
           oo.base = new_base AND
           oo.counter = new_counter AND
           oo.is_bid = false AND
@@ -77,7 +77,7 @@ BEGIN
       FOR o IN SELECT * FROM orders oo
         WHERE
           oo.remains > 0 AND
-          closed = false AND
+          oo.closed = false AND
           oo.base = new_base AND
           oo.counter = new_counter AND
           oo.is_bid = true AND
@@ -149,12 +149,11 @@ BEGIN
     SELECT * INTO STRICT bid FROM orders WHERE id = NEW.bid_order_id;;
     SELECT * INTO STRICT ask FROM orders WHERE id = NEW.ask_order_id;;
 
-    --TODO: what if they are created at the "same time"?
-    IF (bid.created < ask.created AND NEW.price <> bid.price) OR (bid.created > ask.created AND NEW.price <> ask.price) THEN
+    IF (NEW.is_bid = true AND NEW.price <> ask.price) OR (NEW.is_bid = false AND NEW.price <> bid.price) THEN
       RAISE 'Attempted to match two orders but the match has the wrong price. bid: % ask: % match price: %', bid.order_id, ask.order_id, NEW.price;;
     END IF;;
 
-    IF bid.price  < ask.price THEN
+    IF bid.price < ask.price THEN
       RAISE 'Attempted to match two orders that do not agree on the price. bid: % ask: %', bid.order_id, ask.order_id;;
     END IF;;
 
@@ -176,12 +175,12 @@ BEGIN
     -- release holds on the amount that was matched
     UPDATE balances SET hold = hold - NEW.amount WHERE currency = ask.base AND user_id = ask.user_id;;
     --TODO: precision
-    UPDATE balances SET hold = hold - NEW.amount * (CASE WHEN bid.created < ask.created THEN bid.price ELSE ask.price END)
+    UPDATE balances SET hold = hold - NEW.amount * NEW.price
     WHERE currency = bid.counter AND user_id = bid.user_id;;
 
     -- Reducing order volumes and reducing remaining volumes
     UPDATE orders SET remains = remains - NEW.amount,
-      closed = CASE WHEN (remains - NEW.amount) = 0 THEN true ELSE false END
+      closed = (remains - NEW.amount = 0)
       WHERE id IN (ask.id, bid.id);;
 
     GET DIAGNOSTICS ucount = ROW_COUNT;;
@@ -204,7 +203,7 @@ BEGIN
         bid.user_id,
         ask.user_id,
         bid.counter,
-        NEW.amount * (CASE WHEN bid.created < ask.created THEN bid.price ELSE ask.price END),  --TODO: precision
+        NEW.amount * NEW.price, --TODO: precision
         'M' -- match
     );;
 

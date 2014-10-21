@@ -47,6 +47,7 @@ CREATE TABLE totp_tokens_blacklist (
     expiration timestamp NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+CREATE INDEX totp_tokens_blacklist_expiration_idx ON totp_tokens_blacklist(expiration DESC);
 
 CREATE SEQUENCE event_log_id_seq;
 CREATE TABLE event_log (

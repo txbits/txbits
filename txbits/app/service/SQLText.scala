@@ -109,12 +109,12 @@ object SQLText {
       |delete from tokens where expiration < current_timestamp
     """.stripMargin)
 
-  val TOPTTokenIsBlacklisted = SQL(
+  val TOTPTokenIsBlacklisted = SQL(
     """
       |select true from totp_tokens_blacklist where user_id = {user} and token = {token} and expiration >= current_timestamp
     """.stripMargin)
 
-  val blacklistTOPTToken = SQL(
+  val blacklistTOTPToken = SQL(
     """
       |insert into totp_tokens_blacklist(user_id, token, expiration) values ({user}, {token}, {expiration})
     """.stripMargin)
