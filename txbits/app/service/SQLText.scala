@@ -183,15 +183,15 @@ object SQLText {
   val setupForTest = SQL(
     """
       |
-      |insert into currencies(currency) values('LTC');
-      |insert into currencies(currency) values('BTC');
-      |insert into currencies(currency) values('USD');
-      |insert into currencies(currency) values('CAD');
+      |insert into currencies(currency, position) values('BTC',10);
+      |insert into currencies(currency, position) values('LTC',20);
+      |insert into currencies(currency, position) values('USD',30);
+      |insert into currencies(currency, position) values('CAD',40);
       |
-      |insert into markets(base,counter,limit_min) values('LTC','USD',0.1);
-      |insert into markets(base,counter,limit_min) values('LTC','BTC',0.1);
-      |insert into markets(base,counter,limit_min) values('BTC','USD',0.01);
-      |insert into markets(base,counter,limit_min) values('USD','CAD',1.00);
+      |insert into markets(base,counter,limit_min,position) values('BTC','USD',0.01,10);
+      |insert into markets(base,counter,limit_min,position) values('LTC','USD',0.1,20);
+      |insert into markets(base,counter,limit_min,position) values('LTC','BTC',0.1,30);
+      |insert into markets(base,counter,limit_min,position) values('USD','CAD',1.00,40);
       |
       |insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('LTC', 'blockchain', 0.000, 0.000, 0.000, 0.000);
       |insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('BTC', 'blockchain', 0.000, 0.000, 0.000, 0.000);
@@ -371,7 +371,7 @@ object SQLText {
 
   val getCurrencies = SQL(
     """
-      |select * from currencies
+      |select * from currencies order by position
       |""".stripMargin)
 
   val dwFees = SQL(
@@ -391,7 +391,7 @@ object SQLText {
 
   val getPairs = SQL(
     """
-      |select * from markets
+      |select * from markets order by position
       |""".stripMargin)
 
   val metaClean = SQL(
