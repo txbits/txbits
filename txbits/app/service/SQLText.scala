@@ -13,25 +13,33 @@ object SQLText {
       |begin;
       |delete from balances;
       |delete from users_addresses;
+      |delete from passwords;
       |delete from users;
       |commit;
     """.stripMargin)
 
-  val specialUserCreate = SQL(
-    """
-      |insert into users(id, email, password, hasher) values (0, '','','');
-    """.stripMargin)
-
   val createUser = SQL(
     """
-      |insert into users (email, password, hasher, on_mailing_list)
-      |values ({email},{password},{hasher},{onMailingList})
+      |with new_user_row as (
+      |insert into users(email, on_mailing_list)
+      |values ({email},{onMailingList})
+      |returning id
+      |)
+      |insert into passwords (user_id, password, hasher) values (
+      | (select id from new_user_row),
+      | {password},
+      | {hasher}
+      |)
     """.stripMargin)
 
   val updateUser = SQL(
     """
-      |update users set email={email}, password={password}, hasher={hasher}, on_mailing_list={onMailingList}
-      |where id={id}
+      |update users set email={email}, on_mailing_list={onMailingList} where id={id};
+    """.stripMargin)
+
+  val userChangePassword = SQL(
+    """
+      |insert into passwords (user_id, password, hasher) values ({user_id}, {password}, {hasher})
     """.stripMargin)
 
   val turnonTfa = SQL(
@@ -78,14 +86,24 @@ object SQLText {
 
   val findUserById = SQL(
     """
-      |select email, hasher, verification, on_mailing_list,
-      |password, id, tfa_withdrawal, tfa_login, tfa_secret, tfa_type from users where id = {id}
+      |select email, p.hasher, verification, on_mailing_list,
+      |u.id, p.password, tfa_withdrawal, tfa_login, tfa_secret, tfa_type
+      |from users as u
+      |join passwords as p on p.user_id = u.id
+      |where u.id = {id}
+      |order by p.created desc
+      |limit 1
     """.stripMargin)
 
   val findUserByEmail = SQL(
     """
-      |select email, hasher, verification, on_mailing_list,
-      |password, id, tfa_withdrawal, tfa_login, tfa_secret, tfa_type from users where lower(email) = lower({email})
+      |select email, p.hasher, verification, on_mailing_list,
+      |u.id, p.password, tfa_withdrawal, tfa_login, tfa_secret, tfa_type
+      |from users as u
+      |join passwords as p on p.user_id = u.id
+      |where lower(email) = lower({email})
+      |order by p.created desc
+      |limit 1
     """.stripMargin)
 
   val saveToken = SQL(
@@ -141,6 +159,7 @@ object SQLText {
     """
       |delete from deposits_crypto;
       |delete from deposits;
+      |delete from passwords;
       |delete from users_addresses;
       |delete from dw_fees;
       |delete from trade_fees;
@@ -192,7 +211,7 @@ object SQLText {
       |insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max) values('LTC', 42, 0, 0, 1000, 10000);
       |insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max) values('BTC', 42, 0, 0, 100, 1000);
       |
-      |insert into users(id, email, password, hasher) values (0, '','','');
+      |insert into users(id, email) values (0, '');
     """.stripMargin
   )
 

@@ -31,8 +31,6 @@ CREATE TABLE users (
     id bigint DEFAULT nextval('users_id_seq') PRIMARY KEY,
     created timestamp DEFAULT current_timestamp NOT NULL,
     email varchar(256) NOT NULL UNIQUE,
-    password varchar(256) NOT NULL, -- salt is a part of the password field
-    hasher varchar(256) NOT NULL,
     on_mailing_list bool DEFAULT false,
     tfa_withdrawal bool DEFAULT false,
     tfa_login bool DEFAULT false,
@@ -40,6 +38,15 @@ CREATE TABLE users (
     tfa_type varchar(6) check(tfa_type IS NULL OR tfa_type = 'TOTP'), -- TOTP
     verification int DEFAULT 0 NOT NULL,
     active bool DEFAULT true NOT NULL
+);
+
+CREATE TABLE passwords (
+    user_id bigint NOT NULL,
+    password varchar(256) NOT NULL, -- salt is a part of the password field
+    hasher varchar(256) NOT NULL,
+    created timestamp default current_timestamp NOT NULL,
+    foreign key (user_id) references users(id),
+    primary key (user_id, created)
 );
 
 CREATE TABLE totp_tokens_blacklist (
@@ -288,6 +295,7 @@ drop table if exists deposits_crypto cascade;
 drop table if exists matches cascade;
 drop table if exists markets cascade;
 drop table if exists tokens cascade;
+drop table if exists passwords cascade;
 drop table if exists users cascade;
 drop table if exists users_addresses cascade;
 drop table if exists withdrawals cascade;

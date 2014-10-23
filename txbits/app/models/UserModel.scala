@@ -212,13 +212,19 @@ class UserModel(val db: String = "default") {
     )().toList.length > 0
   }
 
-  def saveUser(id: Long, email: String, password: String, hasher: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
+  def saveUser(id: Long, email: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
     SQLText.updateUser.on(
       'id -> id,
       'email -> email,
-      'password -> password,
-      'hasher -> hasher,
       'onMailingList -> onMailingList
+    ).executeUpdate()
+  }
+
+  def userChangePass(id: Long, password: String, hasher: String) = DB.withConnection(db) { implicit c =>
+    SQLText.userChangePassword.on(
+      'user_id -> id,
+      'password -> password,
+      'hasher -> hasher
     ).executeUpdate()
   }
 

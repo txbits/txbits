@@ -84,7 +84,7 @@ object PasswordChange extends Controller with SecureSocial {
         info => {
           import scala.language.reflectiveCalls
           val newPasswordInfo = Registry.hashers.currentHasher.hash(info.newPassword)
-          val u = txbitsUserService.save(request.user.copy(passwordInfo = newPasswordInfo))
+          val u = txbitsUserService.change_pass(request.user.copy(passwordInfo = newPasswordInfo))
           Mailer.sendPasswordChangedNotice(u)(request)
           Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
         }

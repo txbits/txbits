@@ -34,26 +34,38 @@ insert into currencies_crypto(currency) values('LTC');
 insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max) values('LTC', 42, 0, 0, 1000, 10000);
 insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max) values('BTC', 42, 0, 0, 100, 1000);
 
-insert into users(id, email, password, hasher) values (0, '','','');
-insert into users(email, password, hasher) values ('me@viktorstanchev.com','$2a$10$aYNjzFmwBSeqJeccRqKkN.Onh4co9wQVJn40Pv5GQwAEuwjBfmNYO','bcrypt');
-insert into users(email, password, hasher) values ('a@a.com','$2a$10$.bJb4l.7.75zgvYgd4mU8ejjT5C.6VrSMirgc3qGvdWsB8dXV0Bc2','bcrypt');
-insert into users(email, password, hasher) values ('tester1@example.com', '$2a$10$kSgMbDuB59ptDYmkS73ftuOwo8nfPNuOvU5SqfUIXovsynJzkne5a', 'bcrypt');
-insert into users(email, password, hasher) values ('tester2@example.com', '$2a$10$kSgMbDuB59ptDYmkS73ftuOwo8nfPNuOvU5SqfUIXovsynJzkne5a', 'bcrypt');
-insert into users(email, password, hasher) values ('tester3@example.com', '$2a$10$kSgMbDuB59ptDYmkS73ftuOwo8nfPNuOvU5SqfUIXovsynJzkne5a', 'bcrypt');
-insert into users(email, password, hasher) values ('tester4@example.com', '$2a$10$kSgMbDuB59ptDYmkS73ftuOwo8nfPNuOvU5SqfUIXovsynJzkne5a', 'bcrypt');
-insert into users(email, password, hasher) values ('tester5@example.com', '$2a$10$kSgMbDuB59ptDYmkS73ftuOwo8nfPNuOvU5SqfUIXovsynJzkne5a', 'bcrypt');
-insert into users(email, password, hasher) values ('tester6@example.com', '$2a$10$kSgMbDuB59ptDYmkS73ftuOwo8nfPNuOvU5SqfUIXovsynJzkne5a', 'bcrypt');
-insert into users(email, password, hasher) values ('tester7@example.com', '$2a$10$kSgMbDuB59ptDYmkS73ftuOwo8nfPNuOvU5SqfUIXovsynJzkne5a', 'bcrypt');
-insert into users(email, password, hasher) values ('tester8@example.com', '$2a$10$kSgMbDuB59ptDYmkS73ftuOwo8nfPNuOvU5SqfUIXovsynJzkne5a', 'bcrypt');
-insert into users(email, password, hasher) values ('tester9@example.com', '$2a$10$kSgMbDuB59ptDYmkS73ftuOwo8nfPNuOvU5SqfUIXovsynJzkne5a', 'bcrypt');
+insert into users(id, email) values (0, '');
 
-insert into transactions(from_user_id, to_user_id, amount, currency, type) select null, id, 1000 , 'USD' , 'X' from users where email in ('me@viktorstanchev.com', 'a@a.com', 'tester1@example.com', 'tester2@example.com', 'tester3@example.com', 'tester4@example.com', 'tester5@example.com', 'tester6@example.com', 'tester7@example.com', 'tester8@example.com', 'tester9@example.com');
-insert into transactions(from_user_id, to_user_id, amount, currency, type) select null, id, 1000 , 'CAD' , 'X' from users where email in ('me@viktorstanchev.com', 'a@a.com', 'tester1@example.com', 'tester2@example.com', 'tester3@example.com', 'tester4@example.com', 'tester5@example.com', 'tester6@example.com', 'tester7@example.com', 'tester8@example.com', 'tester9@example.com');
+with new_user_row as (
+  insert into users(email, on_mailing_list)
+  values ('me@viktorstanchev.com', true)
+  returning id
+)
+insert into passwords (user_id, password, hasher) values (
+ (select id from new_user_row),
+ '$2a$10$aYNjzFmwBSeqJeccRqKkN.Onh4co9wQVJn40Pv5GQwAEuwjBfmNYO',
+ 'bcrypt'
+);
+
+with new_user_row as (
+  insert into users(email, on_mailing_list)
+  values ('a@a.com', true)
+  returning id
+)
+insert into passwords (user_id, password, hasher) values (
+ (select id from new_user_row),
+ '$2a$10$.bJb4l.7.75zgvYgd4mU8ejjT5C.6VrSMirgc3qGvdWsB8dXV0Bc2',
+ 'bcrypt'
+);
+
+insert into transactions(from_user_id, to_user_id, amount, currency, type) select null, id, 1000 , 'USD' , 'X' from users where email in ('me@viktorstanchev.com', 'a@a.com');
+insert into transactions(from_user_id, to_user_id, amount, currency, type) select null, id, 1000 , 'CAD' , 'X' from users where email in ('me@viktorstanchev.com', 'a@a.com');
 
 # --- !Downs
 
 delete from deposits_crypto;
 delete from deposits;
+delete from passwords;
 delete from users_addresses;
 delete from dw_fees;
 delete from trade_fees;
