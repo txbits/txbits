@@ -18,6 +18,7 @@
     <form id="signup-form" action="@controllers.routes.Registration.handleStartSignUp().absoluteURL(UsernamePasswordProvider.sslEnabled)"
           autocomplete="off" method="post"
     >
+        @CSRF.formField
         @helper.inputText(
         startForm("email"),
         '_label -> Messages("securesocial.signup.email1"),

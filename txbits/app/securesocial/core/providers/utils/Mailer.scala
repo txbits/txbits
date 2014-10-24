@@ -96,7 +96,11 @@ object Mailer {
       email.setSmtpPort(smtpPort)
       email.setSSLOnConnect(smtpSsl)
       email.setAuthentication(smtpUser, smtpPassword)
-      email.send
+      try {
+        email.send
+      } catch {
+        case ex: Throwable => Logger.debug(body._1.getOrElse("").toString); throw ex
+      }
     }
   }
 

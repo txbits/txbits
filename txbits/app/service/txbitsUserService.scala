@@ -54,8 +54,13 @@ object txbitsUserService {
   }
 
   def save(user: SocialUser): SocialUser = {
-    globals.userModel.saveUser(user.id, user.email, user.passwordInfo.password,
-      user.passwordInfo.hasher, user.onMailingList)
+    globals.userModel.saveUser(user.id, user.email, user.onMailingList)
+    user
+  }
+
+  def change_pass(user: SocialUser): SocialUser = {
+    globals.userModel.userChangePass(user.id, user.passwordInfo.password,
+      user.passwordInfo.hasher)
     user
   }
 

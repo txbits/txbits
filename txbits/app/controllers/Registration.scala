@@ -260,7 +260,7 @@ object Registration extends Controller {
           val (toFlash, eventSession) = txbitsUserService.findByEmail(t.email) match {
             case Some(user) => {
               val hashed = Registry.hashers.currentHasher.hash(p._1)
-              val updated = txbitsUserService.save(user.copy(passwordInfo = hashed))
+              val updated = txbitsUserService.change_pass(user.copy(passwordInfo = hashed))
               txbitsUserService.deleteToken(token)
               Mailer.sendPasswordChangedNotice(updated)
               (Success -> Messages(PasswordUpdated), updated)
