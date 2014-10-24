@@ -6,294 +6,294 @@
 
 # --- !Ups
 
-CREATE TABLE currencies (
-    currency varchar(4) NOT NULL PRIMARY KEY,
-    position int NOT NULL -- Used for displaying
+create table currencies (
+    currency varchar(4) not null primary key,
+    position int not null -- used for displaying
 );
 
-CREATE TABLE dw_fees (
-    currency varchar(4) NOT NULL,
-    method varchar(10) NOT NULL,
-    deposit_constant numeric(23,8) NOT NULL,
-    deposit_linear numeric(23,8) NOT NULL,
-    withdraw_constant numeric(23,8) NOT NULL,
-    withdraw_linear numeric(23,8) NOT NULL,
-    PRIMARY KEY (currency, method),
-    FOREIGN KEY (currency) REFERENCES currencies(currency)
+create table dw_fees (
+    currency varchar(4) not null,
+    method varchar(10) not null,
+    deposit_constant numeric(23,8) not null,
+    deposit_linear numeric(23,8) not null,
+    withdraw_constant numeric(23,8) not null,
+    withdraw_linear numeric(23,8) not null,
+    primary key (currency, method),
+    foreign key (currency) references currencies(currency)
 );
 
-CREATE TABLE trade_fees (
-    linear numeric(23,8) NOT NULL check(linear >= 0)
+create table trade_fees (
+    linear numeric(23,8) not null check(linear >= 0)
 );
 
-CREATE SEQUENCE users_id_seq;
-CREATE TABLE users (
-    id bigint DEFAULT nextval('users_id_seq') PRIMARY KEY,
-    created timestamp DEFAULT current_timestamp NOT NULL,
-    email varchar(256) NOT NULL UNIQUE,
-    on_mailing_list bool DEFAULT false,
-    tfa_withdrawal bool DEFAULT false,
-    tfa_login bool DEFAULT false,
-    tfa_secret varchar(256), -- TODO: pick a size
-    tfa_type varchar(6), -- TOTP
-    verification int DEFAULT 0 NOT NULL,
-    active bool DEFAULT true NOT NULL
+create sequence users_id_seq;
+create table users (
+    id bigint default nextval('users_id_seq') primary key,
+    created timestamp default current_timestamp not null,
+    email varchar(256) not null unique,
+    on_mailing_list bool default false,
+    tfa_withdrawal bool default false,
+    tfa_login bool default false,
+    tfa_secret varchar(256), -- todo: pick a size
+    tfa_type varchar(6), -- totp
+    verification int default 0 not null,
+    active bool default true not null
 );
 
-CREATE TABLE passwords (
-    user_id bigint NOT NULL,
-    password varchar(256) NOT NULL, -- salt is a part of the password field
-    hasher varchar(256) NOT NULL,
-    created timestamp default current_timestamp NOT NULL,
+create table passwords (
+    user_id bigint not null,
+    password varchar(256) not null, -- salt is a part of the password field
+    hasher varchar(256) not null,
+    created timestamp default current_timestamp not null,
     foreign key (user_id) references users(id),
     primary key (user_id, created)
 );
 
-CREATE TABLE totp_tokens_blacklist (
-    user_id bigint NOT NULL,
-    token char(6) NOT NULL,
-    expiration timestamp NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+create table totp_tokens_blacklist (
+    user_id bigint not null,
+    token char(6) not null,
+    expiration timestamp not null,
+    foreign key (user_id) references users(id)
 );
-CREATE INDEX totp_tokens_blacklist_expiration_idx ON totp_tokens_blacklist(expiration DESC);
+create index totp_tokens_blacklist_expiration_idx on totp_tokens_blacklist(expiration desc);
 
-CREATE SEQUENCE event_log_id_seq;
-CREATE TABLE event_log (
-    id bigint DEFAULT nextval('event_log_id_seq') PRIMARY KEY,
-    created timestamp DEFAULT current_timestamp NOT NULL,
+create sequence event_log_id_seq;
+create table event_log (
+    id bigint default nextval('event_log_id_seq') primary key,
+    created timestamp default current_timestamp not null,
     email varchar(256),
     user_id bigint,
-    -- I don't think we should store passwords attempted. It's a security risk.
+    -- i don't think we should store passwords attempted. it's a security risk.
     ipv4 integer,
     ipv6 numeric(40),
     browser_headers text, -- these can be parsed later to produce country info,
     browser_id text, -- result of deanonymization
     ssl_info text, -- what ciphers were offered, what cipher was accepted, etc.
-    type text -- One of: login_partial_success, login_success, login_failure, logout, session_expired
+    type text -- one of: login_partial_success, login_success, login_failure, logout, session_expired
 );
 
-CREATE TABLE balances (
-    user_id bigint NOT NULL,
-    currency varchar(4) NOT NULL,
-    balance numeric(23,8) DEFAULT 0 NOT NULL,
-    hold numeric(23,8) DEFAULT 0 NOT NULL,
-    CONSTRAINT positive_balance check(balance >= 0),
-    CONSTRAINT positive_hold check(hold >= 0),
-    CONSTRAINT no_hold_above_balance check(balance >= hold),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (currency) REFERENCES currencies(currency),
-    PRIMARY KEY (user_id, currency)
+create table balances (
+    user_id bigint not null,
+    currency varchar(4) not null,
+    balance numeric(23,8) default 0 not null,
+    hold numeric(23,8) default 0 not null,
+    constraint positive_balance check(balance >= 0),
+    constraint positive_hold check(hold >= 0),
+    constraint no_hold_above_balance check(balance >= hold),
+    foreign key (user_id) references users(id),
+    foreign key (currency) references currencies(currency),
+    primary key (user_id, currency)
 );
 
-CREATE TABLE withdrawal_limits (
-    currency varchar(4) NOT NULL,
-    limit_min numeric(23,8) NOT NULL,
-    limit_max numeric(23,8) NOT NULL,
-    FOREIGN KEY (currency) REFERENCES currencies(currency),
-    PRIMARY KEY (currency)
+create table withdrawal_limits (
+    currency varchar(4) not null,
+    limit_min numeric(23,8) not null,
+    limit_max numeric(23,8) not null,
+    foreign key (currency) references currencies(currency),
+    primary key (currency)
 );
 
-CREATE SEQUENCE transaction_id_seq;
-CREATE TABLE transactions (
-    id bigint DEFAULT nextval('transaction_id_seq') PRIMARY KEY,
+create sequence transaction_id_seq;
+create table transactions (
+    id bigint default nextval('transaction_id_seq') primary key,
     from_user_id bigint, -- can be null when it's a deposit
     to_user_id bigint, -- can be null when it's a withdrawal or fee
-    amount numeric(23,8) NOT NULL,
-    currency varchar(4) NOT NULL,
-    created timestamp DEFAULT current_timestamp NOT NULL,
-    type char NOT NULL, -- D=deposit W=withdrawal M=match F=fee
-    FOREIGN KEY (from_user_id, currency) REFERENCES balances(user_id, currency),
-    FOREIGN KEY (to_user_id, currency) REFERENCES balances(user_id, currency)
+    amount numeric(23,8) not null,
+    currency varchar(4) not null,
+    created timestamp default current_timestamp not null,
+    type char not null, -- d=deposit w=withdrawal m=match f=fee
+    foreign key (from_user_id, currency) references balances(user_id, currency),
+    foreign key (to_user_id, currency) references balances(user_id, currency)
 );
 
-CREATE SEQUENCE market_id_seq;
-CREATE TABLE markets (
-    id bigint DEFAULT nextval('market_id_seq') PRIMARY KEY,
-    base varchar(4) NOT NULL, -- BTC in BTC/USD
-    counter varchar(4) NOT NULL, -- USD in BTC/USD
-    UNIQUE (base, counter),
-    limit_min numeric(23,8) NOT NULL, -- minimum amount of base currency in an order
-    active bool DEFAULT true NOT NULL, -- false prevents new orders from being inserted
-    position int NOT NULL, -- used for displaying
-    FOREIGN KEY (base) REFERENCES currencies(currency),
-    FOREIGN KEY (counter) REFERENCES currencies(currency)
+create sequence market_id_seq;
+create table markets (
+    id bigint default nextval('market_id_seq') primary key,
+    base varchar(4) not null, -- btc in btc/usd
+    counter varchar(4) not null, -- usd in btc/usd
+    unique (base, counter),
+    limit_min numeric(23,8) not null, -- minimum amount of base currency in an order
+    active bool default true not null, -- false prevents new orders from being inserted
+    position int not null, -- used for displaying
+    foreign key (base) references currencies(currency),
+    foreign key (counter) references currencies(currency)
 );
 
-CREATE SEQUENCE order_id_seq;
-CREATE TABLE orders (
-    id bigint DEFAULT nextval('order_id_seq') PRIMARY KEY,
-    created timestamp DEFAULT current_timestamp NOT NULL,
-    original numeric(23,8) NOT NULL check(original > 0),
-    closed bool DEFAULT false NOT NULL,
-    remains numeric(23,8) NOT NULL check(original >= remains AND (remains > 0 OR remains = 0 AND closed = true)),
-    price numeric(23,8) NOT NULL check(price > 0),
-    user_id bigint NOT NULL,
-    base varchar(4) NOT NULL,
-    counter varchar(4) NOT NULL,
-    is_bid bool NOT NULL,
-    FOREIGN KEY (base, counter) REFERENCES markets(base, counter),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+create sequence order_id_seq;
+create table orders (
+    id bigint default nextval('order_id_seq') primary key,
+    created timestamp default current_timestamp not null,
+    original numeric(23,8) not null check(original > 0),
+    closed bool default false not null,
+    remains numeric(23,8) not null check(original >= remains and (remains > 0 or remains = 0 and closed = true)),
+    price numeric(23,8) not null check(price > 0),
+    user_id bigint not null,
+    base varchar(4) not null,
+    counter varchar(4) not null,
+    is_bid bool not null,
+    foreign key (base, counter) references markets(base, counter),
+    foreign key (user_id) references users(id)
 );
-CREATE INDEX bid_idx ON orders(base, counter, price DESC, created ASC) WHERE closed = false AND remains > 0 AND is_bid = true;
-CREATE INDEX ask_idx ON orders(base, counter, price ASC, created ASC) WHERE closed = false AND remains > 0 AND is_bid = false;
-CREATE INDEX user_pending_trades_idx ON orders(user_id, created DESC) WHERE closed = false AND remains > 0;
+create index bid_idx on orders(base, counter, price desc, created asc) where closed = false and remains > 0 and is_bid = true;
+create index ask_idx on orders(base, counter, price asc, created asc) where closed = false and remains > 0 and is_bid = false;
+create index user_pending_trades_idx on orders(user_id, created desc) where closed = false and remains > 0;
 
-CREATE TABLE matches (
-    ask_user_id bigint NOT NULL,
-    bid_user_id bigint NOT NULL,
-    ask_order_id bigint NOT NULL,
-    bid_order_id bigint NOT NULL,
-    amount numeric(23,8) NOT NULL,
-    ask_fee numeric(23,8) NOT NULL,
-    bid_fee numeric(23,8) NOT NULL,
-    price numeric(23,8) NOT NULL check(price > 0),
-    created timestamp DEFAULT current_timestamp NOT NULL,
-    is_bid bool NOT NULL, -- true when an ask was matched by a new bid
-    base varchar(4) NOT NULL,
-    counter varchar(4) NOT NULL,
+create table matches (
+    ask_user_id bigint not null,
+    bid_user_id bigint not null,
+    ask_order_id bigint not null,
+    bid_order_id bigint not null,
+    amount numeric(23,8) not null,
+    ask_fee numeric(23,8) not null,
+    bid_fee numeric(23,8) not null,
+    price numeric(23,8) not null check(price > 0),
+    created timestamp default current_timestamp not null,
+    is_bid bool not null, -- true when an ask was matched by a new bid
+    base varchar(4) not null,
+    counter varchar(4) not null,
 
--- TODO: we won't have references to transactions for now.. for testing... later we should add them
+-- todo: we won't have references to transactions for now.. for testing... later we should add them
 --     first_transaction_id bigint not null,
 --     second_transaction_id bigint not null,
 --     ask_fee_transaction_id bigint,
 --     bid_fee_transaction_id bigint,
 
---     FOREIGN KEY (first_transaction_id) REFERENCES transactions(id),
---     FOREIGN KEY (second_transaction_id) REFERENCES transactions(id),
---     FOREIGN KEY (ask_fee_transaction_id) REFERENCES transactions(id),
---     FOREIGN KEY (bid_fee_transaction_id) REFERENCES transactions(id),
+--     foreign key (first_transaction_id) references transactions(id),
+--     foreign key (second_transaction_id) references transactions(id),
+--     foreign key (ask_fee_transaction_id) references transactions(id),
+--     foreign key (bid_fee_transaction_id) references transactions(id),
 
-    FOREIGN KEY (base, counter) REFERENCES markets(base, counter),
-    PRIMARY KEY (ask_order_id, bid_order_id),
-    FOREIGN KEY (ask_order_id) REFERENCES orders(id),
-    FOREIGN KEY (bid_order_id) REFERENCES orders(id),
-    FOREIGN KEY (ask_user_id) REFERENCES users(id),
-    FOREIGN KEY (bid_user_id) REFERENCES users(id)
+    foreign key (base, counter) references markets(base, counter),
+    primary key (ask_order_id, bid_order_id),
+    foreign key (ask_order_id) references orders(id),
+    foreign key (bid_order_id) references orders(id),
+    foreign key (ask_user_id) references users(id),
+    foreign key (bid_user_id) references users(id)
 );
-CREATE INDEX matches_bid_user_idx ON matches(bid_user_id, created DESC);
-CREATE INDEX matches_ask_user_idx ON matches(ask_user_id, created DESC);
-CREATE INDEX recent_trades_idx ON matches(base, counter, created DESC);
+create index matches_bid_user_idx on matches(bid_user_id, created desc);
+create index matches_ask_user_idx on matches(ask_user_id, created desc);
+create index recent_trades_idx on matches(base, counter, created desc);
 
-CREATE TABLE currencies_crypto (
-    currency varchar(4) PRIMARY KEY,
-    active bool DEFAULT true NOT NULL,
-    min_deposit_confirmations integer DEFAULT 3 NOT NULL check(min_deposit_confirmations > 0),
-    min_withdrawal_confirmations integer DEFAULT 3 NOT NULL check(min_withdrawal_confirmations > 0),
-    FOREIGN KEY (currency) REFERENCES currencies(currency)
+create table currencies_crypto (
+    currency varchar(4) primary key,
+    active bool default true not null,
+    min_deposit_confirmations integer default 3 not null check(min_deposit_confirmations > 0),
+    min_withdrawal_confirmations integer default 3 not null check(min_withdrawal_confirmations > 0),
+    foreign key (currency) references currencies(currency)
 );
 
-CREATE TABLE wallets_crypto (
-    currency varchar(4) NOT NULL,
-    node_id integer DEFAULT 0 NOT NULL,
-    retired bool DEFAULT false NOT NULL, -- set to true when a wallet.dat file is no longer used
+create table wallets_crypto (
+    currency varchar(4) not null,
+    node_id integer default 0 not null,
+    retired bool default false not null, -- set to true when a wallet.dat file is no longer used
     last_block_read integer,
     last_withdrawal_time_received integer,
-    balance numeric(23,8) DEFAULT 0 NOT NULL,
-    balance_min numeric(23,8) NOT NULL check(balance_min >= 0),
-    balance_warn numeric(23,8) NOT NULL check(balance_warn >= balance_min),
-    balance_target numeric(23,8) NOT NULL check(balance_target > balance_warn),
-    balance_max numeric(23,8) NOT NULL check(balance_max > balance_target),
-    PRIMARY KEY (currency, node_id),
-    FOREIGN KEY (currency) REFERENCES currencies(currency)
+    balance numeric(23,8) default 0 not null,
+    balance_min numeric(23,8) not null check(balance_min >= 0),
+    balance_warn numeric(23,8) not null check(balance_warn >= balance_min),
+    balance_target numeric(23,8) not null check(balance_target > balance_warn),
+    balance_max numeric(23,8) not null check(balance_max > balance_target),
+    primary key (currency, node_id),
+    foreign key (currency) references currencies(currency)
 );
 
-CREATE TABLE users_addresses (
-    address varchar(34) PRIMARY KEY,
-    user_id bigint DEFAULT 0 NOT NULL,
-    currency varchar(4) NOT NULL,
-    node_id integer NOT NULL,
-    created timestamp DEFAULT current_timestamp NOT NULL,
+create table users_addresses (
+    address varchar(34) primary key,
+    user_id bigint default 0 not null,
+    currency varchar(4) not null,
+    node_id integer not null,
+    created timestamp default current_timestamp not null,
     assigned timestamp,
-    FOREIGN KEY (currency) REFERENCES currencies(currency),
-    FOREIGN KEY (currency, node_id) REFERENCES wallets_crypto(currency, node_id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    foreign key (currency) references currencies(currency),
+    foreign key (currency, node_id) references wallets_crypto(currency, node_id),
+    foreign key (user_id) references users(id)
 );
-CREATE INDEX users_addresses_idx ON users_addresses(user_id, currency, assigned DESC);
+create index users_addresses_idx on users_addresses(user_id, currency, assigned desc);
 
-CREATE SEQUENCE deposit_id_seq;
-CREATE TABLE deposits (
-    id bigint DEFAULT nextval('deposit_id_seq') PRIMARY KEY,
-    amount numeric(23,8) NOT NULL, --before the fee
-    created timestamp DEFAULT current_timestamp NOT NULL,
-    user_id bigint NOT NULL,
-    currency varchar(4) NOT NULL,
-  --TODO: require transaction ids to be referenced
+create sequence deposit_id_seq;
+create table deposits (
+    id bigint default nextval('deposit_id_seq') primary key,
+    amount numeric(23,8) not null, --before the fee
+    created timestamp default current_timestamp not null,
+    user_id bigint not null,
+    currency varchar(4) not null,
+  --todo: require transaction ids to be referenced
   --transaction_id bigint not null,
-    fee numeric(23,8) NOT NULL,
-    --FOREIGN KEY (transaction_id) REFERENCES transactions(id),
-    FOREIGN KEY (currency) REFERENCES currencies(currency),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    fee numeric(23,8) not null,
+    --foreign key (transaction_id) references transactions(id),
+    foreign key (currency) references currencies(currency),
+    foreign key (user_id) references users(id)
 );
 
-CREATE TABLE deposits_crypto (
-    id bigint NOT NULL PRIMARY KEY,
-    tx_hash varchar(64) NOT NULL UNIQUE,
-    address varchar(34) NOT NULL,
+create table deposits_crypto (
+    id bigint not null primary key,
+    tx_hash varchar(64) not null unique,
+    address varchar(34) not null,
     confirmed timestamp,
-    FOREIGN KEY (address) REFERENCES users_addresses(address),
-    FOREIGN KEY (id) REFERENCES deposits(id)
+    foreign key (address) references users_addresses(address),
+    foreign key (id) references deposits(id)
 );
-CREATE INDEX deposits_crypto_address_idx ON deposits_crypto(address);
+create index deposits_crypto_address_idx on deposits_crypto(address);
 
-CREATE SEQUENCE withdrawal_id_seq;
-CREATE TABLE withdrawals (
-    id bigint DEFAULT nextval('withdrawal_id_seq') PRIMARY KEY,
-    amount numeric(23,8) NOT NULL, --before the fee
-    created timestamp DEFAULT current_timestamp NOT NULL,
-    user_id bigint NOT NULL,
-    currency varchar(4) NOT NULL,
-    --TODO: require transaction ids to be referenced
+create sequence withdrawal_id_seq;
+create table withdrawals (
+    id bigint default nextval('withdrawal_id_seq') primary key,
+    amount numeric(23,8) not null, --before the fee
+    created timestamp default current_timestamp not null,
+    user_id bigint not null,
+    currency varchar(4) not null,
+    --todo: require transaction ids to be referenced
     --transaction_id bigint not null,
-    fee numeric(23,8) NOT NULL,
-    --FOREIGN KEY (transaction_id) REFERENCES transactions(id),
-    FOREIGN KEY (currency) REFERENCES currencies(currency),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    fee numeric(23,8) not null,
+    --foreign key (transaction_id) references transactions(id),
+    foreign key (currency) references currencies(currency),
+    foreign key (user_id) references users(id)
 );
 
-CREATE SEQUENCE withdrawals_crypto_tx_id_seq;
-CREATE TABLE withdrawals_crypto_tx (
-    id bigint DEFAULT nextval('withdrawals_crypto_tx_id_seq') PRIMARY KEY,
-    tx_hash varchar(64) UNIQUE,
-    currency varchar(4) NOT NULL,
+create sequence withdrawals_crypto_tx_id_seq;
+create table withdrawals_crypto_tx (
+    id bigint default nextval('withdrawals_crypto_tx_id_seq') primary key,
+    tx_hash varchar(64) unique,
+    currency varchar(4) not null,
     tx_fee numeric(23,8),
-    node_id integer NOT NULL,
-    created timestamp DEFAULT current_timestamp NOT NULL,
+    node_id integer not null,
+    created timestamp default current_timestamp not null,
     sent timestamp,
     confirmed timestamp,
-    FOREIGN KEY (currency) REFERENCES currencies(currency),
-    FOREIGN KEY (currency, node_id) REFERENCES wallets_crypto(currency, node_id)
+    foreign key (currency) references currencies(currency),
+    foreign key (currency, node_id) references wallets_crypto(currency, node_id)
 );
 
-CREATE TABLE withdrawals_crypto_tx_cold_storage (
-    id bigint NOT NULL PRIMARY KEY,
-    address varchar(34) NOT NULL,
-    value numeric(23,8) NOT NULL,
-    FOREIGN KEY (id) REFERENCES withdrawals_crypto_tx(id)
+create table withdrawals_crypto_tx_cold_storage (
+    id bigint not null primary key,
+    address varchar(34) not null,
+    value numeric(23,8) not null,
+    foreign key (id) references withdrawals_crypto_tx(id)
 );
 
-CREATE TABLE withdrawals_crypto_tx_mutated (
-    id bigint NOT NULL PRIMARY KEY,
-    tx_hash_mutated varchar(64) NOT NULL UNIQUE,
-    FOREIGN KEY (id) REFERENCES withdrawals_crypto_tx(id)
+create table withdrawals_crypto_tx_mutated (
+    id bigint not null primary key,
+    tx_hash_mutated varchar(64) not null unique,
+    foreign key (id) references withdrawals_crypto_tx(id)
 );
 
-CREATE TABLE withdrawals_crypto (
-    id bigint NOT NULL PRIMARY KEY,
+create table withdrawals_crypto (
+    id bigint not null primary key,
     withdrawals_crypto_tx_id bigint,
-    address varchar(34) NOT NULL,
-    FOREIGN KEY (id) REFERENCES withdrawals(id),
-    FOREIGN KEY (withdrawals_crypto_tx_id) REFERENCES withdrawals_crypto_tx(id)
+    address varchar(34) not null,
+    foreign key (id) references withdrawals(id),
+    foreign key (withdrawals_crypto_tx_id) references withdrawals_crypto_tx(id)
 );
-CREATE INDEX withdrawals_crypto_tx_idx ON withdrawals_crypto(withdrawals_crypto_tx_id);
+create index withdrawals_crypto_tx_idx on withdrawals_crypto(withdrawals_crypto_tx_id);
 
-CREATE TABLE tokens (
-    token varchar(256) NOT NULL PRIMARY KEY,
-    email varchar(256) NOT NULL,
-    creation timestamp NOT NULL,
-    expiration timestamp NOT NULL,
-    is_signup bool NOT NULL
+create table tokens (
+    token varchar(256) not null primary key,
+    email varchar(256) not null,
+    creation timestamp not null,
+    expiration timestamp not null,
+    is_signup bool not null
 );
-CREATE INDEX tokens_expiration_idx ON tokens(expiration DESC);
+create index tokens_expiration_idx on tokens(expiration desc);
 
 # --- !Downs
 

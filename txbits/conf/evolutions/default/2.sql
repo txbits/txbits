@@ -7,7 +7,7 @@
 # --- !Ups
 
 -- when a new order is placed we try to match it
-CREATE OR REPLACE FUNCTION 
+create or replace function 
     order_new(
       new_user_id bigint,
       new_base varchar(4),
@@ -15,132 +15,132 @@ CREATE OR REPLACE FUNCTION
       new_amount numeric(23,8),
       new_price numeric(23,8),
       new_is_bid boolean)
-    RETURNS boolean AS $$
-DECLARE
-    o orders%ROWTYPE;; -- first order (chronologically)
-    o2 orders%ROWTYPE;; -- second order (chronologically)
+    returns boolean as $$
+declare
+    o orders%rowtype;; -- first order (chronologically)
+    o2 orders%rowtype;; -- second order (chronologically)
     v numeric(23,8);; -- volume of the match (when it happens)
     fee numeric(23,8);; -- fee % to be paid
-BEGIN
+begin
     -- increase holds
-    IF new_is_bid THEN
-      UPDATE balances SET hold = hold + new_amount * new_price
-      WHERE currency = new_counter AND user_id = new_user_id AND
-      balance >= hold + new_amount * new_price;; --TODO: precision
-    ELSE
-      UPDATE balances SET hold = hold + new_amount
-      WHERE currency = new_base AND user_id = new_user_id AND
+    if new_is_bid then
+      update balances set hold = hold + new_amount * new_price
+      where currency = new_counter and user_id = new_user_id and
+      balance >= hold + new_amount * new_price;; --todo: precision
+    else
+      update balances set hold = hold + new_amount
+      where currency = new_base and user_id = new_user_id and
       balance >= hold + new_amount;;
-    END IF;;
+    end if;;
 
     -- insufficient funds
-    IF NOT FOUND THEN
-      RETURN false;;
-    END IF;;
+    if not found then
+      return false;;
+    end if;;
 
     -- trade fees
-    SELECT linear INTO STRICT fee FROM trade_fees;;
+    select linear into strict fee from trade_fees;;
 
-    PERFORM pg_advisory_xact_lock(id) FROM markets WHERE base = new_base AND counter = new_counter;;
+    perform pg_advisory_xact_lock(id) from markets where base = new_base and counter = new_counter;;
 
-    INSERT INTO orders(user_id, base, counter, original, remains, price, is_bid)
-    VALUES (new_user_id, new_base, new_counter, new_amount, new_amount, new_price, new_is_bid)
-    RETURNING id, created, original, closed, remains, price, user_id, base, counter, is_bid
-    INTO STRICT o2;;
+    insert into orders(user_id, base, counter, original, remains, price, is_bid)
+    values (new_user_id, new_base, new_counter, new_amount, new_amount, new_price, new_is_bid)
+    returning id, created, original, closed, remains, price, user_id, base, counter, is_bid
+    into strict o2;;
 
-    IF new_is_bid THEN
-      FOR o IN SELECT * FROM orders oo
-        WHERE
-          oo.remains > 0 AND
-          oo.closed = false AND
-          oo.base = new_base AND
-          oo.counter = new_counter AND
-          oo.is_bid = false AND
+    if new_is_bid then
+      for o in select * from orders oo
+        where
+          oo.remains > 0 and
+          oo.closed = false and
+          oo.base = new_base and
+          oo.counter = new_counter and
+          oo.is_bid = false and
           oo.price <= new_price
-        ORDER BY
-          oo.price ASC,
-          oo.created ASC
-      LOOP
+        order by
+          oo.price asc,
+          oo.created asc
+      loop
         -- the volume is the minimum of the two volumes
-        v := LEAST(o.remains, o2.remains);;
+        v := least(o.remains, o2.remains);;
 
-        PERFORM match_new(o2.id, o.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);; --TODO: precision
+        perform match_new(o2.id, o.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);; --todo: precision
 
         -- if order was completely filled, stop matching
-        SELECT * INTO STRICT o2 FROM orders WHERE id = o2.id;;
-        IF o2.remains = 0 THEN
-          EXIT;;
-        END IF;;
-      END LOOP;;
-    ELSE
-      FOR o IN SELECT * FROM orders oo
-        WHERE
-          oo.remains > 0 AND
-          oo.closed = false AND
-          oo.base = new_base AND
-          oo.counter = new_counter AND
-          oo.is_bid = true AND
+        select * into strict o2 from orders where id = o2.id;;
+        if o2.remains = 0 then
+          exit;;
+        end if;;
+      end loop;;
+    else
+      for o in select * from orders oo
+        where
+          oo.remains > 0 and
+          oo.closed = false and
+          oo.base = new_base and
+          oo.counter = new_counter and
+          oo.is_bid = true and
           oo.price >= new_price
-        ORDER BY
-          oo.price DESC,
-          oo.created ASC
-      LOOP
+        order by
+          oo.price desc,
+          oo.created asc
+      loop
         -- the volume is the minimum of the two volumes
-        v := LEAST(o.remains, o2.remains);;
+        v := least(o.remains, o2.remains);;
 
-        PERFORM match_new(o.id, o2.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);; --TODO: precision
+        perform match_new(o.id, o2.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);; --todo: precision
 
         -- if order was completely filled, stop matching
-        SELECT * INTO STRICT o2 FROM orders WHERE id = o2.id;;
-        IF o2.remains = 0 THEN
-          EXIT;;
-        END IF;;
-      END LOOP;;
-    END IF;;
+        select * into strict o2 from orders where id = o2.id;;
+        if o2.remains = 0 then
+          exit;;
+        end if;;
+      end loop;;
+    end if;;
 
-    RETURN true;;
-END;;
-$$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER COST 100;
+    return true;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 -- cancel an order and release any holds left open
-CREATE OR REPLACE FUNCTION order_cancel(o_id bigint, o_user_id bigint) returns boolean AS $$
-DECLARE
-    o orders%ROWTYPE;;
+create or replace function order_cancel(o_id bigint, o_user_id bigint) returns boolean as $$
+declare
+    o orders%rowtype;;
     b varchar(4);;
     c varchar(4);;
-BEGIN
-    SELECT base, counter INTO b, c FROM orders
-    WHERE id = o_id AND user_id = o_user_id AND closed = false AND remains > 0;;
+begin
+    select base, counter into b, c from orders
+    where id = o_id and user_id = o_user_id and closed = false and remains > 0;;
 
-    IF NOT FOUND THEN
-      RETURN false;;
-    END IF;;
+    if not found then
+      return false;;
+    end if;;
 
-    PERFORM pg_advisory_xact_lock(id) FROM markets WHERE base = b AND counter = c;;
+    perform pg_advisory_xact_lock(id) from markets where base = b and counter = c;;
 
-    UPDATE orders SET closed = true
-    WHERE id = o_id AND user_id = o_user_id AND closed = false AND remains > 0
-    RETURNING id, created, original, closed, remains, price, user_id, base, counter, is_bid
-    INTO o;;
+    update orders set closed = true
+    where id = o_id and user_id = o_user_id and closed = false and remains > 0
+    returning id, created, original, closed, remains, price, user_id, base, counter, is_bid
+    into o;;
 
-    IF NOT FOUND THEN
-      RETURN false;;
-    END IF;;
+    if not found then
+      return false;;
+    end if;;
 
-    IF o.is_bid THEN
-      UPDATE balances SET hold = hold - o.remains * o.price
-      WHERE currency = o.counter AND user_id = o.user_id;; --TODO: precision
-    ELSE
-      UPDATE balances SET hold = hold - o.remains
-      WHERE currency = o.base AND user_id = o.user_id;;
-    END IF;;
+    if o.is_bid then
+      update balances set hold = hold - o.remains * o.price
+      where currency = o.counter and user_id = o.user_id;; --todo: precision
+    else
+      update balances set hold = hold - o.remains
+      where currency = o.base and user_id = o.user_id;;
+    end if;;
 
-    RETURN true;;
-END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+    return true;;
+end;;
+$$ language plpgsql volatile cost 100;
 
 -- when a new match is inserted, we reduce the orders and release the holds
-CREATE OR REPLACE FUNCTION 
+create or replace function 
     match_new(
       new_bid_order_id bigint,
       new_ask_order_id bigint,
@@ -149,117 +149,117 @@ CREATE OR REPLACE FUNCTION
       new_ask_fee numeric(23,8),
       new_amount numeric(23,8),
       new_price numeric(23,8))
-    RETURNS void AS $$
-DECLARE
-    bid orders%ROWTYPE;;
-    ask orders%ROWTYPE;;
+    returns void as $$
+declare
+    bid orders%rowtype;;
+    ask orders%rowtype;;
     ucount int;; -- used for debugging
-BEGIN
-    SELECT * INTO STRICT bid FROM orders WHERE id = new_bid_order_id;;
-    SELECT * INTO STRICT ask FROM orders WHERE id = new_ask_order_id;;
+begin
+    select * into strict bid from orders where id = new_bid_order_id;;
+    select * into strict ask from orders where id = new_ask_order_id;;
 
-    IF (new_is_bid = true AND new_price <> ask.price) OR (new_is_bid = false AND new_price <> bid.price) THEN
-      RAISE 'Attempted to match two orders but the match has the wrong price. bid: % ask: % match price: %', bid.order_id, ask.order_id, NEW.price;;
-    END IF;;
+    if (new_is_bid = true and new_price <> ask.price) or (new_is_bid = false and new_price <> bid.price) then
+      raise 'attempted to match two orders but the match has the wrong price. bid: % ask: % match price: %', bid.order_id, ask.order_id, new.price;;
+    end if;;
 
-    IF bid.price < ask.price THEN
-      RAISE 'Attempted to match two orders that do not agree on the price. bid: % ask: %', bid.order_id, ask.order_id;;
-    END IF;;
+    if bid.price < ask.price then
+      raise 'attempted to match two orders that do not agree on the price. bid: % ask: %', bid.order_id, ask.order_id;;
+    end if;;
 
     -- make sure the amount is the whole of one or the other order
-    IF NOT (new_amount = bid.remains OR new_amount = ask.remains) THEN
-      RAISE 'Match must be complete. Failed to match whole order. amount: % bid: % ask: %', NEW.amount, bid.order_id, ask.order_id;;
-    END IF;;
+    if not (new_amount = bid.remains or new_amount = ask.remains) then
+      raise 'match must be complete. failed to match whole order. amount: % bid: % ask: %', new.amount, bid.order_id, ask.order_id;;
+    end if;;
 
     -- make sure the ask order is of type ask and the bid order is of type bid
-    IF bid.is_bid <> true OR ask.is_bid <> false THEN
-      RAISE 'Tried to match orders of wrong types! bid: % ask: %', NEW.amount, bid.order_id, ask.order_id;;
-    END IF;;
+    if bid.is_bid <> true or ask.is_bid <> false then
+      raise 'tried to match orders of wrong types! bid: % ask: %', new.amount, bid.order_id, ask.order_id;;
+    end if;;
 
     -- make sure the two orders are on the same market
-    IF bid.base <> ask.base OR bid.counter <> ask.counter THEN
-      RAISE 'Matching two orders from different markets. bid: %/% ask: %/%', bid.base, bid.counter, ask.base, ask.counter;;
-    END IF;;
+    if bid.base <> ask.base or bid.counter <> ask.counter then
+      raise 'matching two orders from different markets. bid: %/% ask: %/%', bid.base, bid.counter, ask.base, ask.counter;;
+    end if;;
 
-    INSERT INTO matches (bid_user_id, ask_user_id, bid_order_id, ask_order_id, is_bid, bid_fee, ask_fee, amount, price, base, counter)
-    VALUES (bid.user_id, ask.user_id, bid.id, ask.id, new_is_bid, new_bid_fee, new_ask_fee, new_amount, new_price, bid.base, bid.counter);;
+    insert into matches (bid_user_id, ask_user_id, bid_order_id, ask_order_id, is_bid, bid_fee, ask_fee, amount, price, base, counter)
+    values (bid.user_id, ask.user_id, bid.id, ask.id, new_is_bid, new_bid_fee, new_ask_fee, new_amount, new_price, bid.base, bid.counter);;
 
     -- release holds on the amount that was matched
-    UPDATE balances SET hold = hold - new_amount
-    WHERE currency = ask.base AND user_id = ask.user_id;;
-    --TODO: precision
-    UPDATE balances SET hold = hold - new_amount * new_price
-    WHERE currency = bid.counter AND user_id = bid.user_id;;
+    update balances set hold = hold - new_amount
+    where currency = ask.base and user_id = ask.user_id;;
+    --todo: precision
+    update balances set hold = hold - new_amount * new_price
+    where currency = bid.counter and user_id = bid.user_id;;
 
-    -- Reducing order volumes and reducing remaining volumes
-    UPDATE orders SET remains = remains - new_amount,
+    -- reducing order volumes and reducing remaining volumes
+    update orders set remains = remains - new_amount,
       closed = (remains - new_amount = 0)
-      WHERE id IN (ask.id, bid.id);;
+      where id in (ask.id, bid.id);;
 
-    GET DIAGNOSTICS ucount = ROW_COUNT;;
+    get diagnostics ucount = row_count;;
 
-    IF ucount <> 2 THEN
-      RAISE 'Expected 2 order updates, did %', ucount;;
-    END IF;;
+    if ucount <> 2 then
+      raise 'expected 2 order updates, did %', ucount;;
+    end if;;
 
     -- insert transactions (triggers move the actual money)
-    INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
-    VALUES (
+    insert into transactions (from_user_id, to_user_id, currency, amount, type)
+    values (
         ask.user_id,
         bid.user_id,
         bid.base,
         new_amount,
         'M' -- match
     );;
-    INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
-    VALUES (
+    insert into transactions (from_user_id, to_user_id, currency, amount, type)
+    values (
         bid.user_id,
         ask.user_id,
         bid.counter,
-        new_amount * new_price, --TODO: precision
+        new_amount * new_price, --todo: precision
         'M' -- match
     );;
 
     -- fees transactions (triggers move the actual money)
-    IF new_ask_fee > 0 THEN
-      INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
-      VALUES (
+    if new_ask_fee > 0 then
+      insert into transactions (from_user_id, to_user_id, currency, amount, type)
+      values (
           ask.user_id,
           0,
           ask.counter,
           new_ask_fee,
           'F' -- fee
       );;
-    END IF;;
-    IF new_bid_fee > 0 THEN
-      INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
-      VALUES (
+    end if;;
+    if new_bid_fee > 0 then
+      insert into transactions (from_user_id, to_user_id, currency, amount, type)
+      values (
           bid.user_id,
           0,
           bid.base,
           new_bid_fee,
           'F' -- fee
       );;
-    END IF;;
+    end if;;
 
-END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+end;;
+$$ language plpgsql volatile cost 100;
 
 -- when a deposit is confirmed, we add money to the account
-CREATE OR REPLACE FUNCTION deposit_complete() returns trigger AS $$
-DECLARE
+create or replace function deposit_complete() returns trigger as $$
+declare
   d deposits%rowtype;;
-BEGIN
-    select * into d from deposits where id = NEW.id;;
+begin
+    select * into d from deposits where id = new.id;;
 
     -- user 0 deposits refill hot wallets
-    IF d.user_id = 0 THEN
-      RETURN NULL;;
-    END IF;;
+    if d.user_id = 0 then
+      return null;;
+    end if;;
 
     -- insert transactions (triggers move the actual money)
-    INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
-      VALUES (
+    insert into transactions (from_user_id, to_user_id, currency, amount, type)
+      values (
         null,
         d.user_id,
         d.currency,
@@ -267,220 +267,220 @@ BEGIN
         'D' -- deposit
       );;
     -- insert transactions (triggers move the actual money)
-    INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
-      VALUES (
+    insert into transactions (from_user_id, to_user_id, currency, amount, type)
+      values (
         d.user_id,
         0,
         d.currency,
         d.fee,
         'F' -- fee
       );;
-    RETURN NULL;;
-END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+    return null;;
+end;;
+$$ language plpgsql volatile cost 100;
 
-CREATE TRIGGER deposit_complete_crypto
-    AFTER UPDATE ON deposits_crypto
-    FOR EACH ROW
-    WHEN (OLD.confirmed IS NULL AND NEW.confirmed IS NOT NULL)
-    EXECUTE PROCEDURE deposit_complete();
+create trigger deposit_complete_crypto
+    after update on deposits_crypto
+    for each row
+    when (old.confirmed is null and new.confirmed is not null)
+    execute procedure deposit_complete();
 
-CREATE TRIGGER deposit_completed_crypto
-    AFTER INSERT ON deposits_crypto
-    FOR EACH ROW
-    WHEN (NEW.confirmed IS NOT NULL)
-    EXECUTE PROCEDURE deposit_complete();
+create trigger deposit_completed_crypto
+    after insert on deposits_crypto
+    for each row
+    when (new.confirmed is not null)
+    execute procedure deposit_complete();
 
 
 -- when a withdrawal is requested, remove the money!
-CREATE OR REPLACE FUNCTION withdrawal_insert() returns trigger AS $$
-DECLARE
+create or replace function withdrawal_insert() returns trigger as $$
+declare
   underflow boolean;;
   overflow boolean;;
-BEGIN
-  PERFORM 1 FROM balances WHERE user_id = NEW.user_id AND currency = NEW.currency FOR UPDATE;;
+begin
+  perform 1 from balances where user_id = new.user_id and currency = new.currency for update;;
 
-  SELECT limit_min > new.amount into underflow FROM withdrawal_limits where currency = NEW.currency;;
+  select limit_min > new.amount into underflow from withdrawal_limits where currency = new.currency;;
 
-  IF underflow then
-    raise 'Below lower limit for withdrawal. Tried to withdraw %.', new.amount;;
+  if underflow then
+    raise 'Below lower limit for withdrawal. tried to withdraw %.', new.amount;;
   end if;;
 
-  SELECT ((limit_max < new.amount + (
+  select ((limit_max < new.amount + (
     select coalesce(sum(amount), 0)
     from transactions
-    where type = 'W' and currency = NEW.currency and from_user_id = NEW.user_id and created >= (current_timestamp - interval '24 hours' )
-  )) and limit_max != -1) into overflow FROM withdrawal_limits where currency = NEW.currency;;
+    where type = 'W' and currency = new.currency and from_user_id = new.user_id and created >= (current_timestamp - interval '24 hours' )
+  )) and limit_max != -1) into overflow from withdrawal_limits where currency = new.currency;;
 
-  IF overflow then
-    raise 'Over upper limit for withdrawal. Tried to withdraw %.', new.amount;;
+  if overflow then
+    raise 'Over upper limit for withdrawal. tried to withdraw %.', new.amount;;
   end if;;
 
     -- insert transactions (triggers move the actual money)
-    INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
-      VALUES (
-        NEW.user_id,
+    insert into transactions (from_user_id, to_user_id, currency, amount, type)
+      values (
+        new.user_id,
         null,
-        NEW.currency,
-        NEW.amount - NEW.fee,
+        new.currency,
+        new.amount - new.fee,
         'W' -- withdraw
       );;
 
     -- insert transactions (triggers move the actual money)
-    INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
-      VALUES (
-        NEW.user_id,
+    insert into transactions (from_user_id, to_user_id, currency, amount, type)
+      values (
+        new.user_id,
         0,
-        NEW.currency,
-        NEW.fee,
+        new.currency,
+        new.fee,
         'F' -- fee
       );;
-    RETURN NULL;;
-END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+    return null;;
+end;;
+$$ language plpgsql volatile cost 100;
 
-CREATE TRIGGER withdrawal_insert
-    AFTER INSERT ON withdrawals
-    FOR EACH ROW
-    EXECUTE PROCEDURE withdrawal_insert();
+create trigger withdrawal_insert
+    after insert on withdrawals
+    for each row
+    execute procedure withdrawal_insert();
 
 
 -- when a new transaction is created, we update the balances
-CREATE OR REPLACE FUNCTION transaction_insert() returns trigger AS $$
-DECLARE
+create or replace function transaction_insert() returns trigger as $$
+declare
   ucount int;;
-BEGIN
-  IF NEW.from_user_id IS NOT NULL THEN
-    UPDATE balances SET balance = balance - NEW.amount WHERE user_id = NEW.from_user_id AND currency = NEW.currency;;
-    GET DIAGNOSTICS ucount = ROW_COUNT;;
-    IF ucount <> 1 THEN
-        RAISE 'Expected 1 balance update, did %', ucount;;
-    END IF;;
-  END IF;;
-  IF NEW.to_user_id IS NOT NULL THEN
-    UPDATE balances SET balance = balance + NEW.amount WHERE user_id = NEW.to_user_id AND currency = NEW.currency;;
-    GET DIAGNOSTICS ucount = ROW_COUNT;;
-    IF ucount <> 1 THEN
-        RAISE 'Expected 1 balance update, did %', ucount;;
-    END IF;;
-  END IF;;
-  RETURN NULL;;
-END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+begin
+  if new.from_user_id is not null then
+    update balances set balance = balance - new.amount where user_id = new.from_user_id and currency = new.currency;;
+    get diagnostics ucount = row_count;;
+    if ucount <> 1 then
+        raise 'Expected 1 balance update, did %', ucount;;
+    end if;;
+  end if;;
+  if new.to_user_id is not null then
+    update balances set balance = balance + new.amount where user_id = new.to_user_id and currency = new.currency;;
+    get diagnostics ucount = row_count;;
+    if ucount <> 1 then
+        raise 'Expected 1 balance update, did %', ucount;;
+    end if;;
+  end if;;
+  return null;;
+end;;
+$$ language plpgsql volatile cost 100;
 
-CREATE TRIGGER transaction_insert
-    AFTER INSERT ON transactions
-    FOR EACH ROW
-    EXECUTE PROCEDURE transaction_insert();
+create trigger transaction_insert
+    after insert on transactions
+    for each row
+    execute procedure transaction_insert();
 
 -- when updating a transaction, we update the balances
-CREATE OR REPLACE FUNCTION transaction_update() returns trigger AS $$
-DECLARE
+create or replace function transaction_update() returns trigger as $$
+declare
   ucount int;;
-BEGIN
-  IF OLD.from_user_id <> NEW.from_user_id THEN
-    RAISE 'Cannot change source of transaction! Old user: %, New user: %', OLD.from_user_id, NEW.from_user_id;;
-  END IF;;
-  IF OLD.to_user_id <> NEW.to_user_id THEN
-    RAISE 'Cannot change destination of transaction! Old user: %, New user: %', OLD.to_user_id, NEW.to_user_id;;
-  END IF;;
-  IF OLD.currency <> NEW.currency THEN
-    RAISE 'Cannot change currency of transaction! Old currency: %, New currency: %', OLD.currency, NEW.currency;;
-  END IF;;
+begin
+  if old.from_user_id <> new.from_user_id then
+    raise 'Cannot change source of transaction! old user: %, new user: %', old.from_user_id, new.from_user_id;;
+  end if;;
+  if old.to_user_id <> new.to_user_id then
+    raise 'Cannot change destination of transaction! old user: %, new user: %', old.to_user_id, new.to_user_id;;
+  end if;;
+  if old.currency <> new.currency then
+    raise 'Cannot change currency of transaction! old currency: %, new currency: %', old.currency, new.currency;;
+  end if;;
 
-  IF OLD.from_user_id IS NOT NULL THEN
-    UPDATE balances SET balance = balance + OLD.amount - NEW.amount WHERE user_id = OLD.from_user_id AND currency = OLD.currency;;
-    GET DIAGNOSTICS ucount = ROW_COUNT;;
-    IF ucount <> 1 THEN
-        RAISE 'Expected 1 balance update, did %', ucount;;
-    END IF;;
-  END IF;;
-  IF OLD.to_user_id IS NOT NULL THEN
-    UPDATE balances SET balance = balance - OLD.amount + NEW.amount WHERE user_id = OLD.to_user_id AND currency = OLD.currency;;
-    GET DIAGNOSTICS ucount = ROW_COUNT;;
-    IF ucount <> 1 THEN
-        RAISE 'Expected 1 balance update, did %', ucount;;
-    END IF;;
-  END IF;;
-  RETURN NULL;;
-END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+  if old.from_user_id is not null then
+    update balances set balance = balance + old.amount - new.amount where user_id = old.from_user_id and currency = old.currency;;
+    get diagnostics ucount = row_count;;
+    if ucount <> 1 then
+        raise 'Expected 1 balance update, did %', ucount;;
+    end if;;
+  end if;;
+  if old.to_user_id is not null then
+    update balances set balance = balance - old.amount + new.amount where user_id = old.to_user_id and currency = old.currency;;
+    get diagnostics ucount = row_count;;
+    if ucount <> 1 then
+        raise 'Expected 1 balance update, did %', ucount;;
+    end if;;
+  end if;;
+  return null;;
+end;;
+$$ language plpgsql volatile cost 100;
 
-CREATE TRIGGER transaction_update
-AFTER UPDATE ON transactions
-FOR EACH ROW
-EXECUTE PROCEDURE transaction_update();
+create trigger transaction_update
+after update on transactions
+for each row
+execute procedure transaction_update();
 
 -- create balances assicated with users
-CREATE OR REPLACE FUNCTION user_insert() returns trigger AS $$
-DECLARE
+create or replace function user_insert() returns trigger as $$
+declare
   ucount int;;
-BEGIN
-  INSERT INTO balances (user_id, currency) SELECT NEW.id, currency FROM currencies;;
-  RETURN NULL;;
-END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+begin
+  insert into balances (user_id, currency) select new.id, currency from currencies;;
+  return null;;
+end;;
+$$ language plpgsql volatile cost 100;
 
-CREATE TRIGGER user_insert
-  AFTER INSERT ON users
-  FOR EACH ROW
-  EXECUTE PROCEDURE user_insert();
+create trigger user_insert
+  after insert on users
+  for each row
+  execute procedure user_insert();
 
-CREATE OR REPLACE FUNCTION wallets_crypto_retire() returns trigger AS $$
-DECLARE
-BEGIN
-  UPDATE users_addresses SET assigned = current_timestamp 
-  WHERE user_id = 0 AND assigned IS NULL AND currency = NEW.currency AND node_id = NEW.node_id;;
+create or replace function wallets_crypto_retire() returns trigger as $$
+declare
+begin
+  update users_addresses set assigned = current_timestamp 
+  where user_id = 0 and assigned is null and currency = new.currency and node_id = new.node_id;;
 
-  RETURN NULL;;
-END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+  return null;;
+end;;
+$$ language plpgsql volatile cost 100;
 
-CREATE TRIGGER wallets_crypto_retire
-  AFTER UPDATE ON wallets_crypto
-  FOR EACH ROW
-  WHEN (OLD.retired = false AND NEW.retired = true)
-  EXECUTE PROCEDURE wallets_crypto_retire();
+create trigger wallets_crypto_retire
+  after update on wallets_crypto
+  for each row
+  when (old.retired = false and new.retired = true)
+  execute procedure wallets_crypto_retire();
 
 -- create balances associated with currencies
-CREATE OR REPLACE FUNCTION currency_insert() returns trigger AS $$
-DECLARE
+create or replace function currency_insert() returns trigger as $$
+declare
   ucount int;;
-BEGIN
-  INSERT INTO balances (user_id, currency) SELECT id, NEW.currency FROM users;;
-  RETURN NULL;;
-END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+begin
+  insert into balances (user_id, currency) select id, new.currency from users;;
+  return null;;
+end;;
+$$ language plpgsql volatile cost 100;
 
-CREATE TRIGGER currency_insert
-  AFTER INSERT ON currencies
-  FOR EACH ROW
-  EXECUTE PROCEDURE currency_insert();
+create trigger currency_insert
+  after insert on currencies
+  for each row
+  execute procedure currency_insert();
 
 
 -- https://wiki.postgresql.org/wiki/First/last_%28aggregate%29
 
--- Create a function that always returns the first non-NULL item
-CREATE OR REPLACE FUNCTION public.first_agg ( anyelement, anyelement )
-RETURNS anyelement LANGUAGE sql IMMUTABLE STRICT AS $$
-        SELECT $1;;
+-- create a function that always returns the first non-null item
+create or replace function public.first_agg ( anyelement, anyelement )
+returns anyelement language sql immutable strict as $$
+        select $1;;
 $$;
 
--- And then wrap an aggregate around it
-CREATE AGGREGATE public.first (
+-- and then wrap an aggregate around it
+create aggregate public.first (
         sfunc    = public.first_agg,
         basetype = anyelement,
         stype    = anyelement
 );
 
--- Create a function that always returns the last non-NULL item
-CREATE OR REPLACE FUNCTION public.last_agg ( anyelement, anyelement )
-RETURNS anyelement LANGUAGE sql IMMUTABLE STRICT AS $$
-        SELECT $2;;
+-- create a function that always returns the last non-null item
+create or replace function public.last_agg ( anyelement, anyelement )
+returns anyelement language sql immutable strict as $$
+        select $2;;
 $$;
 
--- And then wrap an aggregate around it
-CREATE AGGREGATE public.last (
+-- and then wrap an aggregate around it
+create aggregate public.last (
         sfunc    = public.last_agg,
         basetype = anyelement,
         stype    = anyelement
@@ -488,26 +488,26 @@ CREATE AGGREGATE public.last (
 
 # --- !Downs
 
-DROP FUNCTION IF EXISTS order_new(bigint, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) CASCADE;
-DROP FUNCTION IF EXISTS order_cancel(bigint, bigint) CASCADE;
-DROP FUNCTION IF EXISTS match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) CASCADE;
-DROP FUNCTION IF EXISTS transaction_insert() CASCADE;
-DROP FUNCTION IF EXISTS transaction_update() CASCADE;
-DROP FUNCTION IF EXISTS user_insert() CASCADE;
-DROP FUNCTION IF EXISTS wallets_crypto_retire() CASCADE;
-DROP FUNCTION IF EXISTS currency_insert() CASCADE;
-DROP FUNCTION IF EXISTS withdrawal_insert() CASCADE;
-DROP FUNCTION IF EXISTS deposit_complete() CASCADE;
-DROP FUNCTION IF EXISTS first_agg() CASCADE;
-DROP FUNCTION IF EXISTS last_agg() CASCADE;
-DROP AGGREGATE IF EXISTS first(anyelement);
-DROP AGGREGATE IF EXISTS last(anyelement);
-DROP TRIGGER IF EXISTS transaction_insert ON transactions CASCADE;
-DROP TRIGGER IF EXISTS transaction_update ON transactions CASCADE;
-DROP TRIGGER IF EXISTS user_insert ON transactions CASCADE;
-DROP TRIGGER IF EXISTS wallets_crypto_retire ON transactions CASCADE;
-DROP TRIGGER IF EXISTS currency_insert ON transactions CASCADE;
-DROP TRIGGER IF EXISTS withdrawal_insert ON orders CASCADE;
-DROP TRIGGER IF EXISTS deposit_complete_crypto ON orders CASCADE;
-DROP TRIGGER IF EXISTS deposit_completed_crypto ON orders CASCADE;
-DROP TRIGGER IF EXISTS deposit_complete_bank ON orders CASCADE;
+drop function if exists order_new(bigint, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) cascade;
+drop function if exists order_cancel(bigint, bigint) cascade;
+drop function if exists match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) cascade;
+drop function if exists transaction_insert() cascade;
+drop function if exists transaction_update() cascade;
+drop function if exists user_insert() cascade;
+drop function if exists wallets_crypto_retire() cascade;
+drop function if exists currency_insert() cascade;
+drop function if exists withdrawal_insert() cascade;
+drop function if exists deposit_complete() cascade;
+drop function if exists first_agg() cascade;
+drop function if exists last_agg() cascade;
+drop aggregate if exists first(anyelement);
+drop aggregate if exists last(anyelement);
+drop trigger if exists transaction_insert on transactions cascade;
+drop trigger if exists transaction_update on transactions cascade;
+drop trigger if exists user_insert on transactions cascade;
+drop trigger if exists wallets_crypto_retire on transactions cascade;
+drop trigger if exists currency_insert on transactions cascade;
+drop trigger if exists withdrawal_insert on orders cascade;
+drop trigger if exists deposit_complete_crypto on orders cascade;
+drop trigger if exists deposit_completed_crypto on orders cascade;
+drop trigger if exists deposit_complete_bank on orders cascade;
