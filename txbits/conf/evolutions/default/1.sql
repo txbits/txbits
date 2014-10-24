@@ -7,7 +7,8 @@
 # --- !Ups
 
 CREATE TABLE currencies (
-    currency varchar(4) NOT NULL PRIMARY KEY
+    currency varchar(4) NOT NULL PRIMARY KEY,
+    position int NOT NULL -- Used for displaying
 );
 
 CREATE TABLE dw_fees (
@@ -113,6 +114,7 @@ CREATE TABLE markets (
     UNIQUE (base, counter),
     limit_min numeric(23,8) NOT NULL, -- minimum amount of base currency in an order
     active bool DEFAULT true NOT NULL, -- false prevents new orders from being inserted
+    position int NOT NULL, -- used for displaying
     FOREIGN KEY (base) REFERENCES currencies(currency),
     FOREIGN KEY (counter) REFERENCES currencies(currency)
 );
