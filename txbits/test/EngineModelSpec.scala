@@ -35,13 +35,13 @@ class EngineModelSpec extends Specification with Mockito {
     // the application is used for its database connection
 
     "tell us the balance" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
       val result = globals.engineModel.balance(uid)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
     }
 
     "be able to add fake balance on fake exchange" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
       globals.userModel.addFakeMoney(uid, "LTC", 1)
 
       val result = globals.engineModel.balance(uid)
@@ -49,7 +49,7 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "not be able to add fake balance on real exchange" in new WithCleanTestDbApplicationReal {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
       globals.userModel.addFakeMoney(uid, "LTC", 1)
 
       val result = globals.engineModel.balance(uid)
@@ -57,7 +57,7 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "not be able to remove fake balance on real exchange" in new WithCleanTestDbApplicationReal {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
       globals.userModel.subtractFakeMoney(uid, "LTC", 1)
 
       val result = globals.engineModel.balance(uid)
@@ -65,13 +65,13 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "no money = no bid" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
 
       globals.engineModel.askBid(uid, "LTC", "USD", 1, 1, true) must beFalse
     }
 
     "be able to place a bid" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
 
       globals.userModel.addFakeMoney(uid, "USD", 1)
       globals.engineModel.askBid(uid, "LTC", "USD", 1, 1, true)
@@ -81,7 +81,7 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "be able to place an ask" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
       globals.userModel.addFakeMoney(uid, "LTC", 1)
       globals.engineModel.askBid(uid, "LTC", "USD", 1, 1, false)
 
@@ -90,8 +90,8 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "be able to make a match" in new WithCleanTestDbApplication {
-      val asker = globals.userModel.create("test@test.test", "", "", false).get
-      val bidder = globals.userModel.create("test2@test.test", "", "", false).get
+      val asker = globals.userModel.create("test@test.test", "", false).get
+      val bidder = globals.userModel.create("test2@test.test", "", false).get
 
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 1)
@@ -106,8 +106,8 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "be able to make a match of one and a half asks" in new WithCleanTestDbApplication {
-      val asker = globals.userModel.create("test@test.test", "", "", false).get
-      val bidder = globals.userModel.create("test2@test.test", "", "", false).get
+      val asker = globals.userModel.create("test@test.test", "", false).get
+      val bidder = globals.userModel.create("test2@test.test", "", false).get
 
       globals.userModel.addFakeMoney(asker, "LTC", 2)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
@@ -127,8 +127,8 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "be able to make a match and get charged the right fee" in new WithCleanTestDbApplication {
-      val asker = globals.userModel.create("test@test.test", "", "", false).get
-      val bidder = globals.userModel.create("test2@test.test", "", "", false).get
+      val asker = globals.userModel.create("test@test.test", "", false).get
+      val bidder = globals.userModel.create("test2@test.test", "", false).get
 
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
@@ -143,8 +143,8 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "be able to make a match and get charged the right fee if we swap the bid and the ask" in new WithCleanTestDbApplication {
-      val asker = globals.userModel.create("test@test.test", "", "", false).get
-      val bidder = globals.userModel.create("test2@test.test", "", "", false).get
+      val asker = globals.userModel.create("test@test.test", "", false).get
+      val bidder = globals.userModel.create("test2@test.test", "", false).get
 
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
@@ -159,8 +159,8 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "be able to make a match and verify it in trade history" in new WithCleanTestDbApplication {
-      val asker = globals.userModel.create("test@test.test", "", "", false).get
-      val bidder = globals.userModel.create("test2@test.test", "", "", false).get
+      val asker = globals.userModel.create("test@test.test", "", false).get
+      val bidder = globals.userModel.create("test2@test.test", "", false).get
 
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
@@ -175,7 +175,7 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "be able to make a self-match and verify it in balance and trade history" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
 
       globals.userModel.addFakeMoney(uid, "LTC", 1)
       globals.userModel.addFakeMoney(uid, "USD", 2)
@@ -196,8 +196,8 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "be able to cancel a transaction" in new WithCleanTestDbApplication {
-      val asker = globals.userModel.create("test@test.test", "", "", false).get
-      val bidder = globals.userModel.create("test2@test.test", "", "", false).get
+      val asker = globals.userModel.create("test@test.test", "", false).get
+      val bidder = globals.userModel.create("test2@test.test", "", false).get
 
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
@@ -215,7 +215,7 @@ class EngineModelSpec extends Specification with Mockito {
     }
 
     "be able to make withdraw request with fees" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
 
       val feeConstant = 1
       val feeLinear = 0.01

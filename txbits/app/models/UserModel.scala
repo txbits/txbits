@@ -11,7 +11,7 @@ import anorm.SqlParser._
 import play.api.Play
 import java.sql.Timestamp
 import org.joda.time.DateTime
-import securesocial.core.{ Token, PasswordInfo, SocialUser }
+import securesocial.core.{ Token, SocialUser }
 import service.{ SQLText, TOTPSecret }
 import play.api.libs.json.Json
 
@@ -35,11 +35,10 @@ class UserModel(val db: String = "default") {
   import globals.symbolColumn
   import globals.bigDecimalColumn
 
-  def create(email: String, password: String, hasher: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
+  def create(email: String, password: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
     SQLText.createUser.on(
       'email -> email,
       'password -> password,
-      'hasher -> hasher,
       'onMailingList -> onMailingList
     ).executeInsert[Option[Long]]()
   }
@@ -76,7 +75,6 @@ class UserModel(val db: String = "default") {
           new SocialUser(
             row[Long]("id"),
             row[String]("email"),
-            PasswordInfo(row[String]("hasher"), row[String]("password")),
             row[Int]("verification"),
             row[Boolean]("on_mailing_list"),
             row[Boolean]("tfa_withdrawal"),
@@ -94,7 +92,24 @@ class UserModel(val db: String = "default") {
         new SocialUser(
           row[Long]("id"),
           row[String]("email"),
-          PasswordInfo(row[String]("hasher"), row[String]("password")),
+          row[Int]("verification"),
+          row[Boolean]("on_mailing_list"),
+          row[Boolean]("tfa_withdrawal"),
+          row[Boolean]("tfa_login"),
+          row[Option[String]]("tfa_secret"),
+          row[Option[Symbol]]("tfa_type")
+        )
+      ).headOption
+  }
+
+  def findUserByEmailAndPassword(email: String, password: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
+    SQLText.findUserByEmailAndPassword.on(
+      'email -> email,
+      'password -> password
+    )().map(row =>
+        new SocialUser(
+          row[Long]("id"),
+          row[String]("email"),
           row[Int]("verification"),
           row[Boolean]("on_mailing_list"),
           row[Boolean]("tfa_withdrawal"),
@@ -220,11 +235,10 @@ class UserModel(val db: String = "default") {
     ).executeUpdate()
   }
 
-  def userChangePass(id: Long, password: String, hasher: String) = DB.withConnection(db) { implicit c =>
+  def userChangePass(id: Long, password: String) = DB.withConnection(db) { implicit c =>
     SQLText.userChangePassword.on(
       'user_id -> id,
-      'password -> password,
-      'hasher -> hasher
+      'password -> password
     ).executeUpdate()
   }
 

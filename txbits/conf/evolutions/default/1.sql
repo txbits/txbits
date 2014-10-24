@@ -6,6 +6,8 @@
 
 # --- !Ups
 
+create extension pgcrypto;
+
 create table currencies (
     currency varchar(4) not null primary key,
     position int not null -- used for displaying
@@ -43,7 +45,6 @@ create table users (
 create table passwords (
     user_id bigint not null,
     password varchar(256) not null, -- salt is a part of the password field
-    hasher varchar(256) not null,
     created timestamp default current_timestamp not null,
     foreign key (user_id) references users(id),
     primary key (user_id, created)
@@ -329,4 +330,4 @@ drop sequence if exists market_id_seq cascade;
 drop sequence if exists transaction_id_seq cascade;
 drop sequence if exists event_log_id_seq cascade;
 drop sequence if exists withdrawals_crypto_tx_id_seq cascade;
-
+drop extension pgcrypto;

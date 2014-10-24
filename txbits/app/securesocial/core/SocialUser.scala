@@ -21,7 +21,7 @@ import play.api.libs.json.{ JsValue, Json, JsObject, Writes }
 /**
  * An implementation of Identity.  Used by SecureSocial to gather user information when users sign up and/or sign in.
  */
-case class SocialUser(id: Long, email: String, passwordInfo: PasswordInfo, verification: Int, onMailingList: Boolean,
+case class SocialUser(id: Long, email: String, verification: Int, onMailingList: Boolean,
   TFAWithdrawal: Boolean = false, TFALogin: Boolean = false, TFASecret: Option[String] = None, TFAType: Option[Symbol] = None)
 
 object SocialUser {
@@ -33,12 +33,3 @@ object SocialUser {
     }
   }
 }
-
-/**
- * The password details
- *
- * @param hasher the id of the hasher used to hash this password
- * @param password the hashed password
- * @param salt the optional salt used when hashing
- */
-case class PasswordInfo(hasher: String, password: String, salt: Option[String] = None)

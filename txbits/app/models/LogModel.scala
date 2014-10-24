@@ -11,7 +11,6 @@ import anorm.SqlParser._
 import play.api.Play
 import java.sql.Timestamp
 import org.joda.time.DateTime
-import securesocial.core.{ Token, PasswordInfo, SocialUser }
 import models.LogType.LogType
 import play.api.libs.json.{ JsString, JsValue, Writes, Json }
 import play.api.mvc.{ RequestHeader, AnyContent, Request }

@@ -17,7 +17,6 @@
 package securesocial.core
 
 import play.api.Logger
-import providers.utils.PasswordHasher
 import scala.None
 import play.api.Play.current
 
@@ -55,7 +54,4 @@ class PluginRegistry[T <: Registrable](label: String) {
  */
 object Registry {
   lazy val provider = current.plugin[UsernamePasswordProvider].get
-  lazy val hashers = new PluginRegistry[PasswordHasher]("password hasher") {
-    lazy val currentHasher: PasswordHasher = get(UsernamePasswordProvider.hasher).get
-  }
 }

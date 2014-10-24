@@ -25,10 +25,9 @@ object SQLText {
       |values ({email},{onMailingList})
       |returning id
       |)
-      |insert into passwords (user_id, password, hasher) values (
+      |insert into passwords (user_id, password) values (
       | (select id from new_user_row),
-      | {password},
-      | {hasher}
+      | crypt({password}, gen_salt('bf', 8))
       |)
     """.stripMargin)
 
@@ -39,7 +38,7 @@ object SQLText {
 
   val userChangePassword = SQL(
     """
-      |insert into passwords (user_id, password, hasher) values ({user_id}, {password}, {hasher})
+      |insert into passwords (user_id, password) values ({user_id}, crypt({password}, gen_salt('bf', 8)))
     """.stripMargin)
 
   val turnonTfa = SQL(
@@ -86,24 +85,29 @@ object SQLText {
 
   val findUserById = SQL(
     """
-      |select email, p.hasher, verification, on_mailing_list,
-      |u.id, p.password, tfa_withdrawal, tfa_login, tfa_secret, tfa_type
+      |select email, verification, on_mailing_list,
+      |u.id, tfa_withdrawal, tfa_login, tfa_secret, tfa_type
       |from users as u
-      |join passwords as p on p.user_id = u.id
       |where u.id = {id}
-      |order by p.created desc
-      |limit 1
     """.stripMargin)
 
   val findUserByEmail = SQL(
     """
-      |select email, p.hasher, verification, on_mailing_list,
-      |u.id, p.password, tfa_withdrawal, tfa_login, tfa_secret, tfa_type
+      |select email, verification, on_mailing_list,
+      |u.id, tfa_withdrawal, tfa_login, tfa_secret, tfa_type
       |from users as u
-      |join passwords as p on p.user_id = u.id
       |where lower(email) = lower({email})
-      |order by p.created desc
-      |limit 1
+    """.stripMargin)
+
+  val findUserByEmailAndPassword = SQL(
+    """
+      |with user_row as (select u.email, u.verification, u.on_mailing_list, u.id, p.password, u.tfa_withdrawal, u.tfa_login, u.tfa_secret, u.tfa_type
+      | from users as u
+      | join passwords as p on p.user_id = u.id
+      | where lower(u.email) = lower({email})
+      | order by p.created desc
+      | limit 1)
+      | select email, verification, on_mailing_list, id, tfa_withdrawal, tfa_login, tfa_secret, tfa_type from user_row where user_row.password = crypt({password}, user_row.password)
     """.stripMargin)
 
   val saveToken = SQL(

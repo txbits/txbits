@@ -510,4 +510,3 @@ drop trigger if exists currency_insert on transactions cascade;
 drop trigger if exists withdrawal_insert on orders cascade;
 drop trigger if exists deposit_complete_crypto on orders cascade;
 drop trigger if exists deposit_completed_crypto on orders cascade;
-drop trigger if exists deposit_complete_bank on orders cascade;
