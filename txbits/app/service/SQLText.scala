@@ -109,12 +109,12 @@ object SQLText {
       |delete from tokens where expiration < current_timestamp
     """.stripMargin)
 
-  val TOPTTokenIsBlacklisted = SQL(
+  val TOTPTokenIsBlacklisted = SQL(
     """
       |select true from totp_tokens_blacklist where user_id = {user} and token = {token} and expiration >= current_timestamp
     """.stripMargin)
 
-  val blacklistTOPTToken = SQL(
+  val blacklistTOTPToken = SQL(
     """
       |insert into totp_tokens_blacklist(user_id, token, expiration) values ({user}, {token}, {expiration})
     """.stripMargin)
@@ -273,8 +273,7 @@ object SQLText {
 
   val askBid = SQL(
     """
-      |insert into orders(user_id, base, counter, original, remains, price, type)
-      |values ({uid}, {base}, {counter}, {amount}, {amount}, {price}, {type})
+      |select order_new({uid}, {base}, {counter}, {amount}, {price}, {is_bid})
       |""".stripMargin)
 
   val cancelTrade = SQL(
@@ -284,14 +283,14 @@ object SQLText {
 
   val userPendingTrades = SQL(
     """
-      |select id, type, remains as amount, price, base, counter, created from orders
+      |select id, is_bid, remains as amount, price, base, counter, created from orders
       |where user_id = {uid} and closed = false and remains > 0
       |order by created desc
       |""".stripMargin)
 
   val recentTrades = SQL(
     """
-      |select amount, created, price, base, counter, type
+      |select amount, created, price, base, counter, is_bid
       |from matches m
       |where base = {base} and counter = {counter}
       |order by created desc
@@ -331,16 +330,16 @@ object SQLText {
 
   val openAsks = SQL(
     """
-      |select type, sum(remains) as amount, price, base, counter from orders
-      |where type = 'ask' and base = {base} and counter = {counter} and closed = false and remains > 0
-      |group by type, price, base, counter order by price asc limit 40
+      |select sum(remains) as amount, price, base, counter from orders
+      |where not is_bid and base = {base} and counter = {counter} and closed = false and remains > 0
+      |group by price, base, counter order by price asc limit 40
       |""".stripMargin)
 
   val openBids = SQL(
     """
-      |select type, sum(remains) as amount, price, base, counter from orders
-      |where type = 'bid' and base = {base} and counter = {counter} and closed = false and remains > 0
-      |group by type, price, base, counter order by price desc limit 40
+      |select sum(remains) as amount, price, base, counter from orders
+      |where is_bid and base = {base} and counter = {counter} and closed = false and remains > 0
+      |group by price, base, counter order by price desc limit 40
       |""".stripMargin)
 
   val getRecentMatches = SQL(

@@ -147,7 +147,7 @@ class UserModel(val db: String = "default") {
         'token -> token.uuid,
         'creation -> new Timestamp(token.creationTime.getMillis),
         'expiration -> new Timestamp(token.expirationTime.getMillis),
-        'is_signup -> (if (token.isSignUp) 1 else 0)
+        'is_signup -> token.isSignUp
       ).execute
     }
 
@@ -164,7 +164,7 @@ class UserModel(val db: String = "default") {
     SQLText.findToken.on(
       'token -> token
     )().map(row =>
-        Token(token, row[String]("email"), row[DateTime]("creation"), row[DateTime]("expiration"), row[Int]("is_signup") != 0)
+        Token(token, row[String]("email"), row[DateTime]("creation"), row[DateTime]("expiration"), row[Boolean]("is_signup"))
       ).headOption
   }
 
@@ -197,16 +197,16 @@ class UserModel(val db: String = "default") {
     SQLText.deleteExpiredTOTPBlacklistTokens.execute()
   }
 
-  def blacklistTOPTToken(user: BigDecimal, token: String, expiration: Timestamp) = DB.withConnection(db) { implicit c =>
-    SQLText.blacklistTOPTToken.on(
+  def blacklistTOTPToken(user: BigDecimal, token: String, expiration: Timestamp) = DB.withConnection(db) { implicit c =>
+    SQLText.blacklistTOTPToken.on(
       'user -> user,
       'token -> token,
       'expiration -> expiration
     ).execute()
   }
 
-  def TOPTTokenIsBlacklisted(user: BigDecimal, token: String) = DB.withConnection(db) { implicit c =>
-    SQLText.TOPTTokenIsBlacklisted.on(
+  def TOTPTokenIsBlacklisted(user: BigDecimal, token: String) = DB.withConnection(db) { implicit c =>
+    SQLText.TOTPTokenIsBlacklisted.on(
       'user -> user,
       'token -> token
     )().toList.length > 0

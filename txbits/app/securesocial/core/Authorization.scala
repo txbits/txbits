@@ -41,9 +41,9 @@ trait Authorization {
 object Authorization2fa extends Authorization {
   def verifyTokenForUser(user: BigDecimal, token: String, secret: String) = {
     if (TOTPAuthenticator.pinMatchesSecret(token, TOTPSecret(secret))) {
-      if (!userModel.TOPTTokenIsBlacklisted(user, token)) {
+      if (!userModel.TOTPTokenIsBlacklisted(user, token)) {
         val blacklistDuration: Long = Play.current.configuration.getLong("TOTPTokenBlacklistDurationMs").getOrElse(30 * 7 * 1000)
-        userModel.blacklistTOPTToken(user, token, new Timestamp(System.currentTimeMillis() + blacklistDuration))
+        userModel.blacklistTOTPToken(user, token, new Timestamp(System.currentTimeMillis() + blacklistDuration))
         true
       } else {
         false

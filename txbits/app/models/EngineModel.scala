@@ -45,43 +45,32 @@ class EngineModel(val db: String = "default") {
     ).toMap
   }
 
-  def bid(uid: Long, base: String, counter: String, amount: BigDecimal, price: BigDecimal) = DB.withConnection(db) { implicit c =>
+  def askBid(uid: Long, base: String, counter: String, amount: BigDecimal, price: BigDecimal, isBid: Boolean) = DB.withConnection(db) { implicit c =>
     SQLText.askBid.on(
       'uid -> uid,
       'base -> base,
       'counter -> counter,
       'amount -> amount.bigDecimal,
       'price -> price.bigDecimal,
-      'type -> "bid"
-    ).executeInsert[Option[Long]]()
-  }
-
-  def ask(uid: Long, base: String, counter: String, amount: BigDecimal, price: BigDecimal) = DB.withConnection(db) { implicit c =>
-    SQLText.askBid.on(
-      'uid -> uid,
-      'base -> base,
-      'counter -> counter,
-      'amount -> amount.bigDecimal,
-      'price -> price.bigDecimal,
-      'type -> "ask"
-    ).executeInsert[Option[Long]]()
+      'is_bid -> isBid
+    )().map(_[Boolean]("order_new")).head
   }
 
   def userPendingTrades(uid: Long) = DB.withConnection(db) { implicit c =>
     SQLText.userPendingTrades.on('uid -> uid)().map(row =>
-      Trade(row[Long]("id"), row[String]("type"), row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"), row[DateTime]("created"))
+      Trade(row[Long]("id"), if (row[Boolean]("is_bid")) "bid" else "ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"), row[DateTime]("created"))
     ).toList
   }
 
   def openAsks(base: String, counter: String) = DB.withConnection(db) { implicit c =>
     SQLText.openAsks.on('base -> base, 'counter -> counter)().map(row =>
-      OpenOrder(row[String]("type"), row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
+      OpenOrder("ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
     ).toList
   }
 
   def openBids(base: String, counter: String) = DB.withConnection(db) { implicit c =>
     SQLText.openBids.on('base -> base, 'counter -> counter)().map(row =>
-      OpenOrder(row[String]("type"), row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
+      OpenOrder("bid", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
     ).toList
   }
 
@@ -143,7 +132,7 @@ class EngineModel(val db: String = "default") {
           row[BigDecimal]("price").bigDecimal.toPlainString,
           row[String]("base"),
           row[String]("counter"),
-          row[String]("type"))
+          if (row[Boolean]("is_bid")) "bid" else "ask")
       ).toList
   }
 
@@ -175,7 +164,7 @@ object Match {
     Json.obj(
       "amount" -> m.amount.bigDecimal.toPlainString,
       "price" -> m.price.bigDecimal.toPlainString,
-      "created" -> m.created.toString(),
+      "created" -> m.created.toString,
       "pair" -> "%s/%s".format(m.base, m.counter),
       "base" -> m.base,
       "counter" -> m.counter

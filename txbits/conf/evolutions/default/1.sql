@@ -7,8 +7,7 @@
 # --- !Ups
 
 CREATE TABLE currencies (
-    currency varchar(4) NOT NULL PRIMARY KEY,
-    precision int -- Used for rounding
+    currency varchar(4) NOT NULL PRIMARY KEY
 );
 
 CREATE TABLE dw_fees (
@@ -18,12 +17,12 @@ CREATE TABLE dw_fees (
     deposit_linear numeric(23,8) NOT NULL,
     withdraw_constant numeric(23,8) NOT NULL,
     withdraw_linear numeric(23,8) NOT NULL,
-    UNIQUE (currency,method),
+    PRIMARY KEY (currency, method),
     FOREIGN KEY (currency) REFERENCES currencies(currency)
 );
 
 CREATE TABLE trade_fees (
-    linear numeric(23,8) NOT NULL
+    linear numeric(23,8) NOT NULL check(linear >= 0)
 );
 
 CREATE SEQUENCE users_id_seq;
@@ -37,7 +36,7 @@ CREATE TABLE users (
     tfa_withdrawal bool DEFAULT false,
     tfa_login bool DEFAULT false,
     tfa_secret varchar(256), -- TODO: pick a size
-    tfa_type varchar(6) check(tfa_type IS NULL OR tfa_type = 'TOTP'), -- TOTP
+    tfa_type varchar(6), -- TOTP
     verification int DEFAULT 0 NOT NULL,
     active bool DEFAULT true NOT NULL
 );
@@ -48,6 +47,7 @@ CREATE TABLE totp_tokens_blacklist (
     expiration timestamp NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+CREATE INDEX totp_tokens_blacklist_expiration_idx ON totp_tokens_blacklist(expiration DESC);
 
 CREATE SEQUENCE event_log_id_seq;
 CREATE TABLE event_log (
@@ -92,8 +92,8 @@ CREATE TABLE transactions (
     to_user_id bigint, -- can be null when it's a withdrawal or fee
     amount numeric(23,8) NOT NULL,
     currency varchar(4) NOT NULL,
-    created timestamp DEFAULT current_timestamp,
-    type varchar(1) NOT NULL, -- D=deposit W=withdrawal M=match F=fee
+    created timestamp DEFAULT current_timestamp NOT NULL,
+    type char NOT NULL, -- D=deposit W=withdrawal M=match F=fee
     FOREIGN KEY (from_user_id, currency) REFERENCES balances(user_id, currency),
     FOREIGN KEY (to_user_id, currency) REFERENCES balances(user_id, currency)
 );
@@ -116,19 +116,18 @@ CREATE TABLE orders (
     created timestamp DEFAULT current_timestamp NOT NULL,
     original numeric(23,8) NOT NULL check(original > 0),
     closed bool DEFAULT false NOT NULL,
-    remains numeric(23,8) NOT NULL check(original >= remains AND (remains >= 0 OR remains = 0 AND closed = true)),
+    remains numeric(23,8) NOT NULL check(original >= remains AND (remains > 0 OR remains = 0 AND closed = true)),
     price numeric(23,8) NOT NULL check(price > 0),
     user_id bigint NOT NULL,
     base varchar(4) NOT NULL,
     counter varchar(4) NOT NULL,
-    type varchar(3) NOT NULL, -- "bid" or "ask"
-    unique (id, user_id, base, counter),
+    is_bid bool NOT NULL,
     FOREIGN KEY (base, counter) REFERENCES markets(base, counter),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
---TODO: consider using partitioning instead: http://www.postgresql.org/docs/9.1/static/ddl-partitioning.html
-create index orders_closed_idx on orders(closed) where closed = false;
-create index orders_remains_idx on orders(remains) where remains > 0;
+CREATE INDEX bid_idx ON orders(base, counter, price DESC, created ASC) WHERE closed = false AND remains > 0 AND is_bid = true;
+CREATE INDEX ask_idx ON orders(base, counter, price ASC, created ASC) WHERE closed = false AND remains > 0 AND is_bid = false;
+CREATE INDEX user_pending_trades_idx ON orders(user_id, created DESC) WHERE closed = false AND remains > 0;
 
 CREATE TABLE matches (
     ask_user_id bigint NOT NULL,
@@ -140,7 +139,7 @@ CREATE TABLE matches (
     bid_fee numeric(23,8) NOT NULL,
     price numeric(23,8) NOT NULL check(price > 0),
     created timestamp DEFAULT current_timestamp NOT NULL,
-    type varchar(3) NOT NULL,
+    is_bid bool NOT NULL, -- true when an ask was matched by a new bid
     base varchar(4) NOT NULL,
     counter varchar(4) NOT NULL,
 
@@ -157,9 +156,14 @@ CREATE TABLE matches (
 
     FOREIGN KEY (base, counter) REFERENCES markets(base, counter),
     PRIMARY KEY (ask_order_id, bid_order_id),
-    FOREIGN KEY (ask_order_id, ask_user_id, base, counter) REFERENCES orders(id, user_id, base, counter),
-    FOREIGN KEY (bid_order_id, bid_user_id, base, counter) REFERENCES orders(id, user_id, base, counter)
+    FOREIGN KEY (ask_order_id) REFERENCES orders(id),
+    FOREIGN KEY (bid_order_id) REFERENCES orders(id),
+    FOREIGN KEY (ask_user_id) REFERENCES users(id),
+    FOREIGN KEY (bid_user_id) REFERENCES users(id)
 );
+CREATE INDEX matches_bid_user_idx ON matches(bid_user_id, created DESC);
+CREATE INDEX matches_ask_user_idx ON matches(ask_user_id, created DESC);
+CREATE INDEX recent_trades_idx ON matches(base, counter, created DESC);
 
 CREATE TABLE currencies_crypto (
     currency varchar(4) PRIMARY KEY,
@@ -195,6 +199,7 @@ CREATE TABLE users_addresses (
     FOREIGN KEY (currency, node_id) REFERENCES wallets_crypto(currency, node_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+CREATE INDEX users_addresses_idx ON users_addresses(user_id, currency, assigned DESC);
 
 CREATE SEQUENCE deposit_id_seq;
 CREATE TABLE deposits (
@@ -219,6 +224,7 @@ CREATE TABLE deposits_crypto (
     FOREIGN KEY (address) REFERENCES users_addresses(address),
     FOREIGN KEY (id) REFERENCES deposits(id)
 );
+CREATE INDEX deposits_crypto_address_idx ON deposits_crypto(address);
 
 CREATE SEQUENCE withdrawal_id_seq;
 CREATE TABLE withdrawals (
@@ -229,7 +235,7 @@ CREATE TABLE withdrawals (
     currency varchar(4) NOT NULL,
     --TODO: require transaction ids to be referenced
     --transaction_id bigint not null,
-    fee numeric(23,8) not null,
+    fee numeric(23,8) NOT NULL,
     --FOREIGN KEY (transaction_id) REFERENCES transactions(id),
     FOREIGN KEY (currency) REFERENCES currencies(currency),
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -269,14 +275,16 @@ CREATE TABLE withdrawals_crypto (
     FOREIGN KEY (id) REFERENCES withdrawals(id),
     FOREIGN KEY (withdrawals_crypto_tx_id) REFERENCES withdrawals_crypto_tx(id)
 );
+CREATE INDEX withdrawals_crypto_tx_idx ON withdrawals_crypto(withdrawals_crypto_tx_id);
 
 CREATE TABLE tokens (
     token varchar(256) NOT NULL PRIMARY KEY,
-    email varchar(256),
-    creation timestamp,
-    expiration timestamp,
-    is_signup smallint
+    email varchar(256) NOT NULL,
+    creation timestamp NOT NULL,
+    expiration timestamp NOT NULL,
+    is_signup bool NOT NULL
 );
+CREATE INDEX tokens_expiration_idx ON tokens(expiration DESC);
 
 # --- !Downs
 

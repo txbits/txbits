@@ -6,162 +6,194 @@
 
 # --- !Ups
 
--- recursive function to match new orders with old orders
-CREATE OR REPLACE FUNCTION execute_order(in o2 orders) -- second order (chronologically)
-returns void AS $$
+-- when a new order is placed we try to match it
+CREATE OR REPLACE FUNCTION 
+    order_new(
+      new_user_id bigint,
+      new_base varchar(4),
+      new_counter varchar(4),
+      new_amount numeric(23,8),
+      new_price numeric(23,8),
+      new_is_bid boolean)
+    RETURNS boolean AS $$
 DECLARE
     o orders%ROWTYPE;; -- first order (chronologically)
-    v numeric(23,8);;  -- volume of the match (when it happens)
+    o2 orders%ROWTYPE;; -- second order (chronologically)
+    v numeric(23,8);; -- volume of the match (when it happens)
     fee numeric(23,8);; -- fee % to be paid
-    o2_next orders%ROWTYPE;;
-BEGIN
-    -- find a match
-    SELECT * INTO o
-    FROM orders oo
-    WHERE
-        oo.remains > 0 AND
-        closed = false AND
-        o2.base = oo.base AND
-        o2.counter = oo.counter AND
-        o2.type <> oo.type AND
-        (
-            (o2.type = 'bid' AND oo.price <= o2.price) OR
-            (o2.type = 'ask' AND oo.price >= o2.price)
-        )
-    ORDER BY
-        CASE WHEN o2.type = 'bid' THEN oo.price ELSE -oo.price END ASC,
-        oo.created ASC;;
-
-    -- if not match is found, we can end here
-    IF NOT FOUND THEN
-        RETURN;;
-    END IF;;
-
-    -- the volume is the minimum of the two volumes
-    v := LEAST(o.remains, o2.remains);;
-
-    -- fees
-    SELECT linear into fee FROM trade_fees;;
-
-    -- insert a match entry
-    INSERT INTO matches (bid_user_id, ask_user_id, bid_order_id, ask_order_id, type, bid_fee, ask_fee, amount, price, base, counter)
-    VALUES (
-        CASE WHEN o2.type = 'bid' THEN o2.user_id ELSE o.user_id END,
-        CASE WHEN o2.type = 'ask' THEN o2.user_id ELSE o.user_id END,
-        CASE WHEN o2.type = 'bid' THEN o2.id ELSE o.id END,
-        CASE WHEN o2.type = 'ask' THEN o2.id ELSE o.id END,
-        o2.type,
-        fee * v, --TODO: precision
-        fee * o.price * v, --TODO: precision
-        v,
-        o.price,
-        o.base,
-        o.counter);;
-
-    -- if there is left over volume from the new order, match again
-    select * into o2_next from orders where id = o2.id;;
-    IF o2_next.remains > 0 THEN
-        PERFORM execute_order(o2_next);;
-    END IF;;
-END;;
-$$ LANGUAGE plpgsql;
-
--- when a new order is placed we try to match it
-CREATE OR REPLACE FUNCTION order_insert_match() returns trigger AS $$
-DECLARE
 BEGIN
     -- increase holds
-    IF NEW.type = 'bid' THEN
-      UPDATE balances SET hold = hold + NEW.original * NEW.price WHERE currency = NEW.counter AND user_id = NEW.user_id;; --TODO: precision
+    IF new_is_bid THEN
+      UPDATE balances SET hold = hold + new_amount * new_price
+      WHERE currency = new_counter AND user_id = new_user_id AND
+      balance >= hold + new_amount * new_price;; --TODO: precision
     ELSE
-      UPDATE balances SET hold = hold + NEW.original WHERE currency = NEW.base AND user_id = NEW.user_id;;
+      UPDATE balances SET hold = hold + new_amount
+      WHERE currency = new_base AND user_id = new_user_id AND
+      balance >= hold + new_amount;;
     END IF;;
 
-    PERFORM pg_advisory_xact_lock(id) FROM markets WHERE base = NEW.base AND counter = NEW.counter;;
-    PERFORM execute_order(NEW);;
-    RETURN NULL;;
+    -- insufficient funds
+    IF NOT FOUND THEN
+      RETURN false;;
+    END IF;;
+
+    -- trade fees
+    SELECT linear INTO STRICT fee FROM trade_fees;;
+
+    PERFORM pg_advisory_xact_lock(id) FROM markets WHERE base = new_base AND counter = new_counter;;
+
+    INSERT INTO orders(user_id, base, counter, original, remains, price, is_bid)
+    VALUES (new_user_id, new_base, new_counter, new_amount, new_amount, new_price, new_is_bid)
+    RETURNING id, created, original, closed, remains, price, user_id, base, counter, is_bid
+    INTO STRICT o2;;
+
+    IF new_is_bid THEN
+      FOR o IN SELECT * FROM orders oo
+        WHERE
+          oo.remains > 0 AND
+          oo.closed = false AND
+          oo.base = new_base AND
+          oo.counter = new_counter AND
+          oo.is_bid = false AND
+          oo.price <= new_price
+        ORDER BY
+          oo.price ASC,
+          oo.created ASC
+      LOOP
+        -- the volume is the minimum of the two volumes
+        v := LEAST(o.remains, o2.remains);;
+
+        PERFORM match_new(o2.id, o.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);; --TODO: precision
+
+        -- if order was completely filled, stop matching
+        SELECT * INTO STRICT o2 FROM orders WHERE id = o2.id;;
+        IF o2.remains = 0 THEN
+          EXIT;;
+        END IF;;
+      END LOOP;;
+    ELSE
+      FOR o IN SELECT * FROM orders oo
+        WHERE
+          oo.remains > 0 AND
+          oo.closed = false AND
+          oo.base = new_base AND
+          oo.counter = new_counter AND
+          oo.is_bid = true AND
+          oo.price >= new_price
+        ORDER BY
+          oo.price DESC,
+          oo.created ASC
+      LOOP
+        -- the volume is the minimum of the two volumes
+        v := LEAST(o.remains, o2.remains);;
+
+        PERFORM match_new(o.id, o2.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);; --TODO: precision
+
+        -- if order was completely filled, stop matching
+        SELECT * INTO STRICT o2 FROM orders WHERE id = o2.id;;
+        IF o2.remains = 0 THEN
+          EXIT;;
+        END IF;;
+      END LOOP;;
+    END IF;;
+
+    RETURN true;;
 END;;
-$$ LANGUAGE plpgsql VOLATILE COST 100;
+$$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER COST 100;
 
-CREATE TRIGGER order_insert_match
-    AFTER INSERT ON orders
-    FOR EACH ROW
-    EXECUTE PROCEDURE order_insert_match();
-
--- release and holds left open cancellation of an order
+-- cancel an order and release any holds left open
 CREATE OR REPLACE FUNCTION order_cancel(o_id bigint, o_user_id bigint) returns boolean AS $$
 DECLARE
-  o orders%ROWTYPE;;
-  b varchar(4);;
-  c varchar(4);;
+    o orders%ROWTYPE;;
+    b varchar(4);;
+    c varchar(4);;
 BEGIN
-  SELECT base, counter INTO b, c FROM orders WHERE id = o_id AND user_id = o_user_id;;
+    SELECT base, counter INTO b, c FROM orders
+    WHERE id = o_id AND user_id = o_user_id AND closed = false AND remains > 0;;
 
-  PERFORM pg_advisory_xact_lock(id) FROM markets WHERE base = b AND counter = c;;
+    IF NOT FOUND THEN
+      RETURN false;;
+    END IF;;
 
-  WITH cancelled_order AS (
-  UPDATE orders SET closed = true
-  WHERE id = o_id AND user_id = o_user_id AND closed = false AND remains != 0
-  RETURNING id, created, original, closed, remains, price, user_id, base, counter, type)
-  SELECT * INTO o FROM cancelled_order;;
+    PERFORM pg_advisory_xact_lock(id) FROM markets WHERE base = b AND counter = c;;
 
-  IF NOT FOUND THEN
-    RETURN false;;
-  END IF;;
+    UPDATE orders SET closed = true
+    WHERE id = o_id AND user_id = o_user_id AND closed = false AND remains > 0
+    RETURNING id, created, original, closed, remains, price, user_id, base, counter, is_bid
+    INTO o;;
 
-  IF o.type = 'bid' THEN
-    UPDATE balances SET hold = hold - o.remains * o.price WHERE currency = o.counter AND user_id = o.user_id;; --TODO: precision
-  ELSE
-    UPDATE balances SET hold = hold - o.remains WHERE currency = o.base AND user_id = o.user_id;;
-  END IF;;
+    IF NOT FOUND THEN
+      RETURN false;;
+    END IF;;
 
-  RETURN true;;
+    IF o.is_bid THEN
+      UPDATE balances SET hold = hold - o.remains * o.price
+      WHERE currency = o.counter AND user_id = o.user_id;; --TODO: precision
+    ELSE
+      UPDATE balances SET hold = hold - o.remains
+      WHERE currency = o.base AND user_id = o.user_id;;
+    END IF;;
+
+    RETURN true;;
 END;;
 $$ LANGUAGE plpgsql VOLATILE COST 100;
 
 -- when a new match is inserted, we reduce the orders and release the holds
-CREATE OR REPLACE FUNCTION match_insert() returns trigger AS $$
+CREATE OR REPLACE FUNCTION 
+    match_new(
+      new_bid_order_id bigint,
+      new_ask_order_id bigint,
+      new_is_bid boolean,
+      new_bid_fee numeric(23,8),
+      new_ask_fee numeric(23,8),
+      new_amount numeric(23,8),
+      new_price numeric(23,8))
+    RETURNS void AS $$
 DECLARE
     bid orders%ROWTYPE;;
     ask orders%ROWTYPE;;
     ucount int;; -- used for debugging
 BEGIN
-    SELECT * INTO bid FROM orders WHERE id = NEW.bid_order_id;;
-    SELECT * INTO ask FROM orders WHERE id = NEW.ask_order_id;;
+    SELECT * INTO STRICT bid FROM orders WHERE id = new_bid_order_id;;
+    SELECT * INTO STRICT ask FROM orders WHERE id = new_ask_order_id;;
 
-    --TODO: what if they are created at the "same time"?
-    IF (bid.created < ask.created AND NEW.price <> bid.price) OR (bid.created > ask.created AND NEW.price <> ask.price) THEN
-      RAISE 'Attempted to match two orders but the match has the wong price. bid: % ask: % match price: %', bid.order_id, ask.order_id, NEW.price;;
+    IF (new_is_bid = true AND new_price <> ask.price) OR (new_is_bid = false AND new_price <> bid.price) THEN
+      RAISE 'Attempted to match two orders but the match has the wrong price. bid: % ask: % match price: %', bid.order_id, ask.order_id, NEW.price;;
     END IF;;
 
-    IF bid.price  < ask.price THEN
-      RAISE 'Attempted to match two orders that dont agree on the price. bid: % ask: %', bid.order_id, ask.order_id;;
+    IF bid.price < ask.price THEN
+      RAISE 'Attempted to match two orders that do not agree on the price. bid: % ask: %', bid.order_id, ask.order_id;;
     END IF;;
 
     -- make sure the amount is the whole of one or the other order
-    IF NOT (NEW.amount = bid.remains OR NEW.amount = ask.remains) THEN
+    IF NOT (new_amount = bid.remains OR new_amount = ask.remains) THEN
       RAISE 'Match must be complete. Failed to match whole order. amount: % bid: % ask: %', NEW.amount, bid.order_id, ask.order_id;;
     END IF;;
 
     -- make sure the ask order is of type ask and the bid order is of type bid
-    IF NOT (bid.type = 'bid' AND ask.type = 'ask') THEN
+    IF bid.is_bid <> true OR ask.is_bid <> false THEN
       RAISE 'Tried to match orders of wrong types! bid: % ask: %', NEW.amount, bid.order_id, ask.order_id;;
     END IF;;
 
     -- make sure the two orders are on the same market
     IF bid.base <> ask.base OR bid.counter <> ask.counter THEN
-        RAISE 'Matching two orders from different markets. bid: %/% ask: %/%', bid.base, bid.counter, ask.base, ask.counter;;
+      RAISE 'Matching two orders from different markets. bid: %/% ask: %/%', bid.base, bid.counter, ask.base, ask.counter;;
     END IF;;
 
+    INSERT INTO matches (bid_user_id, ask_user_id, bid_order_id, ask_order_id, is_bid, bid_fee, ask_fee, amount, price, base, counter)
+    VALUES (bid.user_id, ask.user_id, bid.id, ask.id, new_is_bid, new_bid_fee, new_ask_fee, new_amount, new_price, bid.base, bid.counter);;
+
     -- release holds on the amount that was matched
-    UPDATE balances SET hold = hold - NEW.amount WHERE currency = ask.base AND user_id = ask.user_id;;
+    UPDATE balances SET hold = hold - new_amount
+    WHERE currency = ask.base AND user_id = ask.user_id;;
     --TODO: precision
-    UPDATE balances SET hold = hold - NEW.amount * (CASE WHEN bid.created < ask.created THEN bid.price ELSE ask.price END)
+    UPDATE balances SET hold = hold - new_amount * new_price
     WHERE currency = bid.counter AND user_id = bid.user_id;;
 
     -- Reducing order volumes and reducing remaining volumes
-    UPDATE orders SET remains = remains - NEW.amount,
-      closed = CASE WHEN (remains - NEW.amount) = 0 THEN true ELSE false END
+    UPDATE orders SET remains = remains - new_amount,
+      closed = (remains - new_amount = 0)
       WHERE id IN (ask.id, bid.id);;
 
     GET DIAGNOSTICS ucount = ROW_COUNT;;
@@ -176,7 +208,7 @@ BEGIN
         ask.user_id,
         bid.user_id,
         bid.base,
-        NEW.amount,
+        new_amount,
         'M' -- match
     );;
     INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
@@ -184,40 +216,34 @@ BEGIN
         bid.user_id,
         ask.user_id,
         bid.counter,
-        NEW.amount * (CASE WHEN bid.created < ask.created THEN bid.price ELSE ask.price END),  --TODO: precision
+        new_amount * new_price, --TODO: precision
         'M' -- match
     );;
 
     -- fees transactions (triggers move the actual money)
-    IF NEW.ask_fee > 0 THEN
+    IF new_ask_fee > 0 THEN
       INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
       VALUES (
           ask.user_id,
           0,
           ask.counter,
-          NEW.ask_fee,
+          new_ask_fee,
           'F' -- fee
       );;
     END IF;;
-    IF NEW.bid_fee > 0 THEN
+    IF new_bid_fee > 0 THEN
       INSERT INTO transactions (from_user_id, to_user_id, currency, amount, type)
       VALUES (
           bid.user_id,
           0,
           bid.base,
-          NEW.bid_fee,
+          new_bid_fee,
           'F' -- fee
       );;
     END IF;;
 
-    RETURN NULL;;
 END;;
 $$ LANGUAGE plpgsql VOLATILE COST 100;
-
-CREATE TRIGGER match_insert
-    AFTER INSERT ON matches
-    FOR EACH ROW
-    EXECUTE PROCEDURE match_insert();
 
 -- when a deposit is confirmed, we add money to the account
 CREATE OR REPLACE FUNCTION deposit_complete() returns trigger AS $$
@@ -462,10 +488,9 @@ CREATE AGGREGATE public.last (
 
 # --- !Downs
 
-DROP FUNCTION IF EXISTS order_insert_match() CASCADE;
-DROP FUNCTION IF EXISTS order_cancel() CASCADE;
-DROP FUNCTION IF EXISTS execute_order(orders) CASCADE;
-DROP FUNCTION IF EXISTS match_insert() CASCADE;
+DROP FUNCTION IF EXISTS order_new(bigint, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) CASCADE;
+DROP FUNCTION IF EXISTS order_cancel(bigint, bigint) CASCADE;
+DROP FUNCTION IF EXISTS match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) CASCADE;
 DROP FUNCTION IF EXISTS transaction_insert() CASCADE;
 DROP FUNCTION IF EXISTS transaction_update() CASCADE;
 DROP FUNCTION IF EXISTS user_insert() CASCADE;
@@ -477,8 +502,6 @@ DROP FUNCTION IF EXISTS first_agg() CASCADE;
 DROP FUNCTION IF EXISTS last_agg() CASCADE;
 DROP AGGREGATE IF EXISTS first(anyelement);
 DROP AGGREGATE IF EXISTS last(anyelement);
-DROP TRIGGER IF EXISTS order_insert_match ON orders CASCADE;
-DROP TRIGGER IF EXISTS match_insert ON matches CASCADE;
 DROP TRIGGER IF EXISTS transaction_insert ON transactions CASCADE;
 DROP TRIGGER IF EXISTS transaction_update ON transactions CASCADE;
 DROP TRIGGER IF EXISTS user_insert ON transactions CASCADE;
