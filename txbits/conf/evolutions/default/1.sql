@@ -16,10 +16,10 @@ create table currencies (
 create table dw_fees (
     currency varchar(4) not null,
     method varchar(10) not null,
-    deposit_constant numeric(23,8) not null,
-    deposit_linear numeric(23,8) not null,
-    withdraw_constant numeric(23,8) not null,
-    withdraw_linear numeric(23,8) not null,
+    deposit_constant numeric(23,8) not null check(deposit_constant >= 0),
+    deposit_linear numeric(23,8) not null check(deposit_linear >= 0),
+    withdraw_constant numeric(23,8) not null check(withdraw_constant >= 0),
+    withdraw_linear numeric(23,8) not null check(withdraw_linear >= 0),
     primary key (currency, method),
     foreign key (currency) references currencies(currency)
 );
@@ -65,10 +65,9 @@ create table event_log (
     created timestamp default current_timestamp not null,
     email varchar(256),
     user_id bigint,
-    -- i don't think we should store passwords attempted. it's a security risk.
     ipv4 integer,
     ipv6 numeric(40),
-    browser_headers text, -- these can be parsed later to produce country info,
+    browser_headers text, -- these can be parsed later to produce country info
     browser_id text, -- result of deanonymization
     ssl_info text, -- what ciphers were offered, what cipher was accepted, etc.
     type text -- one of: login_partial_success, login_success, login_failure, logout, session_expired
@@ -89,32 +88,19 @@ create table balances (
 
 create table withdrawal_limits (
     currency varchar(4) not null,
-    limit_min numeric(23,8) not null,
-    limit_max numeric(23,8) not null,
+    limit_min numeric(23,8) not null check(limit_min > 0),
+    limit_max numeric(23,8) not null check(limit_max >= 0),
     foreign key (currency) references currencies(currency),
     primary key (currency)
-);
-
-create sequence transaction_id_seq;
-create table transactions (
-    id bigint default nextval('transaction_id_seq') primary key,
-    from_user_id bigint, -- can be null when it's a deposit
-    to_user_id bigint, -- can be null when it's a withdrawal or fee
-    amount numeric(23,8) not null,
-    currency varchar(4) not null,
-    created timestamp default current_timestamp not null,
-    type char not null, -- d=deposit w=withdrawal m=match f=fee
-    foreign key (from_user_id, currency) references balances(user_id, currency),
-    foreign key (to_user_id, currency) references balances(user_id, currency)
 );
 
 create sequence market_id_seq;
 create table markets (
     id bigint default nextval('market_id_seq') primary key,
-    base varchar(4) not null, -- btc in btc/usd
-    counter varchar(4) not null, -- usd in btc/usd
+    base varchar(4) not null, -- BTC in BTC/USD
+    counter varchar(4) not null, -- USD in BTC/USD
     unique (base, counter),
-    limit_min numeric(23,8) not null, -- minimum amount of base currency in an order
+    limit_min numeric(23,8) not null check(limit_min > 0), -- minimum amount of base currency in an order
     active bool default true not null, -- false prevents new orders from being inserted
     position int not null, -- used for displaying
     foreign key (base) references currencies(currency),
@@ -145,32 +131,20 @@ create table matches (
     bid_user_id bigint not null,
     ask_order_id bigint not null,
     bid_order_id bigint not null,
-    amount numeric(23,8) not null,
-    ask_fee numeric(23,8) not null,
-    bid_fee numeric(23,8) not null,
+    amount numeric(23,8) not null check(amount > 0),
+    ask_fee numeric(23,8) not null check(ask_fee >= 0),
+    bid_fee numeric(23,8) not null check(bid_fee >= 0),
     price numeric(23,8) not null check(price > 0),
     created timestamp default current_timestamp not null,
     is_bid bool not null, -- true when an ask was matched by a new bid
     base varchar(4) not null,
     counter varchar(4) not null,
-
--- todo: we won't have references to transactions for now.. for testing... later we should add them
---     first_transaction_id bigint not null,
---     second_transaction_id bigint not null,
---     ask_fee_transaction_id bigint,
---     bid_fee_transaction_id bigint,
-
---     foreign key (first_transaction_id) references transactions(id),
---     foreign key (second_transaction_id) references transactions(id),
---     foreign key (ask_fee_transaction_id) references transactions(id),
---     foreign key (bid_fee_transaction_id) references transactions(id),
-
     foreign key (base, counter) references markets(base, counter),
-    primary key (ask_order_id, bid_order_id),
     foreign key (ask_order_id) references orders(id),
     foreign key (bid_order_id) references orders(id),
     foreign key (ask_user_id) references users(id),
-    foreign key (bid_user_id) references users(id)
+    foreign key (bid_user_id) references users(id),
+    primary key (ask_order_id, bid_order_id)
 );
 create index matches_bid_user_idx on matches(bid_user_id, created desc);
 create index matches_ask_user_idx on matches(ask_user_id, created desc);
@@ -190,13 +164,13 @@ create table wallets_crypto (
     retired bool default false not null, -- set to true when a wallet.dat file is no longer used
     last_block_read integer,
     last_withdrawal_time_received integer,
-    balance numeric(23,8) default 0 not null,
+    balance numeric(23,8) default 0 not null check(balance >= 0),
     balance_min numeric(23,8) not null check(balance_min >= 0),
     balance_warn numeric(23,8) not null check(balance_warn >= balance_min),
     balance_target numeric(23,8) not null check(balance_target > balance_warn),
     balance_max numeric(23,8) not null check(balance_max > balance_target),
-    primary key (currency, node_id),
-    foreign key (currency) references currencies(currency)
+    foreign key (currency) references currencies(currency),
+    primary key (currency, node_id)
 );
 
 create table users_addresses (
@@ -215,14 +189,11 @@ create index users_addresses_idx on users_addresses(user_id, currency, assigned 
 create sequence deposit_id_seq;
 create table deposits (
     id bigint default nextval('deposit_id_seq') primary key,
-    amount numeric(23,8) not null, --before the fee
+    amount numeric(23,8) not null check(amount > 0), -- before the fee
     created timestamp default current_timestamp not null,
     user_id bigint not null,
     currency varchar(4) not null,
-  --todo: require transaction ids to be referenced
-  --transaction_id bigint not null,
-    fee numeric(23,8) not null,
-    --foreign key (transaction_id) references transactions(id),
+    fee numeric(23,8) not null check(fee >= 0),
     foreign key (currency) references currencies(currency),
     foreign key (user_id) references users(id)
 );
@@ -240,17 +211,15 @@ create index deposits_crypto_address_idx on deposits_crypto(address);
 create sequence withdrawal_id_seq;
 create table withdrawals (
     id bigint default nextval('withdrawal_id_seq') primary key,
-    amount numeric(23,8) not null, --before the fee
+    amount numeric(23,8) not null check(amount > 0), -- before the fee
     created timestamp default current_timestamp not null,
     user_id bigint not null,
     currency varchar(4) not null,
-    --todo: require transaction ids to be referenced
-    --transaction_id bigint not null,
-    fee numeric(23,8) not null,
-    --foreign key (transaction_id) references transactions(id),
+    fee numeric(23,8) not null check(fee >= 0),
     foreign key (currency) references currencies(currency),
     foreign key (user_id) references users(id)
 );
+create index withdrawals_limit_idx on withdrawals(user_id, currency, created desc);
 
 create sequence withdrawals_crypto_tx_id_seq;
 create table withdrawals_crypto_tx (
@@ -269,7 +238,7 @@ create table withdrawals_crypto_tx (
 create table withdrawals_crypto_tx_cold_storage (
     id bigint not null primary key,
     address varchar(34) not null,
-    value numeric(23,8) not null,
+    value numeric(23,8) not null check(value > 0),
     foreign key (id) references withdrawals_crypto_tx(id)
 );
 
@@ -317,7 +286,6 @@ drop table if exists withdrawals_crypto_tx_cold_storage cascade;
 drop table if exists withdrawals_crypto_tx_mutated cascade;
 drop table if exists currencies_crypto cascade;
 drop table if exists wallets_crypto cascade;
-drop table if exists transactions cascade;
 drop table if exists dw_fees cascade;
 drop table if exists trade_fees cascade;
 drop table if exists totp_tokens_blacklist cascade;
@@ -328,7 +296,6 @@ drop sequence if exists deposit_id_seq cascade;
 drop sequence if exists users_id_seq cascade;
 drop sequence if exists withdrawal_id_seq cascade;
 drop sequence if exists market_id_seq cascade;
-drop sequence if exists transaction_id_seq cascade;
 drop sequence if exists event_log_id_seq cascade;
 drop sequence if exists withdrawals_crypto_tx_id_seq cascade;
 drop extension pgcrypto;

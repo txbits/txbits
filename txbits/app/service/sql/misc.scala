@@ -26,7 +26,6 @@ object misc {
       |delete from users_addresses;
       |delete from dw_fees;
       |delete from trade_fees;
-      |delete from transactions;
       |delete from withdrawals_crypto;
       |delete from withdrawals_crypto_tx_mutated;
       |delete from withdrawals_crypto_tx_cold_storage;
