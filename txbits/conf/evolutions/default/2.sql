@@ -1000,14 +1000,15 @@ withdraw_crypto (
   a_uid bigint,
   a_amount numeric(23,8),
   a_address varchar(34),
-  a_currency varchar(4)
-) returns void as $$
+  a_currency varchar(4),
+  out id bigint
+) returns setof bigint as $$
   with rows as (
     insert into withdrawals (amount, user_id, currency, fee)
     values (a_amount, a_uid, a_currency, (select withdraw_constant + a_amount * withdraw_linear from dw_fees where currency = a_currency and method = 'blockchain')) returning id
   )
   insert into withdrawals_crypto (id, address)
-  values ((select id from rows), a_address);;
+  values ((select id from rows), a_address) returning id;;
 $$ language sql volatile cost 100;
 
 

@@ -89,7 +89,7 @@ class EngineModel(val db: String = "default") {
       'uid -> uid,
       'currency -> currency,
       'amount -> amount.bigDecimal,
-      'address -> address).executeInsert[Option[Long]]()
+      'address -> address).map(row => row[Long]("id")).list.headOption
   }
 
   def addresses(uid: Long, currency: String) = DB.withConnection(db) { implicit c =>
