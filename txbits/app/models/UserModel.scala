@@ -41,7 +41,7 @@ class UserModel(val db: String = "default") {
       'email -> email,
       'password -> password,
       'onMailingList -> onMailingList
-    ).executeInsert[Option[Long]]()
+    ).map(row => row[Long]("id")).list.headOption
   }
 
   def addFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
