@@ -49,12 +49,12 @@ object frontend {
 
   val addFakeMoney = SQL(
     """
-    | select * from add_fake_money({uid}, {amount}, {currency})
+    | select * from add_fake_money({uid}, {currency}, {amount})
     |""".stripMargin)
 
   val removeFakeMoney = SQL(
     """
-    | select * from remove_fake_money({uid}, {amount}, {currency})
+    | select * from remove_fake_money({uid}, {currency}, {amount})
     |""".stripMargin)
 
   val findUserById = SQL(
