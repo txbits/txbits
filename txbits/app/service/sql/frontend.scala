@@ -154,7 +154,7 @@ object frontend {
 
   val orderCancel = SQL(
     """
-    | select * from order_cancel({uid}, {id})
+    | select * from order_cancel({id}, {uid})
     |""".stripMargin)
 
   val userPendingTrades = SQL(
