@@ -486,6 +486,531 @@ create aggregate public.last (
         stype    = anyelement
 );
 
+create or replace function
+create_user (
+  a_password text,
+  a_email varchar(256),
+  a_onMailingList bool,
+  out id bigint
+) returns setof bigint as $$
+  with new_user_row as (
+    insert into users(email, on_mailing_list)
+    values (a_email,a_onMailingList)
+    returning id
+  )
+  insert into passwords (user_id, password) values (
+    (select id from new_user_row),
+    crypt(a_password, gen_salt('bf', 8))
+  ) returning (select id from new_user_row);;
+$$ language sql volatile cost 100;
+
+create or replace function
+update_user (
+  a_id bigint,
+  a_email varchar(256),
+  a_onMailingList bool
+) returns void as $$
+  update users set email=a_email, on_mailing_list=a_onMailingList where id=a_id;;;
+$$ language sql volatile cost 100;
+
+create or replace function
+user_change_password (
+  a_user_id bigint,
+  a_password text
+) returns void as $$
+  insert into passwords (user_id, password) values (a_user_id, crypt(a_password, gen_salt('bf', 8)));;
+$$ language sql volatile cost 100;
+
+create or replace function
+turnon_tfa (
+  a_id bigint
+) returns void as $$
+  update users set tfa_login=true, tfa_withdrawal=true
+  where id=a_id;;
+$$ language sql volatile cost 100;
+
+create or replace function
+update_tfa_secret (
+  a_id bigint,
+  a_secret varchar(256),
+  a_typ varchar(6)
+) returns void as $$
+  update users set tfa_secret=a_secret, tfa_type=a_typ, tfa_login=false, tfa_withdrawal=false
+  where id=a_id;;
+$$ language sql volatile cost 100;
+
+create or replace function
+turnoff_tfa (
+  a_id bigint
+) returns void as $$
+  update users set tfa_secret=NULL, tfa_login=false, tfa_withdrawal=false, tfa_type=NULL
+  where id=a_id;;
+$$ language sql volatile cost 100;
+
+create or replace function
+turnon_emails (
+  a_id bigint
+) returns void as $$
+  update users set on_mailing_list=true
+  where id=a_id;;
+$$ language sql volatile cost 100;
+
+create or replace function
+turnoff_emails (
+  a_id bigint
+) returns void as $$
+  update users set on_mailing_list=false
+  where id=a_id;;
+$$ language sql volatile cost 100;
+
+create or replace function
+add_fake_money (
+  a_uid bigint,
+  a_currency varchar(4),
+  a_amount numeric(23,8)
+) returns void as $$
+  insert into transactions(to_user_id, currency, amount, type)
+  values (a_uid,a_currency,a_amount,'X');;
+$$ language sql volatile cost 100;
+
+create or replace function
+remove_fake_money (
+  a_uid bigint,
+  a_currency varchar(4),
+  a_amount numeric(23,8)
+) returns void as $$
+  insert into transactions(from_user_id, currency, amount, type)
+  values (a_uid,a_currency,a_amount,'X');;
+$$ language sql volatile cost 100;
+
+create or replace function
+find_user_by_id (
+  a_id bigint,
+  out users
+) returns setof users as $$
+  select * from users
+  where id = a_id;;
+$$ language sql volatile cost 100;
+
+create or replace function
+find_user_by_email (
+  a_email varchar(256),
+  out users
+) returns setof users as $$
+  select * from users
+  where lower(email) = lower(a_email);;
+$$ language sql volatile cost 100;
+
+create or replace function
+find_user_by_email_and_password (
+  a_email varchar(256),
+  a_password text,
+  out users
+) returns setof users as $$
+  with user_row as (
+    select u.*, p.password from users as u
+    join passwords as p on p.user_id = u.id
+    where lower(u.email) = lower(a_email)
+    order by p.created desc
+    limit 1
+  )
+  select id, created, email, on_mailing_list, tfa_withdrawal, tfa_login, tfa_secret, tfa_type, verification, active from user_row where user_row.password = crypt(a_password, user_row.password);;
+$$ language sql volatile cost 100;
+
+create or replace function
+save_token (
+  a_email varchar(256),
+  a_token varchar(256),
+  a_is_signup bool,
+  a_creation timestamp,
+  a_expiration timestamp
+) returns void as $$
+  insert into tokens (email, token, creation, expiration, is_signup)
+  values (a_email,a_token,a_creation,a_expiration,a_is_signup);;
+$$ language sql volatile cost 100;
+
+create or replace function
+find_token (
+  a_token varchar(256),
+  out tokens
+) returns setof tokens as $$
+  select email, token, creation, expiration, is_signup from tokens where token = a_token;;
+$$ language sql volatile cost 100;
+
+create or replace function
+delete_token (
+  a_token varchar(256)
+) returns void as $$
+  delete from tokens where token = a_token;;
+$$ language sql volatile cost 100;
+
+create or replace function
+delete_expired_tokens (
+) returns void as $$
+  delete from tokens where expiration < current_timestamp;;
+$$ language sql volatile cost 100;
+
+create or replace function
+totp_token_is_blacklisted (
+  a_token varchar(256),
+  a_user bigint,
+  out bool
+) returns setof bool as $$
+select true from totp_tokens_blacklist where user_id = a_user and token = a_token and expiration >= current_timestamp;;
+$$ language sql volatile cost 100;
+
+create or replace function
+blacklist_totp_token (
+  a_token varchar(256),
+  a_user bigint,
+  a_expiration timestamp
+) returns void as $$
+insert into totp_tokens_blacklist(user_id, token, expiration) values (a_user, a_token, a_expiration);;
+$$ language sql volatile cost 100;
+
+create or replace function
+delete_expired_totp_blacklist_tokens (
+) returns void as $$
+  delete from totp_tokens_blacklist where expiration < current_timestamp;;
+$$ language sql volatile cost 100;
+
+create or replace function
+new_log (
+  a_user_id bigint,
+  a_browser_headers text,
+  a_email varchar(256),
+  a_ssl_info text,
+  a_browser_id text,
+  a_ipv4 int,
+  a_type text
+) returns void as $$
+  insert into event_log (user_id, email, ipv4, browser_headers, browser_id, ssl_info, type)
+  values (a_user_id, a_email, a_ipv4, a_browser_headers, a_browser_id, a_ssl_info, a_type);;
+$$ language sql volatile cost 100;
+
+create or replace function
+login_log (
+  a_user_id bigint,
+  out event_log
+) returns setof event_log as $$
+  select *
+  from event_log
+  where type in ('login_success', 'login_failure', 'logout', 'session_expired')
+    and user_id = a_user_id
+  order by created desc;;
+$$ language sql volatile cost 100;
+
+create or replace function
+balance (
+  a_uid bigint,
+  out currency varchar(4),
+  out amount numeric(23,8),
+  out hold numeric(23,8)
+) returns setof record as $$
+  select c.currency, coalesce(b.balance, 0) as amount, hold from currencies c
+  left outer join balances b on c.currency = b.currency and user_id = a_uid;;
+$$ language sql volatile cost 100;
+
+create or replace function
+get_required_confirmations (
+  out currency varchar(4),
+  out min_deposit_confirmations integer
+) returns setof record as $$
+  select currency, min_deposit_confirmations
+  from currencies_crypto where active = true;;
+$$ language sql volatile cost 100;
+
+create or replace function
+get_addresses (
+  a_uid bigint,
+  a_currency varchar(4),
+  out address varchar(34),
+  out assigned timestamp
+) returns setof record as $$
+  with rows as (
+    update users_addresses set user_id = a_uid, assigned = current_timestamp
+      where assigned is NULL and user_id = 0 and currency = a_currency and
+        address = (
+            select address from users_addresses
+            where assigned is NULL and user_id = 0 and currency = a_currency limit 1
+        )
+        and not exists (
+            select 1 from (
+                select address from users_addresses
+                where user_id = a_uid and currency = a_currency order by assigned desc limit 1
+            ) a
+            left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
+        )
+      returning address, assigned
+  )
+
+  (
+    select address, assigned from rows
+  )
+  union
+  (
+    select address, assigned from users_addresses
+    where user_id = a_uid and currency = a_currency
+  )
+  order by assigned desc;;
+$$ language sql volatile cost 100;
+
+create or replace function
+get_all_addresses (
+  a_uid bigint,
+  out currency varchar(4),
+  out address varchar(34),
+  out assigned timestamp
+) returns setof record as $$
+  with rows as (
+  update users_addresses set user_id = a_uid, assigned = current_timestamp
+  where assigned is NULL and user_id = 0 and
+  address = any (select distinct on (currency) address from users_addresses
+  where assigned is NULL and user_id = 0 and currency not in (select currency
+  from (select distinct on (currency) currency, address from users_addresses
+  where user_id = a_uid and currency = any (select currency
+  from currencies_crypto where active = true) order by currency, assigned desc)
+  a left join deposits_crypto dc on dc.address = a.address where dc.id is NULL))
+  returning currency, address, assigned
+  )
+  (select currency, address, assigned from rows)
+  union
+  (select currency, address, assigned from users_addresses
+  where user_id = a_uid and currency = any (select currency
+  from currencies_crypto where active = true))
+  order by assigned desc;;
+$$ language sql volatile cost 100;
+
+create or replace function
+get_all_withdrawals (
+  a_uid bigint,
+  out currency varchar(4),
+  out amount numeric(23,8),
+  out fee numeric(23,8),
+  out created timestamp,
+  out info text
+) returns setof record as $$
+  select currency, amount, fee, created, address as info
+  from withdrawals_crypto wc
+  inner join withdrawals w on w.id = wc.id
+  where w.user_id = a_uid and withdrawals_crypto_tx_id is null
+  order by created desc;;
+$$ language sql volatile cost 100;
+
+create or replace function
+get_all_deposits (
+  a_uid bigint,
+  out currency varchar(4),
+  out amount numeric(23,8),
+  out fee numeric(23,8),
+  out created timestamp,
+  out info text
+) returns setof record as $$
+  select currency, amount, fee, created, address as info
+  from deposits_crypto dc
+  inner join deposits d on d.id = dc.id
+  where d.user_id = a_uid and dc.confirmed is null
+  order by created desc;;
+$$ language sql volatile cost 100;
+
+create or replace function
+user_pending_trades (
+  a_uid bigint,
+  out id bigint,
+  out is_bid bool,
+  out amount numeric(23,8),
+  out price numeric(23,8),
+  out base varchar(4),
+  out counter varchar(4),
+  out created timestamp
+) returns setof record as $$
+  select id, is_bid, remains as amount, price, base, counter, created from orders
+  where user_id = a_uid and closed = false and remains > 0
+  order by created desc;;
+$$ language sql volatile cost 100;
+
+create or replace function
+recent_trades (
+  a_base varchar(4),
+  a_counter varchar(4),
+  out amount numeric(23,8),
+  out created timestamp,
+  out price numeric(23,8),
+  out base varchar(4),
+  out counter varchar(4),
+  out is_bid bool
+) returns setof record as $$
+  select amount, created, price, base, counter, is_bid
+  from matches m
+  where base = a_base and counter = a_counter
+  order by created desc
+  limit 40;;
+$$ language sql volatile cost 100;
+
+create or replace function
+trade_history (
+  a_id bigint,
+  out amount numeric(23,8),
+  out created timestamp,
+  out price numeric(23,8),
+  out base varchar(4),
+  out counter varchar(4),
+  out type varchar(3),
+  out fee numeric(23,8)
+) returns setof record as $$
+  select amount, created, price, base, counter, type, fee from (
+    select amount, created, price, base, counter, 'bid' as type, bid_fee as fee
+    from matches where bid_user_id = a_id
+    union
+    select amount, created, price, base, counter, 'ask' as type, ask_fee as fee
+    from matches where ask_user_id = a_id
+  ) as trade_history order by created desc;;
+$$ language sql volatile cost 100;
+
+create or replace function
+deposit_withdraw_history (
+  a_id bigint,
+  out amount numeric(23,8),
+  out created timestamp,
+  out currency varchar(4),
+  out fee numeric(23,8),
+  out type varchar(1),
+  out address varchar(34)
+) returns setof record as $$
+  select * from
+  (
+    (
+      select amount, created, currency, fee, 'w' as type, address
+      from withdrawals w left join withdrawals_crypto wc on w.id = wc.id
+      where user_id = a_id
+    )
+    union
+    (
+      select amount, created, currency, fee, 'd' as type, address
+      from deposits d left join deposits_crypto dc on d.id = dc.id
+      where user_id = a_id and (dc.confirmed is not null or dc.id is null)
+    )
+  ) as a
+  order by created desc;;
+$$ language sql volatile cost 100;
+
+create or replace function
+open_asks (
+  a_base varchar(4),
+  a_counter varchar(4),
+  out amount numeric(23,8),
+  out price numeric(23,8),
+  out base varchar(4),
+  out counter varchar(4)
+) returns setof record as $$
+  select sum(remains) as amount, price, base, counter from orders
+  where not is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
+  group by price, base, counter order by price asc limit 40;;
+$$ language sql volatile cost 100;
+
+create or replace function
+open_bids (
+  a_base varchar(4),
+  a_counter varchar(4),
+  out amount numeric(23,8),
+  out price numeric(23,8),
+  out base varchar(4),
+  out counter varchar(4)
+) returns setof record as $$
+  select sum(remains) as amount, price, base, counter from orders
+  where is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
+  group by price, base, counter order by price desc limit 40;;
+$$ language sql volatile cost 100;
+
+create or replace function
+get_recent_matches (
+  a_last_match timestamp,
+  out amount numeric(23,8),
+  out created timestamp,
+  out price numeric(23,8),
+  out base varchar(4),
+  out counter varchar(4)
+) returns setof record as $$
+  select amount, m.created, m.price, m.base, m.counter
+  from matches m
+  where m.created > a_last_match
+  order by m.created desc;;
+$$ language sql volatile cost 100;
+
+create or replace function
+get_currencies (
+  out currency varchar(4)
+) returns setof varchar(4) as $$
+  select currency from currencies order by position;;
+$$ language sql volatile cost 100;
+
+create or replace function
+dw_fees (
+  out dw_fees
+) returns setof dw_fees as $$
+  select * from dw_fees;;
+$$ language sql volatile cost 100;
+
+create or replace function
+trade_fees (
+  out trade_fees
+) returns setof trade_fees as $$
+  select * from trade_fees;;
+$$ language sql volatile cost 100;
+
+create or replace function
+dw_limits (
+  out withdrawal_limits
+) returns setof withdrawal_limits as $$
+  select * from withdrawal_limits;;
+$$ language sql volatile cost 100;
+
+create or replace function
+get_pairs (
+  out markets
+) returns setof markets as $$
+  select * from markets order by position;;
+$$ language sql volatile cost 100;
+
+create or replace function
+chart_from_db (
+  a_base varchar(4),
+  a_counter varchar(4),
+  out start_of_period timestamp,
+  out volume numeric(23,8),
+  out low numeric(23,8),
+  out high numeric(23,8),
+  out open numeric(23,8),
+  out close numeric(23,8)
+) returns setof record as $$
+  select (date_trunc('hour', created) + INTERVAL '30 min' * ROUND(date_part('minute', created) / 30.0)) as start_of_period,
+         sum(amount) as volume,
+         min(price) as low,
+         max(price) as high,
+         first(price) as open,
+         last(price) as close
+  from matches
+  where base = a_base and counter = a_counter and created >= (current_timestamp - interval '24 hours' )
+  group by start_of_period
+  order by start_of_period ASC;;
+$$ language sql volatile cost 100;
+
+create or replace function
+withdraw_crypto (
+  a_uid bigint,
+  a_amount numeric(23,8),
+  a_address varchar(34),
+  a_currency varchar(4)
+) returns void as $$
+  with rows as (
+    insert into withdrawals (amount, user_id, currency, fee)
+    values (a_amount, a_uid, a_currency, (select withdraw_constant + a_amount * withdraw_linear from dw_fees where currency = a_currency and method = 'blockchain')) returning id
+  )
+  insert into withdrawals_crypto (id, address)
+  values ((select id from rows), a_address);;
+$$ language sql volatile cost 100;
+
+
 # --- !Downs
 
 drop function if exists order_new(bigint, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) cascade;
@@ -502,6 +1027,50 @@ drop function if exists first_agg() cascade;
 drop function if exists last_agg() cascade;
 drop aggregate if exists first(anyelement);
 drop aggregate if exists last(anyelement);
+
+drop function if exists  create_user (text, varchar(256), bool) cascade;
+drop function if exists  update_user (bigint, varchar(256), bool) cascade;
+drop function if exists  user_change_password (bigint, text) cascade;
+drop function if exists  turnon_tfa (bigint) cascade;
+drop function if exists  update_tfa_secret (bigint, varchar(256), varchar(6)) cascade;
+drop function if exists  turnoff_tfa (bigint) cascade;
+drop function if exists  turnon_emails (bigint) cascade;
+drop function if exists  turnoff_emails (bigint) cascade;
+drop function if exists  add_fake_money (bigint, varchar(4), numeric(23,8)) cascade;
+drop function if exists  remove_fake_money (bigint, varchar(4), numeric(23,8)) cascade;
+drop function if exists  find_user_by_id (bigint) cascade;
+drop function if exists  find_user_by_email (varchar(256)) cascade;
+drop function if exists  find_user_by_email_and_password (varchar(256), text) cascade;
+drop function if exists  save_token (varchar(256), varchar(256), bool, timestamp, timestamp) cascade;
+drop function if exists  find_token (varchar(256)) cascade;
+drop function if exists  delete_token (varchar(256)) cascade;
+drop function if exists  delete_expired_tokens () cascade;
+drop function if exists  totp_token_is_blacklisted (varchar(256), bigint) cascade;
+drop function if exists  blacklist_totp_token (varchar(256), bigint, timestamp) cascade;
+drop function if exists  delete_expired_totp_blacklist_tokens () cascade;
+drop function if exists  new_log (bigint, text, varchar(256), text, text, int, text) cascade;
+drop function if exists  login_log (bigint) cascade;
+drop function if exists  balance (bigint) cascade;
+drop function if exists  get_required_confirmations () cascade;
+drop function if exists  get_addresses (bigint, varchar(4)) cascade;
+drop function if exists  get_all_addresses (bigint) cascade;
+drop function if exists  get_all_withdrawals (bigint) cascade;
+drop function if exists  get_all_deposits (bigint) cascade;
+drop function if exists  user_pending_trades (bigint) cascade;
+drop function if exists  recent_trades (varchar(4), varchar(4)) cascade;
+drop function if exists  trade_history (bigint) cascade;
+drop function if exists  deposit_withdraw_history (bigint) cascade;
+drop function if exists  open_asks (varchar(4), varchar(4)) cascade;
+drop function if exists  open_bids (varchar(4), varchar(4)) cascade;
+drop function if exists  get_recent_matches (timestamp) cascade;
+drop function if exists  get_currencies () cascade;
+drop function if exists  dw_fees () cascade;
+drop function if exists  trade_fees () cascade;
+drop function if exists  dw_limits () cascade;
+drop function if exists  get_pairs () cascade;
+drop function if exists  chart_from_db (varchar(4), varchar(4)) cascade;
+drop function if exists  withdraw_crypto (bigint, numeric(23,8), varchar(34), varchar(4)) cascade;
+
 drop trigger if exists transaction_insert on transactions cascade;
 drop trigger if exists transaction_update on transactions cascade;
 drop trigger if exists user_insert on transactions cascade;
@@ -510,3 +1079,4 @@ drop trigger if exists currency_insert on transactions cascade;
 drop trigger if exists withdrawal_insert on orders cascade;
 drop trigger if exists deposit_complete_crypto on orders cascade;
 drop trigger if exists deposit_completed_crypto on orders cascade;
+

@@ -12,7 +12,8 @@ import play.api.Play
 import java.sql.Timestamp
 import org.joda.time.DateTime
 import securesocial.core.{ Token, SocialUser }
-import service.{ SQLText, TOTPSecret }
+import service.sql.frontend
+import service.TOTPSecret
 import play.api.libs.json.Json
 
 case class TradeHistory(amount: String, fee: String, created: DateTime, price: String, base: String, counter: String, typ: String)
@@ -36,7 +37,7 @@ class UserModel(val db: String = "default") {
   import globals.bigDecimalColumn
 
   def create(email: String, password: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
-    SQLText.createUser.on(
+    frontend.createUser.on(
       'email -> email,
       'password -> password,
       'onMailingList -> onMailingList
@@ -45,11 +46,11 @@ class UserModel(val db: String = "default") {
 
   def addFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
     if (Play.current.configuration.getBoolean("fakeexchange").get) {
-      SQLText.addFakeMoney.on(
+      frontend.addFakeMoney.on(
         'uid -> uid,
         'currency -> currency,
         'amount -> amount.bigDecimal
-      ).executeUpdate() > 0
+      ).execute()
     } else {
       false
     }
@@ -57,11 +58,11 @@ class UserModel(val db: String = "default") {
 
   def subtractFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
     if (Play.current.configuration.getBoolean("fakeexchange").get) {
-      SQLText.removeFakeMoney.on(
+      frontend.removeFakeMoney.on(
         'uid -> uid,
         'currency -> currency,
         'amount -> amount.bigDecimal
-      ).executeUpdate() > 0
+      ).execute()
     } else {
       false
     }
@@ -69,7 +70,7 @@ class UserModel(val db: String = "default") {
 
   def findUserById(id: Long): Option[SocialUser] =
     DB.withConnection(db) { implicit c =>
-      SQLText.findUserById.on(
+      frontend.findUserById.on(
         'id -> id
       )().map(row =>
           new SocialUser(
@@ -86,7 +87,7 @@ class UserModel(val db: String = "default") {
     }
 
   def findUserByEmail(email: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
-    SQLText.findUserByEmail.on(
+    frontend.findUserByEmail.on(
       'email -> email
     )().map(row =>
         new SocialUser(
@@ -103,7 +104,7 @@ class UserModel(val db: String = "default") {
   }
 
   def findUserByEmailAndPassword(email: String, password: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
-    SQLText.findUserByEmailAndPassword.on(
+    frontend.findUserByEmailAndPassword.on(
       'email -> email,
       'password -> password
     )().map(row =>
@@ -121,7 +122,7 @@ class UserModel(val db: String = "default") {
   }
 
   def tradeHistory(uid: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.tradeHistory.on(
+    frontend.tradeHistory.on(
       'id -> uid
     )().map(row =>
         TradeHistory(row[BigDecimal]("amount").bigDecimal.toPlainString,
@@ -135,7 +136,7 @@ class UserModel(val db: String = "default") {
   }
 
   def depositWithdrawHistory(uid: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.depositWithdrawHistory.on(
+    frontend.depositWithdrawHistory.on(
       'id -> uid
     )().map(row =>
         DepositWithdrawHistory(
@@ -157,7 +158,7 @@ class UserModel(val db: String = "default") {
    */
   def saveToken(token: Token) =
     DB.withConnection(db) { implicit c =>
-      SQLText.saveToken.on(
+      frontend.saveToken.on(
         'email -> token.email,
         'token -> token.uuid,
         'creation -> new Timestamp(token.creationTime.getMillis),
@@ -176,7 +177,7 @@ class UserModel(val db: String = "default") {
    * @return
    */
   def findToken(token: String): Option[Token] = DB.withConnection(db) { implicit c =>
-    SQLText.findToken.on(
+    frontend.findToken.on(
       'token -> token
     )().map(row =>
         Token(token, row[String]("email"), row[DateTime]("creation"), row[DateTime]("expiration"), row[Boolean]("is_signup"))
@@ -192,7 +193,7 @@ class UserModel(val db: String = "default") {
    * @param uuid the token id
    */
   def deleteToken(uuid: String) = DB.withConnection(db) { implicit c =>
-    SQLText.deleteToken.on(
+    frontend.deleteToken.on(
       'token -> uuid
     ).execute()
   }
@@ -205,15 +206,15 @@ class UserModel(val db: String = "default") {
    *
    */
   def deleteExpiredTokens() = DB.withConnection(db) { implicit c =>
-    SQLText.deleteExpiredTokens.execute()
+    frontend.deleteExpiredTokens.execute()
   }
 
   def deleteExpiredTOTPBlacklistTokens() = DB.withConnection(db) { implicit c =>
-    SQLText.deleteExpiredTOTPBlacklistTokens.execute()
+    frontend.deleteExpiredTOTPBlacklistTokens.execute()
   }
 
   def blacklistTOTPToken(user: BigDecimal, token: String, expiration: Timestamp) = DB.withConnection(db) { implicit c =>
-    SQLText.blacklistTOTPToken.on(
+    frontend.blacklistTOTPToken.on(
       'user -> user,
       'token -> token,
       'expiration -> expiration
@@ -221,63 +222,60 @@ class UserModel(val db: String = "default") {
   }
 
   def TOTPTokenIsBlacklisted(user: BigDecimal, token: String) = DB.withConnection(db) { implicit c =>
-    SQLText.TOTPTokenIsBlacklisted.on(
+    frontend.TOTPTokenIsBlacklisted.on(
       'user -> user,
       'token -> token
     )().toList.length > 0
   }
 
   def saveUser(id: Long, email: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
-    SQLText.updateUser.on(
+    frontend.updateUser.on(
       'id -> id,
       'email -> email,
       'onMailingList -> onMailingList
-    ).executeUpdate()
+    ).execute()
   }
 
   def userChangePass(id: Long, password: String) = DB.withConnection(db) { implicit c =>
-    SQLText.userChangePassword.on(
+    frontend.userChangePassword.on(
       'user_id -> id,
       'password -> password
-    ).executeUpdate()
+    ).execute()
   }
 
   def genTFASecret(uid: Long, typ: String) = DB.withConnection(db) { implicit c =>
     val secret = TOTPSecret()
     // everything is off by default
-    if (SQLText.updateTfaSecret.on(
+    frontend.updateTfaSecret.on(
       'id -> uid,
       'secret -> secret.toBase32,
       'typ -> typ
-    ).executeUpdate() > 0) {
-      Some(secret)
-    } else {
-      None
-    }
+    ).execute()
+    secret
   }
 
   def turnOffTFA(uid: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.turnoffTfa.on(
+    frontend.turnoffTfa.on(
       'id -> uid
-    ).executeUpdate() > 0
+    ).execute()
   }
 
   def turnOnTFA(uid: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.turnonTfa.on(
+    frontend.turnonTfa.on(
       'id -> uid
-    ).executeUpdate() > 0
+    ).execute()
   }
 
   def turnOffEmails(uid: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.turnoffEmails.on(
+    frontend.turnoffEmails.on(
       'id -> uid
-    ).executeUpdate() > 0
+    ).execute()
   }
 
   def turnOnEmails(uid: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.turnonEmails.on(
+    frontend.turnonEmails.on(
       'id -> uid
-    ).executeUpdate() > 0
+    ).execute()
   }
 
 }

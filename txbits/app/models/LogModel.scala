@@ -14,7 +14,7 @@ import org.joda.time.DateTime
 import models.LogType.LogType
 import play.api.libs.json.{ JsString, JsValue, Writes, Json }
 import play.api.mvc.{ RequestHeader, AnyContent, Request }
-import service.SQLText
+import service.sql.frontend
 
 object LogType extends Enumeration {
   type LogType = Value
@@ -63,7 +63,7 @@ class LogModel(val db: String = "default") {
   import globals.integerColumn
 
   def logEvent(logEvent: LogEvent) = DB.withConnection(db) { implicit c =>
-    SQLText.newLog.on(
+    frontend.newLog.on(
       'user_id -> logEvent.uid,
       'email -> logEvent.email,
       'ipv4 -> logEvent.ipv4,
@@ -72,13 +72,13 @@ class LogModel(val db: String = "default") {
       'browser_id -> logEvent.browser_id,
       'ssl_info -> logEvent.ssl_info,
       'type -> logEvent.typ.toString
-    ).executeUpdate()
+    ).execute()
   }
 
   // Warning: make sure that we are not leaking information about other addresses if the user
   // changes their email temporarily to make this query
   def getLoginEvents(uid: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.loginLog.on(
+    frontend.loginLog.on(
       'user_id -> uid
     )().map(row => {
         val ip = if (row[Option[Int]]("ipv4").isDefined) {
