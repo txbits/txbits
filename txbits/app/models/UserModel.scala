@@ -213,7 +213,7 @@ class UserModel(val db: String = "default") {
     frontend.deleteExpiredTOTPBlacklistTokens.execute()
   }
 
-  def blacklistTOTPToken(user: BigDecimal, token: String, expiration: Timestamp) = DB.withConnection(db) { implicit c =>
+  def blacklistTOTPToken(user: Long, token: String, expiration: Timestamp) = DB.withConnection(db) { implicit c =>
     frontend.blacklistTOTPToken.on(
       'user -> user,
       'token -> token,
@@ -221,7 +221,7 @@ class UserModel(val db: String = "default") {
     ).execute()
   }
 
-  def TOTPTokenIsBlacklisted(user: BigDecimal, token: String) = DB.withConnection(db) { implicit c =>
+  def TOTPTokenIsBlacklisted(user: Long, token: String) = DB.withConnection(db) { implicit c =>
     frontend.TOTPTokenIsBlacklisted.on(
       'user -> user,
       'token -> token
