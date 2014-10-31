@@ -619,14 +619,14 @@ $$ language sql volatile cost 100;
 
 create or replace function
 save_token (
-  a_email varchar(256),
   a_token varchar(256),
+  a_email varchar(256),
   a_is_signup bool,
   a_creation timestamp,
   a_expiration timestamp
 ) returns void as $$
-  insert into tokens (email, token, creation, expiration, is_signup)
-  values (a_email,a_token,a_creation,a_expiration,a_is_signup);;
+  insert into tokens (token, email, creation, expiration, is_signup)
+  values (a_token,a_email,a_creation,a_expiration,a_is_signup);;
 $$ language sql volatile cost 100;
 
 create or replace function
@@ -634,7 +634,7 @@ find_token (
   a_token varchar(256),
   out tokens
 ) returns setof tokens as $$
-  select email, token, creation, expiration, is_signup from tokens where token = a_token;;
+  select token, email, creation, expiration, is_signup from tokens where token = a_token;;
 $$ language sql volatile cost 100;
 
 create or replace function

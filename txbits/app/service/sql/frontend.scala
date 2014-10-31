@@ -74,7 +74,7 @@ object frontend {
 
   val saveToken = SQL(
     """
-    | select * from save_token({email}, {token}, {is_signup}, {creation}, {expiration})
+    | select * from save_token({token}, {email}, {is_signup}, {creation}, {expiration})
     |""".stripMargin)
 
   val findToken = SQL(
