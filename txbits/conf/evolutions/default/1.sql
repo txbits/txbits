@@ -32,7 +32,7 @@ create sequence users_id_seq;
 create table users (
     id bigint default nextval('users_id_seq') primary key,
     created timestamp default current_timestamp not null,
-    email varchar(256) not null unique,
+    email varchar(256) not null,
     on_mailing_list bool default false,
     tfa_withdrawal bool default false,
     tfa_login bool default false,
@@ -41,6 +41,7 @@ create table users (
     verification int default 0 not null,
     active bool default true not null
 );
+create unique index unique_lower_email on users (lower(email));
 
 create table passwords (
     user_id bigint not null,

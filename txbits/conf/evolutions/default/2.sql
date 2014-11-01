@@ -492,7 +492,7 @@ create_user (
   a_email varchar(256),
   a_onMailingList bool,
   out id bigint
-) returns setof bigint as $$
+) returns bigint as $$
   with new_user_row as (
     insert into users(email, on_mailing_list)
     values (a_email,a_onMailingList)
@@ -609,7 +609,7 @@ find_user_by_email_and_password (
 ) returns setof users as $$
   with user_row as (
     select u.*, p.password from users as u
-    join passwords as p on p.user_id = u.id
+    inner join passwords as p on p.user_id = u.id
     where lower(u.email) = lower(a_email)
     order by p.created desc
     limit 1
@@ -845,7 +845,7 @@ recent_trades (
   where base = a_base and counter = a_counter
   order by created desc
   limit 40;;
-$$ language sql volatile cost 100;
+$$ language sql volatile cost 100 rows 40;
 
 create or replace function
 trade_history (
@@ -906,7 +906,7 @@ open_asks (
   select sum(remains) as amount, price, base, counter from orders
   where not is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
   group by price, base, counter order by price asc limit 40;;
-$$ language sql volatile cost 100;
+$$ language sql volatile cost 100 rows 40;
 
 create or replace function
 open_bids (
@@ -920,7 +920,7 @@ open_bids (
   select sum(remains) as amount, price, base, counter from orders
   where is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
   group by price, base, counter order by price desc limit 40;;
-$$ language sql volatile cost 100;
+$$ language sql volatile cost 100 rows 40;
 
 create or replace function
 get_recent_matches (
