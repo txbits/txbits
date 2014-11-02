@@ -149,7 +149,7 @@ object frontend {
 
   val orderNew = SQL(
     """
-    | select * from order_new({uid}, {base}, {counter}, {amount}, {price}, {is_bid})
+    | select order_new({uid}, {base}, {counter}, {amount}, {price}, {is_bid})
     |""".stripMargin)
 
   val orderCancel = SQL(
