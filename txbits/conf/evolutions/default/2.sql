@@ -510,6 +510,7 @@ add_fake_money (
   a_currency varchar(4),
   a_amount numeric(23,8)
 ) returns void as $$
+  insert into deposits(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
   select transfer_funds(null, a_uid, a_currency, a_amount);;
 $$ language sql volatile cost 100;
 
@@ -519,6 +520,7 @@ remove_fake_money (
   a_currency varchar(4),
   a_amount numeric(23,8)
 ) returns void as $$
+  insert into withdrawals(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
   select transfer_funds(a_uid, null, a_currency, a_amount);;
 $$ language sql volatile cost 100;
 
