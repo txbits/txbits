@@ -50,8 +50,7 @@ object PasswordChange extends Controller with SecureSocial {
   case class ChangeInfo(currentPassword: String, newPassword: String)
 
   def checkCurrentPassword[A](currentPassword: String)(implicit request: SecuredRequest[A]): Boolean = {
-    val maybeHasher = Registry.hashers.get(request.user.passwordInfo.hasher)
-    maybeHasher.map(_.matches(request.user.passwordInfo, currentPassword)).getOrElse(false)
+    txbitsUserService.findByEmailAndPassword(request.user.email, currentPassword).isDefined
   }
 
   private def execute[A](f: (SecuredRequest[A], Form[ChangeInfo]) => Result)(implicit request: SecuredRequest[A]): Result = {
@@ -83,8 +82,7 @@ object PasswordChange extends Controller with SecureSocial {
         errors => BadRequest(SecureSocialTemplates.getPasswordChangePage(request, errors)),
         info => {
           import scala.language.reflectiveCalls
-          val newPasswordInfo = Registry.hashers.currentHasher.hash(info.newPassword)
-          val u = txbitsUserService.change_pass(request.user.copy(passwordInfo = newPasswordInfo))
+          val u = txbitsUserService.change_pass(request.user, info.newPassword)
           Mailer.sendPasswordChangedNotice(u)(request)
           Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
         }

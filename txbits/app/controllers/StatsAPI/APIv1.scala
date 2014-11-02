@@ -12,7 +12,7 @@ import scala.collection.mutable
 import play.api.libs.iteratee.Concurrent.Channel
 import org.joda.time.DateTime
 import play.api.db.DB
-import service.SQLText
+import service.sql.frontend
 import java.sql.Timestamp
 import models.Match
 import akka.actor.Cancellable
@@ -65,7 +65,7 @@ object APIv1 extends Controller {
 
   def checkMatchesAndNotifySockets(): Unit = DB.withConnection(masterDB) { implicit c =>
     try {
-      val matches = SQLText.getRecentMatches.on(
+      val matches = frontend.getRecentMatches.on(
         'last_match -> new Timestamp(lastMatchDatetime.getMillis)
       )().map(row =>
           Match(
@@ -138,30 +138,23 @@ object APIv1 extends Controller {
   //TODO: move this out of postgres and into something more suited for this kind of data
   def chartFromDB(base: String, counter: String) = DB.withConnection(masterDB) { implicit c =>
     import globals.bigDecimalColumn
-    //TODO: group by created, rounding down to the nearest half hour
-    SQL(
-      """
-        | select (date_trunc('hour', created) + INTERVAL '30 min' * ROUND(date_part('minute', created) / 30.0)) as start_of_period, sum(amount) as volume, min(price) as low, max(price) as high, first(price) as open, last(price) as close
-        | from matches
-        | where base = {base} and counter = {counter} and created >= (current_timestamp - interval '24 hours' )
-        | group by start_of_period
-        | order by start_of_period ASC""".stripMargin).on(
-        'base -> base,
-        'counter -> counter
-      )().map(row => {
-          // We want a json array because that's what the graphing api understands
-          // Format: Date,Open,High,Low,Close,Volume
+    frontend.chartFromDb.on(
+      'base -> base,
+      'counter -> counter
+    )().filter(row => row[Option[Date]]("start_of_period").isDefined).map(row => {
+        // We want a json array because that's what the graphing api understands
+        // Format: Date,Open,High,Low,Close,Volume
 
-          Seq(
-            JsNumber(row[Date]("start_of_period").getTime),
-            JsNumber(row[BigDecimal]("open")),
-            JsNumber(row[BigDecimal]("high")),
-            JsNumber(row[BigDecimal]("low")),
-            JsNumber(row[BigDecimal]("close")),
-            JsNumber(row[BigDecimal]("volume"))
-          )
+        Seq(
+          JsNumber(row[Option[Date]]("start_of_period").get.getTime),
+          JsNumber(row[Option[BigDecimal]]("open").get),
+          JsNumber(row[Option[BigDecimal]]("high").get),
+          JsNumber(row[Option[BigDecimal]]("low").get),
+          JsNumber(row[Option[BigDecimal]]("close").get),
+          JsNumber(row[Option[BigDecimal]]("volume").get)
+        )
 
-        }).toList
+      }).toList
   }
 
   def chart(base: String, counter: String) = Action {

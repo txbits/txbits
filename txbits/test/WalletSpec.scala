@@ -104,7 +104,7 @@ class WalletSpec extends Specification with Mockito {
     }
 
     "be able to receive a deposit in the db" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
       val result1 = globals.engineModel.balance(uid)
       // start with empty account
       result1 should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
@@ -158,7 +158,7 @@ class WalletSpec extends Specification with Mockito {
     }
 
     "be able to see pending deposit in the db" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
       val result1 = globals.engineModel.balance(uid)
       // start with empty account
       result1 should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
@@ -215,7 +215,7 @@ class WalletSpec extends Specification with Mockito {
     }
 
     "be charged the right fees for deposits" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
 
       // we are testing an actor
       implicit val actorSystem = Akka.system()
@@ -270,7 +270,7 @@ class WalletSpec extends Specification with Mockito {
     }
 
     "be charged the right fees for deposits not confirmed right away" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
 
       // we are testing an actor
       implicit val actorSystem = Akka.system()
@@ -353,7 +353,7 @@ class WalletSpec extends Specification with Mockito {
     }
 
     "send a withdrawal and get charged the right fee" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
 
       globals.userModel.addFakeMoney(uid, "LTC", 2)
 
@@ -426,7 +426,7 @@ class WalletSpec extends Specification with Mockito {
     }
 
     "send a withdrawal that gets mutated" in new WithCleanTestDbApplication {
-      val uid = globals.userModel.create("test@test.test", "", "", false).get
+      val uid = globals.userModel.create("test@test.test", "", false).get
 
       globals.userModel.addFakeMoney(uid, "LTC", 2)
 

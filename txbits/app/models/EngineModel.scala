@@ -13,23 +13,26 @@ import org.joda.time.DateTime
 import securesocial.core.Token
 import play.api.libs.json.Json
 import java.sql.Timestamp
-import service.SQLText
+import service.sql.frontend
+import service.sql.misc
 
 class EngineModel(val db: String = "default") {
 
   import globals.bigDecimalColumn
   import globals.timestampColumn
 
+  // privileged apis
+
   def clean() = DB.withConnection(db)(implicit c =>
-    SQLText.cleanForTest.execute()
+    misc.cleanForTest.execute()
   )
 
   def testSetup() = DB.withConnection(db)(implicit c =>
-    SQLText.setupForTest.execute()
+    misc.setupForTest.execute()
   )
 
   def setFees(currency: String, method: String, depositConstant: BigDecimal, depositLinear: BigDecimal, withdrawConstant: BigDecimal, withdrawLinear: BigDecimal) = DB.withConnection(db)(implicit c =>
-    SQLText.setFees.on(
+    misc.setFees.on(
       'currency -> currency,
       'method -> method,
       'depositConstant -> depositConstant.bigDecimal,
@@ -39,14 +42,16 @@ class EngineModel(val db: String = "default") {
     ).execute()
   )
 
+  // regular apis
+
   def balance(uid: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.balance.on('uid -> uid)().map(row =>
+    frontend.balance.on('uid -> uid)().map(row =>
       row[String]("currency") -> (row[BigDecimal]("amount"), row[BigDecimal]("hold"))
     ).toMap
   }
 
   def askBid(uid: Long, base: String, counter: String, amount: BigDecimal, price: BigDecimal, isBid: Boolean) = DB.withConnection(db) { implicit c =>
-    SQLText.askBid.on(
+    frontend.orderNew.on(
       'uid -> uid,
       'base -> base,
       'counter -> counter,
@@ -57,43 +62,43 @@ class EngineModel(val db: String = "default") {
   }
 
   def userPendingTrades(uid: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.userPendingTrades.on('uid -> uid)().map(row =>
+    frontend.userPendingTrades.on('uid -> uid)().map(row =>
       Trade(row[Long]("id"), if (row[Boolean]("is_bid")) "bid" else "ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"), row[DateTime]("created"))
     ).toList
   }
 
   def openAsks(base: String, counter: String) = DB.withConnection(db) { implicit c =>
-    SQLText.openAsks.on('base -> base, 'counter -> counter)().map(row =>
+    frontend.openAsks.on('base -> base, 'counter -> counter)().map(row =>
       OpenOrder("ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
     ).toList
   }
 
   def openBids(base: String, counter: String) = DB.withConnection(db) { implicit c =>
-    SQLText.openBids.on('base -> base, 'counter -> counter)().map(row =>
+    frontend.openBids.on('base -> base, 'counter -> counter)().map(row =>
       OpenOrder("bid", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
     ).toList
   }
 
   def cancel(uid: Long, orderId: Long) = DB.withConnection(db) { implicit c =>
     // the database confirms for us that the user owns the transaction before cancelling it
-    SQLText.cancelTrade.on('uid -> uid, 'id -> orderId)().map(row => row[Boolean]("order_cancel")).head
+    frontend.orderCancel.on('uid -> uid, 'id -> orderId)().map(row => row[Boolean]("order_cancel")).head
   }
 
   def withdraw(uid: Long, currency: String, amount: BigDecimal, address: String) = DB.withConnection(db) { implicit c =>
-    SQLText.withdrawCrypto.on(
+    frontend.withdrawCrypto.on(
       'uid -> uid,
       'currency -> currency,
       'amount -> amount.bigDecimal,
-      'address -> address).executeInsert[Option[Long]]()
+      'address -> address).map(row => row[Long]("id")).list.headOption
   }
 
   def addresses(uid: Long, currency: String) = DB.withConnection(db) { implicit c =>
-    SQLText.getAddresses.on('uid -> uid, 'currency -> currency)().map(row => row[String]("address")).toList
+    frontend.getAddresses.on('uid -> uid, 'currency -> currency)().map(row => row[String]("address")).toList
   }
 
   def addresses(uid: Long) = DB.withConnection(db) { implicit c =>
     tuplesToGroupedMap(
-      SQLText.getAllAddresses.on('uid -> uid)().map(
+      frontend.getAllAddresses.on('uid -> uid)().map(
         row => (row[String]("currency"), row[String]("address"))
       ).toList
     )
@@ -107,7 +112,7 @@ class EngineModel(val db: String = "default") {
 
   def pendingWithdrawals(uid: Long) = DB.withConnection(db) { implicit c =>
     tuplesToGroupedMap(
-      SQLText.getAllWithdrawals.on('uid -> uid)().map(row =>
+      frontend.getAllWithdrawals.on('uid -> uid)().map(row =>
         (row[String]("currency"), Withdrawal(row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("fee").bigDecimal.toPlainString, row[DateTime]("created"), row[String]("info")))
       ).toList
     )
@@ -115,14 +120,14 @@ class EngineModel(val db: String = "default") {
 
   def pendingDeposits(uid: Long) = DB.withConnection(db) { implicit c =>
     tuplesToGroupedMap(
-      SQLText.getAllDeposits.on('uid -> uid)().map(row =>
+      frontend.getAllDeposits.on('uid -> uid)().map(row =>
         (row[String]("currency"), Withdrawal(row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("fee").bigDecimal.toPlainString, row[DateTime]("created"), row[String]("info")))
       ).toList
     )
   }
 
   def recentTrades(base: String, counter: String) = DB.withConnection(db) { implicit c =>
-    SQLText.recentTrades.on(
+    frontend.recentTrades.on(
       'base -> base,
       'counter -> counter
     )().map(row =>

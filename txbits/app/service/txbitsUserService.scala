@@ -3,13 +3,7 @@ package service
 import java.sql.{ PreparedStatement, Timestamp }
 import securesocial.core._
 import play.api.{ Play, Logger, Application }
-import play.api.db._
-import org.joda.time.DateTime
 import scala.Some
-import anorm.SqlParser._
-import securesocial.core.PasswordInfo
-import scala.Some
-import anorm.~
 import play.libs.Akka
 import akka.actor.Cancellable
 import org.postgresql.util.PSQLException
@@ -35,9 +29,12 @@ object txbitsUserService {
     globals.userModel.findUserByEmail(email)
   }
 
-  def create(user: SocialUser): SocialUser = {
-    val user_id = globals.userModel.create(user.email, user.passwordInfo.password,
-      user.passwordInfo.hasher, user.onMailingList)
+  def findByEmailAndPassword(email: String, password: String): Option[SocialUser] = {
+    globals.userModel.findUserByEmailAndPassword(email, password)
+  }
+
+  def create(user: SocialUser, password: String): SocialUser = {
+    val user_id = globals.userModel.create(user.email, password, user.onMailingList)
 
     user_id match {
       case Some(id) => {
@@ -58,9 +55,8 @@ object txbitsUserService {
     user
   }
 
-  def change_pass(user: SocialUser): SocialUser = {
-    globals.userModel.userChangePass(user.id, user.passwordInfo.password,
-      user.passwordInfo.hasher)
+  def change_pass(user: SocialUser, password: String): SocialUser = {
+    globals.userModel.userChangePass(user.id, password)
     user
   }
 

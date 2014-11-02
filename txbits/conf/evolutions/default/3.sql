@@ -41,10 +41,9 @@ with new_user_row as (
   values ('me@viktorstanchev.com', true)
   returning id
 )
-insert into passwords (user_id, password, hasher) values (
+insert into passwords (user_id, password) values (
  (select id from new_user_row),
- '$2a$10$aYNjzFmwBSeqJeccRqKkN.Onh4co9wQVJn40Pv5GQwAEuwjBfmNYO',
- 'bcrypt'
+ '$2a$10$aYNjzFmwBSeqJeccRqKkN.Onh4co9wQVJn40Pv5GQwAEuwjBfmNYO'
 );
 
 with new_user_row as (
@@ -52,10 +51,9 @@ with new_user_row as (
   values ('a@a.com', true)
   returning id
 )
-insert into passwords (user_id, password, hasher) values (
+insert into passwords (user_id, password) values (
  (select id from new_user_row),
- '$2a$10$.bJb4l.7.75zgvYgd4mU8ejjT5C.6VrSMirgc3qGvdWsB8dXV0Bc2',
- 'bcrypt'
+ '$2a$10$.bJb4l.7.75zgvYgd4mU8ejjT5C.6VrSMirgc3qGvdWsB8dXV0Bc2'
 );
 
 insert into transactions(from_user_id, to_user_id, amount, currency, type) select null, id, 1000 , 'USD' , 'X' from users where email in ('me@viktorstanchev.com', 'a@a.com');

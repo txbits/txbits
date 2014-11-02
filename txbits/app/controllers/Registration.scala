@@ -201,10 +201,9 @@ object Registration extends Controller {
             val user = txbitsUserService.create(SocialUser(
               -1, // this is a placeholder
               t.email,
-              Registry.hashers.currentHasher.hash(info.password),
               0, //not verified
               info.mailingList
-            ))
+            ), info.password)
             txbitsUserService.deleteToken(t.uuid)
             if (UsernamePasswordProvider.sendWelcomeEmail) {
               Mailer.sendWelcomeEmail(user)
@@ -259,8 +258,7 @@ object Registration extends Controller {
         p => {
           val (toFlash, eventSession) = txbitsUserService.findByEmail(t.email) match {
             case Some(user) => {
-              val hashed = Registry.hashers.currentHasher.hash(p._1)
-              val updated = txbitsUserService.change_pass(user.copy(passwordInfo = hashed))
+              val updated = txbitsUserService.change_pass(user, p._1)
               txbitsUserService.deleteToken(token)
               Mailer.sendPasswordChangedNotice(updated)
               (Success -> Messages(PasswordUpdated), updated)

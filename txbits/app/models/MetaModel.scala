@@ -9,7 +9,8 @@ import play.api.Play.current
 import anorm._
 import anorm.SqlParser._
 import anorm.~
-import service.SQLText
+import service.sql.frontend
+import service.sql.misc
 import play.api.libs.json.Json
 
 case class DwFee(currency: String, method: String, depositConstant: String, depositLinear: String, withdrawConstant: String, withdrawLinear: String)
@@ -31,11 +32,11 @@ class MetaModel(val db: String = "default") {
   import globals.bigDecimalColumn
 
   val currencies = DB.withConnection(db)(implicit c => {
-    SQLText.getCurrencies().map(_[String]("currency")).toList
+    frontend.getCurrencies().map(_[String]("currency")).toList
   })
 
   val validPairs = DB.withConnection(db)(implicit c => {
-    SQLText.getPairs().map(row => (row[String]("base"), row[String]("counter"), row[Boolean]("active"), row[BigDecimal]("limit_min"))).toList
+    frontend.getPairs().map(row => (row[String]("base"), row[String]("counter"), row[Boolean]("active"), row[BigDecimal]("limit_min"))).toList
   })
 
   val allPairsJson = validPairs.map(pair => Json.obj("base" -> pair._1, "counter" -> pair._2))
@@ -46,7 +47,7 @@ class MetaModel(val db: String = "default") {
   }.toMap
 
   val dwFees = DB.withConnection(db)(implicit c => {
-    SQLText.dwFees().map(row =>
+    frontend.dwFees().map(row =>
       DwFee(
         row[String]("currency"),
         row[String]("method"),
@@ -59,13 +60,13 @@ class MetaModel(val db: String = "default") {
   })
 
   val tradeFees = DB.withConnection(db)(implicit c => {
-    SQLText.tradeFees().map(row =>
+    frontend.tradeFees().map(row =>
       row[BigDecimal]("linear")
     ).head
   })
 
   val dwLimits = DB.withConnection(db)(implicit c => {
-    SQLText.dwLimits().map(row =>
+    frontend.dwLimits().map(row =>
       row[String]("currency") ->
         DwLimit(
           row[String]("currency"),
@@ -76,13 +77,15 @@ class MetaModel(val db: String = "default") {
   })
 
   val getRequiredConfirmations = DB.withConnection(db)(implicit c => {
-    SQLText.getRequiredConfirmations().map(row =>
+    frontend.getRequiredConfirmations().map(row =>
       row[String]("currency") -> row[Int]("min_deposit_confirmations").toString
     ).toMap
   })
 
+  // privileged api
+
   def clean() = DB.withConnection(db)(implicit c =>
-    SQLText.metaClean.execute()
+    misc.metaClean.execute()
   )
 
 }

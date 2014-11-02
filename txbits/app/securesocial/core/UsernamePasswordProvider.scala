@@ -27,7 +27,6 @@ import org.joda.time.DateTime
 import scala.concurrent.{ Await, Future }
 import play.api.libs.ws.WSResponse
 import play.Plugin
-import securesocial.core.providers.utils.PasswordHasher
 import controllers.SecureSocialTemplates
 import service.txbitsUserService
 import models.{ LogEvent, LogType, LogModel }
@@ -69,16 +68,12 @@ class UsernamePasswordProvider(application: Application) extends Plugin with Reg
       errors => Left(badRequest(errors, request)),
       credentials => {
         val email = credentials._1.trim
-        val user = txbitsUserService.findByEmail(email)
-        val result = for (
-          user <- user;
-          hasher <- Registry.hashers.get(user.passwordInfo.hasher) if hasher.matches(user.passwordInfo, credentials._2)
-        ) yield Right(user)
-        if (result.isEmpty) {
+        val user = txbitsUserService.findByEmailAndPassword(email, credentials._2)
+        if (user.isEmpty) {
           globals.logModel.logEvent(LogEvent.fromRequest(user.map(u => Some(u.id)).getOrElse(None), Some(email), request, LogType.LoginFailure))
           Left(badRequest(UsernamePasswordProvider.loginForm, request, Some(InvalidCredentials)))
         } else {
-          result.get
+          Right(user.get)
         }
       }
     )
@@ -163,7 +158,6 @@ object UsernamePasswordProvider {
 
   lazy val sendWelcomeEmail = current.configuration.getBoolean(SendWelcomeEmailKey).getOrElse(true)
   lazy val enableGravatar = current.configuration.getBoolean(EnableGravatarKey).getOrElse(true)
-  lazy val hasher = current.configuration.getString(Hasher).getOrElse(PasswordHasher.BCryptHasher)
   lazy val enableTokenJob = current.configuration.getBoolean(EnableTokenJob).getOrElse(true)
   lazy val signupSkipLogin = current.configuration.getBoolean(SignupSkipLogin).getOrElse(false)
 }
