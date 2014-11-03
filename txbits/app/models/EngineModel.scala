@@ -67,16 +67,13 @@ class EngineModel(val db: String = "default") {
     ).toList
   }
 
-  def openAsks(base: String, counter: String) = DB.withConnection(db) { implicit c =>
-    frontend.openAsks.on('base -> base, 'counter -> counter)().map(row =>
-      OpenOrder("ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
-    ).toList
-  }
-
-  def openBids(base: String, counter: String) = DB.withConnection(db) { implicit c =>
-    frontend.openBids.on('base -> base, 'counter -> counter)().map(row =>
-      OpenOrder("bid", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
-    ).toList
+  def openOrders(base: String, counter: String) = DB.withConnection(db) { implicit c =>
+    frontend.openOrders.on('base -> base, 'counter -> counter)().map(row =>
+      row[Boolean]("is_bid") match {
+        case true => OpenOrder("bid", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString)
+        case false => OpenOrder("ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString)
+      }
+    ).toList.groupBy(_.typ)
   }
 
   def cancel(uid: Long, orderId: Long) = DB.withConnection(db) { implicit c =>
@@ -156,7 +153,7 @@ object Trade {
   implicit val format = Json.format[Trade]
 }
 
-case class OpenOrder(typ: String, amount: String, price: String, base: String, counter: String)
+case class OpenOrder(typ: String, amount: String, price: String)
 
 object OpenOrder {
   implicit val writes = Json.writes[OpenOrder]

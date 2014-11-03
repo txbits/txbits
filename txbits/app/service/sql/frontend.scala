@@ -177,14 +177,9 @@ object frontend {
     | select * from deposit_withdraw_history({id})
     |""".stripMargin)
 
-  val openAsks = SQL(
+  val openOrders = SQL(
     """
-    | select * from open_asks({base}, {counter})
-    |""".stripMargin)
-
-  val openBids = SQL(
-    """
-    | select * from open_bids({base}, {counter})
+    | select * from open_orders({base}, {counter})
     |""".stripMargin)
 
   val getRecentMatches = SQL(
