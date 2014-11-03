@@ -75,11 +75,14 @@ package object globals {
   }
 
   val masterDB = "default"
+  val walletDB = "wallet"
+
   val userModel = new UserModel(masterDB)
   val metaModel = new MetaModel(masterDB)
   val engineModel = new EngineModel(masterDB)
   val logModel = new LogModel(masterDB)
-  val walletModel = new WalletModel(masterDB)
+
+  val walletModel = new WalletModel(walletDB)
 
   // set up rpc authenticator for wallets
   val rpcAuth = DefaultAuthenticator.getInstance()
