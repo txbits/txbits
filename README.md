@@ -15,7 +15,7 @@ TxBits is licensed under the Affero General Public License version 3 or later, s
 ## Dev environment setup TL;DR
 
 1. `jdk-7`
-1. postgres database on localhost with database name `txbits_testnet`, user `user` and password `password`
+1. postgres 9.2+ on localhost with database name `txbits_testnet`, user `user` and password `password`
 1. `./txbits.sh run`
 1. Log in at `http://localhost:9000` as `a@a.com` with password `qwerty123`
 1. ???
