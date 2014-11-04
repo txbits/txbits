@@ -173,6 +173,10 @@ object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with Gl
 
   override def onStart(app: Application) {
     Logger.info("Application has started")
+    if (Play.current.configuration.getBoolean("meta.exitimmediately").getOrElse(false)) {
+      Logger.warn("Exiting because of meta.exitimmediately config set to true.")
+      System.exit(0)
+    }
     txbitsUserService.onStart()
     controllers.StatsAPI.APIv1.onStart()
   }
