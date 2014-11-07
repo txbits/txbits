@@ -9,7 +9,6 @@
 create extension pgcrypto;
 
 grant select on play_evolutions to public;
-grant all on play_evolutions_lock to public;
 
 create table currencies (
     currency varchar(4) not null primary key,
