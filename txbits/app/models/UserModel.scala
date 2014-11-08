@@ -46,11 +46,16 @@ class UserModel(val db: String = "default") {
 
   def addFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
     if (Play.current.configuration.getBoolean("fakeexchange").get) {
-      frontend.addFakeMoney.on(
-        'uid -> uid,
-        'currency -> currency,
-        'amount -> amount.bigDecimal
-      ).execute()
+      try {
+        frontend.addFakeMoney.on(
+          'uid -> uid,
+          'currency -> currency,
+          'amount -> amount.bigDecimal
+        ).execute()
+      } catch {
+        case _: Throwable =>
+          false
+      }
     } else {
       false
     }
@@ -58,11 +63,16 @@ class UserModel(val db: String = "default") {
 
   def subtractFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
     if (Play.current.configuration.getBoolean("fakeexchange").get) {
-      frontend.removeFakeMoney.on(
-        'uid -> uid,
-        'currency -> currency,
-        'amount -> amount.bigDecimal
-      ).execute()
+      try {
+        frontend.removeFakeMoney.on(
+          'uid -> uid,
+          'currency -> currency,
+          'amount -> amount.bigDecimal
+        ).execute()
+      } catch {
+        case _: Throwable =>
+          false
+      }
     } else {
       false
     }

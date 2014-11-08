@@ -159,26 +159,26 @@ begin
     select * into strict ask from orders where id = new_ask_order_id;;
 
     if (new_is_bid = true and new_price <> ask.price) or (new_is_bid = false and new_price <> bid.price) then
-      raise 'attempted to match two orders but the match has the wrong price. bid: % ask: % match price: %', bid.order_id, ask.order_id, new.price;;
+      raise 'Attempted to match two orders but the match has the wrong price. Bid: % Ask: % Price: %', bid.order_id, ask.order_id, new.price;;
     end if;;
 
     if bid.price < ask.price then
-      raise 'attempted to match two orders that do not agree on the price. bid: % ask: %', bid.order_id, ask.order_id;;
+      raise 'Attempted to match two orders that do not agree on the price. Bid: % Ask: %', bid.order_id, ask.order_id;;
     end if;;
 
     -- make sure the amount is the whole of one or the other order
     if not (new_amount = bid.remains or new_amount = ask.remains) then
-      raise 'match must be complete. failed to match whole order. amount: % bid: % ask: %', new.amount, bid.order_id, ask.order_id;;
+      raise 'Match must be complete. Failed to match whole order. Amount: % Bid: % Ask: %', new.amount, bid.order_id, ask.order_id;;
     end if;;
 
     -- make sure the ask order is of type ask and the bid order is of type bid
     if bid.is_bid <> true or ask.is_bid <> false then
-      raise 'tried to match orders of wrong types! bid: % ask: %', new.amount, bid.order_id, ask.order_id;;
+      raise 'Tried to match orders of wrong types! Bid: % Ask: %', new.amount, bid.order_id, ask.order_id;;
     end if;;
 
     -- make sure the two orders are on the same market
     if bid.base <> ask.base or bid.counter <> ask.counter then
-      raise 'matching two orders from different markets. bid: %/% ask: %/%', bid.base, bid.counter, ask.base, ask.counter;;
+      raise 'Matching two orders from different markets. Bid: %/% Ask: %/%', bid.base, bid.counter, ask.base, ask.counter;;
     end if;;
 
     insert into matches (bid_user_id, ask_user_id, bid_order_id, ask_order_id, is_bid, bid_fee, ask_fee, amount, price, base, counter)
@@ -199,46 +199,37 @@ begin
     get diagnostics ucount = row_count;;
 
     if ucount <> 2 then
-      raise 'expected 2 order updates, did %', ucount;;
+      raise 'Expected 2 order updates, did %.', ucount;;
     end if;;
 
-    -- insert transactions (triggers move the actual money)
-    insert into transactions (from_user_id, to_user_id, currency, amount, type)
-    values (
+    perform transfer_funds(
         ask.user_id,
         bid.user_id,
         bid.base,
-        new_amount,
-        'M' -- match
+        new_amount
     );;
-    insert into transactions (from_user_id, to_user_id, currency, amount, type)
-    values (
+    perform transfer_funds(
         bid.user_id,
         ask.user_id,
         bid.counter,
-        new_amount * new_price, --todo: precision
-        'M' -- match
+        new_amount * new_price --todo: precision
     );;
 
-    -- fees transactions (triggers move the actual money)
+    -- fees
     if new_ask_fee > 0 then
-      insert into transactions (from_user_id, to_user_id, currency, amount, type)
-      values (
+      perform transfer_funds(
           ask.user_id,
           0,
           ask.counter,
-          new_ask_fee,
-          'F' -- fee
+          new_ask_fee
       );;
     end if;;
     if new_bid_fee > 0 then
-      insert into transactions (from_user_id, to_user_id, currency, amount, type)
-      values (
+      perform transfer_funds(
           bid.user_id,
           0,
           bid.base,
-          new_bid_fee,
-          'F' -- fee
+          new_bid_fee
       );;
     end if;;
 
@@ -257,23 +248,17 @@ begin
       return null;;
     end if;;
 
-    -- insert transactions (triggers move the actual money)
-    insert into transactions (from_user_id, to_user_id, currency, amount, type)
-      values (
+    perform transfer_funds(
         null,
         d.user_id,
         d.currency,
-        d.amount,
-        'D' -- deposit
+        d.amount
       );;
-    -- insert transactions (triggers move the actual money)
-    insert into transactions (from_user_id, to_user_id, currency, amount, type)
-      values (
+    perform transfer_funds(
         d.user_id,
         0,
         d.currency,
-        d.fee,
-        'F' -- fee
+        d.fee
       );;
     return null;;
 end;;
@@ -303,37 +288,31 @@ begin
   select limit_min > new.amount into underflow from withdrawal_limits where currency = new.currency;;
 
   if underflow then
-    raise 'Below lower limit for withdrawal. tried to withdraw %.', new.amount;;
+    raise 'Below lower limit for withdrawal. Tried to withdraw %.', new.amount;;
   end if;;
 
   select ((limit_max < new.amount + (
     select coalesce(sum(amount), 0)
-    from transactions
-    where type = 'W' and currency = new.currency and from_user_id = new.user_id and created >= (current_timestamp - interval '24 hours' )
+    from withdrawals
+    where currency = new.currency and user_id = new.user_id and created >= (current_timestamp - interval '24 hours' )
   )) and limit_max != -1) into overflow from withdrawal_limits where currency = new.currency;;
 
   if overflow then
-    raise 'Over upper limit for withdrawal. tried to withdraw %.', new.amount;;
+    raise 'Over upper limit for withdrawal. Tried to withdraw %.', new.amount;;
   end if;;
 
-    -- insert transactions (triggers move the actual money)
-    insert into transactions (from_user_id, to_user_id, currency, amount, type)
-      values (
+    perform transfer_funds(
         new.user_id,
         null,
         new.currency,
-        new.amount - new.fee,
-        'W' -- withdraw
+        new.amount - new.fee
       );;
 
-    -- insert transactions (triggers move the actual money)
-    insert into transactions (from_user_id, to_user_id, currency, amount, type)
-      values (
+    perform transfer_funds(
         new.user_id,
         0,
         new.currency,
-        new.fee,
-        'F' -- fee
+        new.fee
       );;
     return null;;
 end;;
@@ -345,73 +324,35 @@ create trigger withdrawal_insert
     execute procedure withdrawal_insert();
 
 
--- when a new transaction is created, we update the balances
-create or replace function transaction_insert() returns trigger as $$
+-- to transfer funds, update the balances
+create or replace function
+    transfer_funds(
+      new_from_user_id bigint,
+      new_to_user_id bigint,
+      new_currency varchar(4),
+      new_amount numeric(23,8))
+    returns void as $$
 declare
-  ucount int;;
+    ucount int;;
 begin
-  if new.from_user_id is not null then
-    update balances set balance = balance - new.amount where user_id = new.from_user_id and currency = new.currency;;
-    get diagnostics ucount = row_count;;
-    if ucount <> 1 then
-        raise 'Expected 1 balance update, did %', ucount;;
+    if new_from_user_id is not null then
+      update balances set balance = balance - new_amount where user_id = new_from_user_id and currency = new_currency;;
+      get diagnostics ucount = row_count;;
+      if ucount <> 1 then
+        raise 'Expected 1 balance update, did %.', ucount;;
+      end if;;
     end if;;
-  end if;;
-  if new.to_user_id is not null then
-    update balances set balance = balance + new.amount where user_id = new.to_user_id and currency = new.currency;;
-    get diagnostics ucount = row_count;;
-    if ucount <> 1 then
-        raise 'Expected 1 balance update, did %', ucount;;
+    if new_to_user_id is not null then
+      update balances set balance = balance + new_amount where user_id = new_to_user_id and currency = new_currency;;
+      get diagnostics ucount = row_count;;
+      if ucount <> 1 then
+        raise 'Expected 1 balance update, did %.', ucount;;
+      end if;;
     end if;;
-  end if;;
-  return null;;
 end;;
 $$ language plpgsql volatile cost 100;
 
-create trigger transaction_insert
-    after insert on transactions
-    for each row
-    execute procedure transaction_insert();
-
--- when updating a transaction, we update the balances
-create or replace function transaction_update() returns trigger as $$
-declare
-  ucount int;;
-begin
-  if old.from_user_id <> new.from_user_id then
-    raise 'Cannot change source of transaction! old user: %, new user: %', old.from_user_id, new.from_user_id;;
-  end if;;
-  if old.to_user_id <> new.to_user_id then
-    raise 'Cannot change destination of transaction! old user: %, new user: %', old.to_user_id, new.to_user_id;;
-  end if;;
-  if old.currency <> new.currency then
-    raise 'Cannot change currency of transaction! old currency: %, new currency: %', old.currency, new.currency;;
-  end if;;
-
-  if old.from_user_id is not null then
-    update balances set balance = balance + old.amount - new.amount where user_id = old.from_user_id and currency = old.currency;;
-    get diagnostics ucount = row_count;;
-    if ucount <> 1 then
-        raise 'Expected 1 balance update, did %', ucount;;
-    end if;;
-  end if;;
-  if old.to_user_id is not null then
-    update balances set balance = balance - old.amount + new.amount where user_id = old.to_user_id and currency = old.currency;;
-    get diagnostics ucount = row_count;;
-    if ucount <> 1 then
-        raise 'Expected 1 balance update, did %', ucount;;
-    end if;;
-  end if;;
-  return null;;
-end;;
-$$ language plpgsql volatile cost 100;
-
-create trigger transaction_update
-after update on transactions
-for each row
-execute procedure transaction_update();
-
--- create balances assicated with users
+-- create balances associated with users
 create or replace function user_insert() returns trigger as $$
 declare
   ucount int;;
@@ -569,8 +510,8 @@ add_fake_money (
   a_currency varchar(4),
   a_amount numeric(23,8)
 ) returns void as $$
-  insert into transactions(to_user_id, currency, amount, type)
-  values (a_uid,a_currency,a_amount,'X');;
+  insert into deposits(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
+  select transfer_funds(null, a_uid, a_currency, a_amount);;
 $$ language sql volatile cost 100;
 
 create or replace function
@@ -579,8 +520,8 @@ remove_fake_money (
   a_currency varchar(4),
   a_amount numeric(23,8)
 ) returns void as $$
-  insert into transactions(from_user_id, currency, amount, type)
-  values (a_uid,a_currency,a_amount,'X');;
+  insert into withdrawals(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
+  select transfer_funds(a_uid, null, a_currency, a_amount);;
 $$ language sql volatile cost 100;
 
 create or replace function
@@ -1017,8 +958,7 @@ $$ language sql volatile cost 100;
 drop function if exists order_new(bigint, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) cascade;
 drop function if exists order_cancel(bigint, bigint) cascade;
 drop function if exists match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) cascade;
-drop function if exists transaction_insert() cascade;
-drop function if exists transaction_update() cascade;
+drop function if exists transfer_funds(bigint, bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists user_insert() cascade;
 drop function if exists wallets_crypto_retire() cascade;
 drop function if exists currency_insert() cascade;
@@ -1072,12 +1012,10 @@ drop function if exists  get_pairs () cascade;
 drop function if exists  chart_from_db (varchar(4), varchar(4)) cascade;
 drop function if exists  withdraw_crypto (bigint, numeric(23,8), varchar(34), varchar(4)) cascade;
 
-drop trigger if exists transaction_insert on transactions cascade;
-drop trigger if exists transaction_update on transactions cascade;
-drop trigger if exists user_insert on transactions cascade;
-drop trigger if exists wallets_crypto_retire on transactions cascade;
-drop trigger if exists currency_insert on transactions cascade;
-drop trigger if exists withdrawal_insert on orders cascade;
-drop trigger if exists deposit_complete_crypto on orders cascade;
-drop trigger if exists deposit_completed_crypto on orders cascade;
+drop trigger if exists user_insert on users cascade;
+drop trigger if exists wallets_crypto_retire on wallets_crypto cascade;
+drop trigger if exists currency_insert on currencies cascade;
+drop trigger if exists withdrawal_insert on withdrawals cascade;
+drop trigger if exists deposit_complete_crypto on deposits_crypto cascade;
+drop trigger if exists deposit_completed_crypto on deposits_crypto cascade;
 

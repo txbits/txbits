@@ -56,8 +56,7 @@ insert into passwords (user_id, password) values (
  '$2a$10$.bJb4l.7.75zgvYgd4mU8ejjT5C.6VrSMirgc3qGvdWsB8dXV0Bc2'
 );
 
-insert into transactions(from_user_id, to_user_id, amount, currency, type) select null, id, 1000 , 'USD' , 'X' from users where email in ('me@viktorstanchev.com', 'a@a.com');
-insert into transactions(from_user_id, to_user_id, amount, currency, type) select null, id, 1000 , 'CAD' , 'X' from users where email in ('me@viktorstanchev.com', 'a@a.com');
+update balances set balance = 1000 where user_id in (select id from users where email in ('me@viktorstanchev.com', 'a@a.com')) and currency in ('USD', 'CAD');
 
 # --- !Downs
 
@@ -67,7 +66,6 @@ delete from passwords;
 delete from users_addresses;
 delete from dw_fees;
 delete from trade_fees;
-delete from transactions;
 delete from totp_tokens_blacklist;
 delete from withdrawals_crypto;
 delete from withdrawals_crypto_tx_mutated;
@@ -76,7 +74,7 @@ delete from withdrawals_crypto_tx;
 delete from withdrawals;
 delete from currencies_crypto;
 delete from wallets_crypto;
-delete from balances; -- after transactions
+delete from balances;
 delete from matches;
 delete from orders; -- after matches
 delete from markets; -- after orders
