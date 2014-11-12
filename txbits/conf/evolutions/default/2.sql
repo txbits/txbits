@@ -438,14 +438,18 @@ create aggregate last (
 
 create or replace function
 create_user (
-  a_password text,
   a_email varchar(256),
+  a_password text,
   a_onMailingList bool,
   out id bigint
 ) returns bigint as $$
   with new_user_row as (
-    insert into users(email, on_mailing_list)
-    values (a_email,a_onMailingList)
+    insert into users(id, email, on_mailing_list)
+    values (
+      (select abs(('x' || right(b::text, 16))::bit(64)::bigint) as id from gen_random_bytes(8) as b),
+      a_email,
+      a_onMailingList
+    )
     returning id
   )
   insert into passwords (user_id, password) values (
@@ -998,7 +1002,7 @@ drop aggregate if exists array_agg_mult(anyarray);
 
 drop function if exists order_new (bigint, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) cascade;
 drop function if exists order_cancel (bigint, bigint) cascade;
-drop function if exists create_user (text, varchar(256), bool) cascade;
+drop function if exists create_user (varchar(256), text, bool) cascade;
 drop function if exists update_user (bigint, varchar(256), bool) cascade;
 drop function if exists user_change_password (bigint, text) cascade;
 drop function if exists turnon_tfa (bigint) cascade;

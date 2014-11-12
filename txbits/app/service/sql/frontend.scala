@@ -9,7 +9,7 @@ import anorm._
 object frontend {
   val createUser = SQL(
     """
-    | select * from create_user({password}, {email}, {onMailingList})
+    | select * from create_user({email}, {password}, {onMailingList})
     |""".stripMargin)
 
   val updateUser = SQL(
