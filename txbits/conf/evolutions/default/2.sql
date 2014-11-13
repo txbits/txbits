@@ -9,19 +9,23 @@
 -- when a new order is placed we try to match it
 create or replace function 
 order_new(
-      new_user_id bigint,
-      new_base varchar(4),
-      new_counter varchar(4),
-      new_amount numeric(23,8),
-      new_price numeric(23,8),
-      new_is_bid boolean)
-    returns boolean as $$
+  new_user_id bigint,
+  new_base varchar(4),
+  new_counter varchar(4),
+  new_amount numeric(23,8),
+  new_price numeric(23,8),
+  new_is_bid boolean)
+returns boolean as $$
 declare
     o orders%rowtype;; -- first order (chronologically)
     o2 orders%rowtype;; -- second order (chronologically)
     v numeric(23,8);; -- volume of the match (when it happens)
     fee numeric(23,8);; -- fee % to be paid
 begin
+    if new_user_id = 0 then
+      raise 'User id 0 is not allowed to use this function.';;
+    end if;;
+
     -- increase holds
     if new_is_bid then
       update balances set hold = hold + new_amount * new_price
@@ -104,7 +108,10 @@ $$ language plpgsql volatile security definer cost 100;
 
 -- cancel an order and release any holds left open
 create or replace function
-order_cancel(o_id bigint, o_user_id bigint) returns boolean as $$
+order_cancel(
+  o_id bigint,
+  o_user_id bigint
+) returns boolean as $$
 declare
     o orders%rowtype;;
     b varchar(4);;
@@ -142,15 +149,15 @@ $$ language plpgsql volatile security definer cost 100;
 
 -- when a new match is inserted, we reduce the orders and release the holds
 create or replace function 
-    match_new(
-      new_bid_order_id bigint,
-      new_ask_order_id bigint,
-      new_is_bid boolean,
-      new_bid_fee numeric(23,8),
-      new_ask_fee numeric(23,8),
-      new_amount numeric(23,8),
-      new_price numeric(23,8))
-    returns void as $$
+match_new(
+  new_bid_order_id bigint,
+  new_ask_order_id bigint,
+  new_is_bid boolean,
+  new_bid_fee numeric(23,8),
+  new_ask_fee numeric(23,8),
+  new_amount numeric(23,8),
+  new_price numeric(23,8))
+returns void as $$
 declare
     bid orders%rowtype;;
     ask orders%rowtype;;
@@ -464,24 +471,42 @@ update_user (
   a_email varchar(256),
   a_onMailingList bool
 ) returns void as $$
-  update users set email=a_email, on_mailing_list=a_onMailingList where id=a_id;;;
-$$ language sql volatile security definer cost 100;
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  update users set email=a_email, on_mailing_list=a_onMailingList where id=a_id;;
+  return;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 user_change_password (
   a_user_id bigint,
   a_password text
 ) returns void as $$
+begin
+  if a_user_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
   insert into passwords (user_id, password) values (a_user_id, crypt(a_password, gen_salt('bf', 8)));;
-$$ language sql volatile security definer cost 100;
+  return;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 turnon_tfa (
   a_id bigint
 ) returns void as $$
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
   update users set tfa_login=true, tfa_withdrawal=true
   where id=a_id;;
-$$ language sql volatile security definer cost 100;
+  return;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 update_tfa_secret (
@@ -489,33 +514,59 @@ update_tfa_secret (
   a_secret varchar(256),
   a_typ varchar(6)
 ) returns void as $$
-  update users set tfa_secret=a_secret, tfa_type=a_typ, tfa_login=false, tfa_withdrawal=false
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  update users
+  set tfa_secret=a_secret, tfa_type=a_typ, tfa_login=false, tfa_withdrawal=false
   where id=a_id;;
-$$ language sql volatile security definer cost 100;
+  return;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 turnoff_tfa (
   a_id bigint
 ) returns void as $$
-  update users set tfa_secret=NULL, tfa_login=false, tfa_withdrawal=false, tfa_type=NULL
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  update users
+  set tfa_secret=NULL, tfa_login=false, tfa_withdrawal=false, tfa_type=NULL
   where id=a_id;;
-$$ language sql volatile security definer cost 100;
+  return;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 turnon_emails (
   a_id bigint
 ) returns void as $$
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
   update users set on_mailing_list=true
   where id=a_id;;
-$$ language sql volatile security definer cost 100;
+  return;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 turnoff_emails (
   a_id bigint
 ) returns void as $$
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
   update users set on_mailing_list=false
   where id=a_id;;
-$$ language sql volatile security definer cost 100;
+  return;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 add_fake_money (
@@ -542,9 +593,14 @@ find_user_by_id (
   a_id bigint,
   out users
 ) returns setof users as $$
-  select * from users
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  return query select * from users
   where id = a_id;;
-$$ language sql volatile security definer cost 100;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 find_user_by_email (
@@ -610,8 +666,13 @@ totp_token_is_blacklisted (
   a_user bigint,
   out bool
 ) returns setof bool as $$
-select true from totp_tokens_blacklist where user_id = a_user and token = a_token and expiration >= current_timestamp;;
-$$ language sql volatile security definer cost 100;
+begin
+  if a_user = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  return query select true from totp_tokens_blacklist where user_id = a_user and token = a_token and expiration >= current_timestamp;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 blacklist_totp_token (
@@ -619,8 +680,14 @@ blacklist_totp_token (
   a_user bigint,
   a_expiration timestamp
 ) returns void as $$
-insert into totp_tokens_blacklist(user_id, token, expiration) values (a_user, a_token, a_expiration);;
-$$ language sql volatile security definer cost 100;
+begin
+  if a_user = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  insert into totp_tokens_blacklist(user_id, token, expiration) values (a_user, a_token, a_expiration);;
+  return;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 delete_expired_totp_blacklist_tokens (
@@ -638,21 +705,32 @@ new_log (
   a_ipv4 int,
   a_type text
 ) returns void as $$
+begin
+  if a_user_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
   insert into event_log (user_id, email, ipv4, browser_headers, browser_id, ssl_info, type)
   values (a_user_id, a_email, a_ipv4, a_browser_headers, a_browser_id, a_ssl_info, a_type);;
-$$ language sql volatile security definer cost 100;
+  return;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 login_log (
   a_user_id bigint,
   out event_log
 ) returns setof event_log as $$
-  select *
+begin
+  if a_user_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  return query select *
   from event_log
   where type in ('login_success', 'login_failure', 'logout', 'session_expired')
     and user_id = a_user_id
   order by created desc;;
-$$ language sql volatile security definer cost 100;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 balance (
@@ -661,9 +739,14 @@ balance (
   out amount numeric(23,8),
   out hold numeric(23,8)
 ) returns setof record as $$
-  select c.currency, coalesce(b.balance, 0) as amount, hold from currencies c
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  return query select c.currency, coalesce(b.balance, 0) as amount, b.hold from currencies c
   left outer join balances b on c.currency = b.currency and user_id = a_uid;;
-$$ language sql volatile security definer cost 100;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 get_required_confirmations (
@@ -678,62 +761,74 @@ create or replace function
 get_addresses (
   a_uid bigint,
   a_currency varchar(4),
-  out address varchar(34),
-  out assigned timestamp
+  out o_address varchar(34),
+  out o_assigned timestamp
 ) returns setof record as $$
-  with rows as (
-    update users_addresses set user_id = a_uid, assigned = current_timestamp
-      where assigned is NULL and user_id = 0 and currency = a_currency and
-        address = (
-            select address from users_addresses
-            where assigned is NULL and user_id = 0 and currency = a_currency limit 1
-        )
-        and not exists (
-            select 1 from (
-                select address from users_addresses
-                where user_id = a_uid and currency = a_currency order by assigned desc limit 1
-            ) a
-            left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
-        )
-      returning address, assigned
-  )
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
 
-  (
-    select address, assigned from rows
-  )
-  union
-  (
-    select address, assigned from users_addresses
+  update users_addresses set user_id = a_uid, assigned = current_timestamp
+    where assigned is NULL and user_id = 0 and currency = a_currency and
+      address = (
+          select address from users_addresses
+          where assigned is NULL and user_id = 0 and currency = a_currency limit 1
+      )
+      and not exists (
+          select 1 from (
+              select address from users_addresses
+              where user_id = a_uid and currency = a_currency order by assigned desc limit 1
+          ) a
+          left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
+      );;
+
+  return query select address, assigned from users_addresses
     where user_id = a_uid and currency = a_currency
-  )
-  order by assigned desc;;
-$$ language sql volatile security definer cost 100;
+    order by assigned desc;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 get_all_addresses (
   a_uid bigint,
-  out currency varchar(4),
-  out address varchar(34),
-  out assigned timestamp
+  out o_currency varchar(4),
+  out o_address varchar(34),
+  out o_assigned timestamp
 ) returns setof record as $$
-  with rows as (
-  update users_addresses set user_id = a_uid, assigned = current_timestamp
-  where assigned is NULL and user_id = 0 and
-  address = any (select distinct on (currency) address from users_addresses
-  where assigned is NULL and user_id = 0 and currency not in (select currency
-  from (select distinct on (currency) currency, address from users_addresses
-  where user_id = a_uid and currency = any (select currency
-  from currencies_crypto where active = true) order by currency, assigned desc)
-  a left join deposits_crypto dc on dc.address = a.address where dc.id is NULL))
-  returning currency, address, assigned
-  )
-  (select currency, address, assigned from rows)
-  union
-  (select currency, address, assigned from users_addresses
-  where user_id = a_uid and currency = any (select currency
-  from currencies_crypto where active = true))
-  order by assigned desc;;
-$$ language sql volatile security definer cost 100;
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  update users_addresses
+    set user_id = a_uid, assigned = current_timestamp
+    where assigned is NULL and user_id = 0 and address = any (
+      select distinct on (currency) address
+      from users_addresses
+      where assigned is NULL and user_id = 0 and currency not in (
+        select currency
+        from (
+               select distinct on (currency) currency, address from users_addresses
+                where user_id = a_uid and currency = any (
+                  select currency
+                  from currencies_crypto where active = true
+                ) order by currency, assigned desc
+             ) a
+        left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
+      )
+    );;
+
+  return query
+    select currency, address, assigned from users_addresses
+    where user_id = a_uid and currency = any
+                                (
+                                  select currency
+                                  from currencies_crypto where active = true
+                                )
+    order by assigned desc;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 get_all_withdrawals (
@@ -742,14 +837,19 @@ get_all_withdrawals (
   out amount numeric(23,8),
   out fee numeric(23,8),
   out created timestamp,
-  out info text
+  out info varchar(34)
 ) returns setof record as $$
-  select currency, amount, fee, created, address as info
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  return query select w.currency, w.amount, w.fee, w.created, wc.address as info
   from withdrawals_crypto wc
   inner join withdrawals w on w.id = wc.id
   where w.user_id = a_uid and withdrawals_crypto_tx_id is null
   order by created desc;;
-$$ language sql volatile security definer cost 100;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 get_all_deposits (
@@ -758,14 +858,19 @@ get_all_deposits (
   out amount numeric(23,8),
   out fee numeric(23,8),
   out created timestamp,
-  out info text
+  out info varchar(34)
 ) returns setof record as $$
-  select currency, amount, fee, created, address as info
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  return query select d.currency, d.amount, d.fee, d.created, dc.address as info
   from deposits_crypto dc
   inner join deposits d on d.id = dc.id
   where d.user_id = a_uid and dc.confirmed is null
   order by created desc;;
-$$ language sql volatile security definer cost 100;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 user_pending_trades (
@@ -778,10 +883,15 @@ user_pending_trades (
   out counter varchar(4),
   out created timestamp
 ) returns setof record as $$
-  select id, is_bid, remains as amount, price, base, counter, created from orders
-  where user_id = a_uid and closed = false and remains > 0
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  return query select o.id, o.is_bid, o.remains as amount, o.price, o.base, o.counter, o.created from orders o
+  where user_id = a_uid and closed = false and o.remains > 0
   order by created desc;;
-$$ language sql volatile security definer cost 100;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 recent_trades (
@@ -809,17 +919,22 @@ trade_history (
   out price numeric(23,8),
   out base varchar(4),
   out counter varchar(4),
-  out type varchar(3),
+  out type text,
   out fee numeric(23,8)
 ) returns setof record as $$
-  select amount, created, price, base, counter, type, fee from (
-    select amount, created, price, base, counter, 'bid' as type, bid_fee as fee
-    from matches where bid_user_id = a_id
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  return query select th.amount, th.created, th.price, th.base, th.counter, th.type, th.fee from (
+      select m.amount, m.created, m.price, m.base, m.counter, 'bid' as type, m.bid_fee as fee
+      from matches m where bid_user_id = a_id
     union
-    select amount, created, price, base, counter, 'ask' as type, ask_fee as fee
-    from matches where ask_user_id = a_id
-  ) as trade_history order by created desc;;
-$$ language sql volatile security definer cost 100;
+      select m.amount, m.created, m.price, m.base, m.counter, 'ask' as type, m.ask_fee as fee
+      from matches m where ask_user_id = a_id
+  ) as th order by created desc;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 deposit_withdraw_history (
@@ -828,25 +943,30 @@ deposit_withdraw_history (
   out created timestamp,
   out currency varchar(4),
   out fee numeric(23,8),
-  out type varchar(1),
+  out type text,
   out address varchar(34)
 ) returns setof record as $$
-  select * from
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  return query select * from
   (
     (
-      select amount, created, currency, fee, 'w' as type, address
+      select w.amount, w.created, w.currency, w.fee, 'w' as type, wc.address
       from withdrawals w left join withdrawals_crypto wc on w.id = wc.id
       where user_id = a_id
     )
     union
     (
-      select amount, created, currency, fee, 'd' as type, address
+      select d.amount, d.created, d.currency, d.fee, 'd' as type, dc.address
       from deposits d left join deposits_crypto dc on d.id = dc.id
       where user_id = a_id and (dc.confirmed is not null or dc.id is null)
     )
   ) as a
   order by created desc;;
-$$ language sql volatile security definer cost 100;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 create or replace function
 open_asks (
@@ -975,15 +1095,27 @@ withdraw_crypto (
   a_amount numeric(23,8),
   a_address varchar(34),
   a_currency varchar(4),
-  out id bigint
+  out o_id bigint
 ) returns setof bigint as $$
-  with rows as (
-    insert into withdrawals (amount, user_id, currency, fee)
-    values (a_amount, a_uid, a_currency, (select withdraw_constant + a_amount * withdraw_linear from dw_fees where currency = a_currency and method = 'blockchain')) returning id
-  )
+declare
+  w_id withdrawals.id%type;;
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  insert into withdrawals (amount, user_id, currency, fee)
+  values (a_amount, a_uid, a_currency, (
+    select withdraw_constant + a_amount * withdraw_linear from dw_fees where currency = a_currency and method = 'blockchain'
+  ))
+  returning withdrawals.id into w_id;;
+
   insert into withdrawals_crypto (id, address)
-  values ((select id from rows), a_address) returning id;;
-$$ language sql volatile security definer cost 100;
+  values (w_id, a_address) returning withdrawals_crypto.id into o_id;;
+
+  return next;;
+end;;
+$$ language plpgsql volatile security definer cost 100;
 
 # --- !Downs
 

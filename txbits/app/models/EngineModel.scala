@@ -97,17 +97,17 @@ class EngineModel(val db: String = "default") {
       'uid -> uid,
       'currency -> currency,
       'amount -> amount.bigDecimal,
-      'address -> address).map(row => row[Long]("id")).list.headOption
+      'address -> address).map(row => row[Long]("o_id")).list.headOption
   }
 
   def addresses(uid: Long, currency: String) = DB.withConnection(db) { implicit c =>
-    frontend.getAddresses.on('uid -> uid, 'currency -> currency)().map(row => row[String]("address")).toList
+    frontend.getAddresses.on('uid -> uid, 'currency -> currency)().map(row => row[String]("o_address")).toList
   }
 
   def addresses(uid: Long) = DB.withConnection(db) { implicit c =>
     tuplesToGroupedMap(
       frontend.getAllAddresses.on('uid -> uid)().map(
-        row => (row[String]("currency"), row[String]("address"))
+        row => (row[String]("o_currency"), row[String]("o_address"))
       ).toList
     )
   }
