@@ -840,11 +840,9 @@ open_asks (
   a_base varchar(4),
   a_counter varchar(4),
   out amount numeric(23,8),
-  out price numeric(23,8),
-  out base varchar(4),
-  out counter varchar(4)
+  out price numeric(23,8)
 ) returns setof record as $$
-  select sum(remains) as amount, price, base, counter from orders
+  select sum(remains) as amount, price from orders
   where not is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
   group by price, base, counter order by price asc limit 40;;
 $$ language sql volatile cost 100 rows 40;
@@ -854,13 +852,24 @@ open_bids (
   a_base varchar(4),
   a_counter varchar(4),
   out amount numeric(23,8),
-  out price numeric(23,8),
-  out base varchar(4),
-  out counter varchar(4)
+  out price numeric(23,8)
 ) returns setof record as $$
-  select sum(remains) as amount, price, base, counter from orders
+  select sum(remains) as amount, price from orders
   where is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
   group by price, base, counter order by price desc limit 40;;
+$$ language sql volatile cost 100 rows 40;
+
+create or replace function
+open_orders (
+  a_base varchar(4),
+  a_counter varchar(4),
+  out amount numeric(23,8),
+  out price numeric(23,8),
+  out is_bid bool
+) returns setof record as $$
+  (select *, true from open_bids(a_base, a_counter))
+  union
+  (select *, false from open_asks(a_base, a_counter));;
 $$ language sql volatile cost 100 rows 40;
 
 create or replace function

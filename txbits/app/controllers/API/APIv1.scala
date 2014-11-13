@@ -150,18 +150,18 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
 
   def openTrades(base: String, counter: String) = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     // a specific pair will be given as an argument
-    val bids = globals.engineModel.openBids(base, counter)
-    val asks = globals.engineModel.openAsks(base, counter)
+    val orders = globals.engineModel.openOrders(base, counter)
+    println(orders)
     Ok(Json.obj(
       "status" -> "ok",
       "result" -> Json.obj(
-        "bids" -> bids.map({ b =>
+        "bids" -> orders.getOrElse("bid", List()).sortBy(_.price).reverse.map({ b =>
           Json.obj(
             "amount" -> b.amount,
             "price" -> b.price
           )
         }),
-        "asks" -> asks.map({ a =>
+        "asks" -> orders.getOrElse("ask", List()).sortBy(_.price).map({ a =>
           Json.obj(
             "amount" -> a.amount,
             "price" -> a.price
