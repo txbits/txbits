@@ -20,6 +20,7 @@ class EngineModel(val db: String = "default") {
 
   import globals.bigDecimalColumn
   import globals.timestampColumn
+  import globals.rowToBigDecimalArrayArray
 
   // privileged apis
 
@@ -59,6 +60,13 @@ class EngineModel(val db: String = "default") {
       'price -> price.bigDecimal,
       'is_bid -> isBid
     )().map(_[Boolean]("order_new")).head
+  }
+
+  def ordersDepth(base: String, counter: String) = DB.withConnection(db) { implicit c =>
+    frontend.ordersDepth.on('base -> base, 'counter -> counter)().map(row => (
+      row[Option[Array[Array[java.math.BigDecimal]]]]("asks").getOrElse(Array[Array[java.math.BigDecimal]]()),
+      row[Option[Array[Array[java.math.BigDecimal]]]]("bids").getOrElse(Array[Array[java.math.BigDecimal]]())
+    )).head
   }
 
   def userPendingTrades(uid: Long) = DB.withConnection(db) { implicit c =>

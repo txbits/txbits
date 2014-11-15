@@ -187,6 +187,11 @@ object frontend {
     | select * from open_bids({base}, {counter})
     |""".stripMargin)
 
+  val ordersDepth = SQL(
+    """
+    | select * from orders_depth({base}, {counter})
+    |""".stripMargin)
+
   val getRecentMatches = SQL(
     """
     | select * from get_recent_matches({last_match})

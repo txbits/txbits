@@ -863,6 +863,26 @@ open_bids (
   group by price, base, counter order by price desc limit 40;;
 $$ language sql volatile cost 100 rows 40;
 
+CREATE AGGREGATE array_agg_mult (anyarray) (
+   SFUNC     = array_cat
+  ,STYPE     = anyarray
+  ,INITCOND  = '{}'
+);
+
+create or replace function
+orders_depth(
+  a_base varchar(4),
+  a_counter varchar(4),
+  out asks numeric(23,8)[],
+  out bids numeric(23,8)[])
+as $$
+    select (
+      nullif((select array_agg_mult(array[array[price, amount]]) from open_asks(a_base, a_counter)), array[]::numeric(23,8)[])
+    ), (
+      nullif((select array_agg_mult(array[array[price, amount]]) from open_bids(a_base, a_counter)), array[]::numeric(23,8)[])
+    );;
+$$ language sql stable cost 100;
+
 create or replace function
 get_recent_matches (
   a_last_match timestamp,

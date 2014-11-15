@@ -3,11 +3,12 @@
 // see the accompanying file COPYING or http://www.gnu.org/licenses/agpl.html.
 
 import akka.actor.{ ActorRef, Props }
+import anorm._
 import anorm.MetaDataItem
 import anorm.TypeDoesNotMatch
-import anorm.{ TypeDoesNotMatch, MetaDataItem }
 import com.googlecode.jsonrpc4j.JsonRpcHttpClient
 import controllers.API.CryptoAddress
+import java.math
 import java.net.{ PasswordAuthentication, Authenticator, URL }
 import play.api.mvc.Result
 import play.filters.csrf.CSRFFilter
@@ -23,6 +24,7 @@ import play.api.libs.json.{ Json, JsObject }
 import play.libs.Akka
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
+import scala.Some
 import service.txbitsUserService
 import wallet.{ WalletModel, Wallet }
 
@@ -62,6 +64,16 @@ package object globals {
     value match {
       case v: String => Right(Symbol(v))
       case _ => Left(TypeDoesNotMatch("Cannot convert " + value + ":" + value.asInstanceOf[AnyRef].getClass + " to Symbol for column " + qualified))
+    }
+  }
+
+  // handle parsing 2d arrays of numbers
+  implicit val rowToBigDecimalArrayArray = Column[Option[Array[Array[math.BigDecimal]]]] { (value, meta) =>
+    val MetaDataItem(qualified, nullable, clazz) = meta
+    value match {
+      case o: java.sql.Array => Right(Some(o.getArray).asInstanceOf[Option[Array[Array[java.math.BigDecimal]]]])
+      case null => Right(None)
+      case _ => Left(TypeDoesNotMatch("Cannot convert " + value + ":" + value.asInstanceOf[AnyRef].getClass))
     }
   }
 
