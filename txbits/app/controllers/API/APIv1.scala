@@ -149,6 +149,8 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def openTrades(base: String, counter: String) = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
+    val PriceIndex = 0
+    val AmountIndex = 1
     // a specific pair will be given as an argument
     val (asks, bids) = globals.engineModel.ordersDepth(base, counter)
 
@@ -157,16 +159,16 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
       "result" -> Json.obj(
         "asks" -> asks.map { a: Array[java.math.BigDecimal] =>
           Json.obj(
-            "amount" -> a(0).toPlainString,
-            "price" -> a(1).toPlainString
+            "amount" -> a(AmountIndex).toPlainString,
+            "price" -> a(PriceIndex).toPlainString
           )
-        }.mkString(","),
+        },
         "bids" -> bids.map { b: Array[java.math.BigDecimal] =>
           Json.obj(
-            "amount" -> b(0).toPlainString,
-            "price" -> b(1).toPlainString
+            "amount" -> b(AmountIndex).toPlainString,
+            "price" -> b(PriceIndex).toPlainString
           )
-        }.mkString(",")
+        }
       )
     ))
   }

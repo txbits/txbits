@@ -8,7 +8,6 @@ import anorm.MetaDataItem
 import anorm.TypeDoesNotMatch
 import com.googlecode.jsonrpc4j.JsonRpcHttpClient
 import controllers.API.CryptoAddress
-import java.math
 import java.net.{ PasswordAuthentication, Authenticator, URL }
 import play.api.mvc.Result
 import play.filters.csrf.CSRFFilter
@@ -24,7 +23,6 @@ import play.api.libs.json.{ Json, JsObject }
 import play.libs.Akka
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import scala.Some
 import service.txbitsUserService
 import wallet.{ WalletModel, Wallet }
 
