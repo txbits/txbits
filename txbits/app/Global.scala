@@ -66,11 +66,10 @@ package object globals {
   }
 
   // handle parsing 2d arrays of numbers
-  implicit val rowToBigDecimalArrayArray = Column[Option[Array[Array[math.BigDecimal]]]] { (value, meta) =>
+  implicit val rowToBigDecimalArrayArray: Column[Array[Array[java.math.BigDecimal]]] = Column.nonNull { (value, meta) =>
     val MetaDataItem(qualified, nullable, clazz) = meta
     value match {
-      case o: java.sql.Array => Right(Some(o.getArray).asInstanceOf[Option[Array[Array[java.math.BigDecimal]]]])
-      case null => Right(None)
+      case o: java.sql.Array => Right(o.getArray().asInstanceOf[Array[Array[java.math.BigDecimal]]])
       case _ => Left(TypeDoesNotMatch("Cannot convert " + value + ":" + value.asInstanceOf[AnyRef].getClass))
     }
   }
