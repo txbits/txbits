@@ -847,7 +847,7 @@ open_asks (
   select sum(remains) as amount, price, base, counter from orders
   where not is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
   group by price, base, counter order by price asc limit 40;;
-$$ language sql volatile cost 100 rows 40;
+$$ language sql stable cost 100 rows 40;
 
 create or replace function
 open_bids (
@@ -861,7 +861,27 @@ open_bids (
   select sum(remains) as amount, price, base, counter from orders
   where is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
   group by price, base, counter order by price desc limit 40;;
-$$ language sql volatile cost 100 rows 40;
+$$ language sql stable cost 100 rows 40;
+
+CREATE AGGREGATE array_agg_mult (anyarray) (
+   SFUNC     = array_cat
+  ,STYPE     = anyarray
+  ,INITCOND  = '{}'
+);
+
+create or replace function
+orders_depth(
+  a_base varchar(4),
+  a_counter varchar(4),
+  out asks numeric(23,8)[][],
+  out bids numeric(23,8)[][])
+as $$
+    select (
+      nullif((select array_agg_mult(array[array[price, amount]]) from open_asks(a_base, a_counter)), array[]::numeric(23,8)[])
+    ), (
+      nullif((select array_agg_mult(array[array[price, amount]]) from open_bids(a_base, a_counter)), array[]::numeric(23,8)[])
+    );;
+$$ language sql stable cost 100;
 
 create or replace function
 get_recent_matches (
@@ -968,7 +988,7 @@ drop function if exists first_agg() cascade;
 drop function if exists last_agg() cascade;
 drop aggregate if exists first(anyelement);
 drop aggregate if exists last(anyelement);
-
+drop aggregate if exists array_agg_mult(anyarray);
 drop function if exists  create_user (text, varchar(256), bool) cascade;
 drop function if exists  update_user (bigint, varchar(256), bool) cascade;
 drop function if exists  user_change_password (bigint, text) cascade;
