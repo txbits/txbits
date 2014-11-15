@@ -245,10 +245,27 @@ class UserModel(val db: String = "default") {
     ).execute()
   }
 
-  def userResetPass(email: String, password: String) = DB.withConnection(db) { implicit c =>
-    frontend.userResetPassword.on(
+  def userResetPass(email: String, token: String, password: String) = DB.withConnection(db) { implicit c =>
+    frontend.userResetPasswordComplete.on(
       'email -> email,
+      'token -> token,
       'password -> password
+    )().map(row =>
+        row[Boolean]("user_reset_password_complete")
+      ).head
+  }
+
+  def userResetPassStart(email: String) = DB.withConnection(db) { implicit c =>
+    frontend.userResetPasswordStart.on(
+      'email -> email
+    )().map(row =>
+        row[Boolean]("user_reset_password_start")
+      ).head
+  }
+
+  def userResetPassStarted(email: String) = DB.withConnection(db) { implicit c =>
+    frontend.userResetPasswordStarted.on(
+      'email -> email
     ).execute()
   }
 

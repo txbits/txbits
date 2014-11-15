@@ -46,14 +46,13 @@ object txbitsUserService {
     user
   }
 
-  def change_pass(user: SocialUser, old_password: String, new_password: String): SocialUser = {
-    globals.userModel.userChangePass(user.id, old_password, new_password)
-    user
+  // this function requires higher database privileges
+  def resetPass(email: String, token: String, password: String) {
+    globals.userModel.userResetPass(email, token, password)
   }
 
-  // TODO: only the wallet should be able to run this, so maybe we should move this to the wallet code
-  def reset_pass(email: String, password: String) {
-    globals.userModel.userResetPass(email, password)
+  def resetPassStart(email: String) {
+    globals.userModel.userResetPassStart(email)
   }
 
   /**

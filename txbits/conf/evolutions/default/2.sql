@@ -491,7 +491,7 @@ user_change_password (
   a_user_id bigint,
   a_old_password text,
   a_new_password text
-) returns void as $$
+) returns boolean as $$
 declare
   password_mismatch boolean;;
 begin
@@ -499,28 +499,48 @@ begin
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
   select p.password != crypt(a_old_password, p.password) into password_mismatch from users u left join passwords p on u.id = p.user_id;;
-  if password_mismatch then
-    raise 'User id 0 is not allowed to use this function.';;
+  if password_mismatch or password_mismatch is null then
+    return false;;
   end if;;
   insert into passwords (user_id, password) values (a_user_id, crypt(a_new_password, gen_salt('bf', 8)));;
-  return;;
+  return true;;
 end;;
 $$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
 
--- TODO: lock down access to this function
 create or replace function
-user_reset_password (
-  a_email varchar(256),
-  a_new_password text
-) returns void as $$
+user_reset_password_start (
+  a_email varchar(256)
+) returns boolean as $$
 declare
-  password_mismatch boolean;;
+  email_exists boolean;;
+begin
+  select true into email_exists from password_reset_requests where email = a_email;;
+  if email_exists then
+    return false;;
+  end if;;
+  insert into password_reset_requests values (a_email);;
+  return true;;
+end;;
+$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+
+create or replace function
+user_reset_password_complete (
+  a_email varchar(256),
+  a_token varchar(256),
+  a_new_password text
+) returns boolean as $$
+declare
+  invalid_token boolean;;
 begin
   if a_email = '' then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
+  select count(*) <= 0 into invalid_token from tokens where token = a_token and email = a_email and is_signup = false and expiration >= current_timestamp ;;
+  if invalid_token or invalid_token is null then
+    return false;;
+  end if;;
   insert into passwords (user_id, password) select id, crypt(a_new_password, gen_salt('bf', 8)) from users where email = a_email;;
-  return;;
+  return true;;
 end;;
 $$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
 
@@ -656,18 +676,6 @@ find_user_by_email_and_password (
   )
   select id, created, email, on_mailing_list, tfa_withdrawal, tfa_login, tfa_secret, tfa_type, verification, active
   from user_row where user_row.password = crypt(a_password, user_row.password);;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
-
-create or replace function
-save_token (
-  a_token varchar(256),
-  a_email varchar(256),
-  a_is_signup bool,
-  a_creation timestamp,
-  a_expiration timestamp
-) returns void as $$
-  insert into tokens (token, email, creation, expiration, is_signup)
-  values (a_token,a_email,a_creation,a_expiration,a_is_signup);;
 $$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1168,7 +1176,8 @@ drop function if exists order_cancel (bigint, bigint) cascade;
 drop function if exists create_user (varchar(256), text, bool) cascade;
 drop function if exists update_user (bigint, varchar(256), bool) cascade;
 drop function if exists user_change_password (bigint, text, text) cascade;
-drop function if exists user_reset_password (varchar(256), text) cascade;
+drop function if exists user_reset_password_start (varchar(256)) cascade;
+drop function if exists user_reset_password_complete (varchar(256), varchar(256), text) cascade;
 drop function if exists turnon_tfa (bigint) cascade;
 drop function if exists update_tfa_secret (bigint, varchar(256), varchar(6)) cascade;
 drop function if exists turnoff_tfa (bigint) cascade;

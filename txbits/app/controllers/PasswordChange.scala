@@ -82,7 +82,8 @@ object PasswordChange extends Controller with SecureSocial {
         errors => BadRequest(SecureSocialTemplates.getPasswordChangePage(request, errors)),
         info => {
           import scala.language.reflectiveCalls
-          txbitsUserService.change_pass(request.user, info.currentPassword, info.password)
+          // This never actually fails because we already checked that the password is valid in the validators
+          globals.userModel.userChangePass(request.user.id, info.currentPassword, info.password)
           Mailer.sendPasswordChangedNotice(request.user.email)(request)
           Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
         }

@@ -232,8 +232,15 @@ object Registration extends Controller {
       email => {
         txbitsUserService.userExists(email) match {
           case true => {
-            val token = createToken(email, isSignUp = false)
-            Mailer.sendPasswordResetEmail(email, token._1)
+            txbitsUserService.resetPassStart(email)
+            if (Play.current.configuration.getBoolean("meta.devmode").getOrElse(false)) {
+              // TODO: do this in a separate service which is normally run periodically by the wallet
+              // TODO: pick up password reset requests from the password_reset_requests table
+              // TODO: the createToken call requires admin rights
+              globals.userModel.userResetPassStarted(email)
+              val token = createToken(email, isSignUp = false)
+              Mailer.sendPasswordResetEmail(email, token._1)
+            }
           }
           case false => {
             // The user wasn't registered. Oh, well.
@@ -258,7 +265,8 @@ object Registration extends Controller {
         p => {
           val toFlash = txbitsUserService.userExists(t.email) match {
             case true => {
-              txbitsUserService.reset_pass(t.email, p._1)
+              // this should never actually fail because we checked the token already
+              txbitsUserService.resetPass(t.email, token, p._1)
               txbitsUserService.deleteToken(token)
               Mailer.sendPasswordChangedNotice(t.email)
               Success -> Messages(PasswordUpdated)

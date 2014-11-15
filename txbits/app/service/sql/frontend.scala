@@ -28,9 +28,20 @@ object frontend {
     | select * from user_change_password({user_id}, {old_password}, {new_password})
     |""".stripMargin)
 
-  val userResetPassword = SQL(
+  val userResetPasswordComplete = SQL(
     """
-    | select * from user_reset_password({email}, {password})
+    | select * from user_reset_password_complete({email}, {token}, {password})
+    |""".stripMargin)
+
+  val userResetPasswordStart = SQL(
+    """
+    | select * from user_reset_password_start({email})
+    |""".stripMargin)
+
+  // this needs to be run as superuser
+  val userResetPasswordStarted = SQL(
+    """
+    | delete from password_reset_requests where email = {email}
     |""".stripMargin)
 
   val turnonTfa = SQL(
@@ -78,9 +89,11 @@ object frontend {
     | select * from find_user_by_email_and_password({email}, {password})
     |""".stripMargin)
 
+  // this must be run as superuser
   val saveToken = SQL(
     """
-    | select * from save_token({token}, {email}, {is_signup}, {creation}, {expiration})
+    | insert into tokens (token, email, creation, expiration, is_signup)
+    | values ({token}, {email}, {creation}, {expiration}, {is_signup})
     |""".stripMargin)
 
   val findToken = SQL(
