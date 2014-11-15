@@ -141,12 +141,12 @@ object Registration extends Controller {
         },
         email => {
           // check if there is already an account for this email address
-          txbitsUserService.findByEmail(email) match {
-            case Some(user) => {
+          txbitsUserService.userExists(email) match {
+            case true => {
               // user signed up already, send an email offering to login/recover password
-              Mailer.sendAlreadyRegisteredEmail(user)
+              Mailer.sendAlreadyRegisteredEmail(email)
             }
-            case None => {
+            case false => {
               val token = createToken(email, isSignUp = true)
               Mailer.sendSignUpEmail(email, token._1)
             }
@@ -230,12 +230,12 @@ object Registration extends Controller {
         BadRequest(SecureSocialTemplates.getStartResetPasswordPage(request, errors))
       },
       email => {
-        txbitsUserService.findByEmail(email) match {
-          case Some(user) => {
+        txbitsUserService.userExists(email) match {
+          case true => {
             val token = createToken(email, isSignUp = false)
-            Mailer.sendPasswordResetEmail(user, token._1)
+            Mailer.sendPasswordResetEmail(email, token._1)
           }
-          case None => {
+          case false => {
             // The user wasn't registered. Oh, well.
           }
         }

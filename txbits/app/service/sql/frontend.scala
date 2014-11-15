@@ -7,6 +7,7 @@ package service.sql
 import anorm._
 
 object frontend {
+
   val createUser = SQL(
     """
     | select * from create_user({email}, {password}, {onMailingList})
@@ -15,6 +16,11 @@ object frontend {
   val updateUser = SQL(
     """
     | select * from update_user({id}, {email}, {onMailingList})
+    |""".stripMargin)
+
+  val userExists = SQL(
+    """
+    | select * from user_exists({email});
     |""".stripMargin)
 
   val userChangePassword = SQL(

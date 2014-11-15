@@ -40,9 +40,9 @@ object Mailer {
   val UnknownEmailNoticeSubject = "mails.unknownEmail.subject"
   val PasswordResetOkSubject = "mails.passwordResetOk.subject"
 
-  def sendAlreadyRegisteredEmail(user: SocialUser)(implicit request: RequestHeader) {
-    val txtAndHtml = SecureSocialTemplates.getAlreadyRegisteredEmail(user)
-    sendEmail(Messages(AlreadyRegisteredSubject), user.email, txtAndHtml)
+  def sendAlreadyRegisteredEmail(email: String)(implicit request: RequestHeader) {
+    val txtAndHtml = SecureSocialTemplates.getAlreadyRegisteredEmail(email)
+    sendEmail(Messages(AlreadyRegisteredSubject), email, txtAndHtml)
 
   }
 
@@ -57,9 +57,9 @@ object Mailer {
 
   }
 
-  def sendPasswordResetEmail(user: SocialUser, token: String)(implicit request: RequestHeader) {
-    val txtAndHtml = SecureSocialTemplates.getSendPasswordResetEmail(user, token)
-    sendEmail(Messages(PasswordResetSubject), user.email, txtAndHtml)
+  def sendPasswordResetEmail(email: String, token: String)(implicit request: RequestHeader) {
+    val txtAndHtml = SecureSocialTemplates.getSendPasswordResetEmail(email, token)
+    sendEmail(Messages(PasswordResetSubject), email, txtAndHtml)
   }
 
   def sendPasswordChangedNotice(user: SocialUser)(implicit request: RequestHeader) {

@@ -29,6 +29,10 @@ object txbitsUserService {
     globals.userModel.findUserByEmail(email)
   }
 
+  def userExists(email: String): Boolean = {
+    globals.userModel.userExists(email)
+  }
+
   def findByEmailAndPassword(email: String, password: String): Option[SocialUser] = {
     globals.userModel.findUserByEmailAndPassword(email, password)
   }

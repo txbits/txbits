@@ -618,6 +618,15 @@ find_user_by_email (
 $$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
 
 create or replace function
+user_exists (
+  a_email varchar(256),
+  out user_exists boolean
+) returns boolean as $$
+  select (case when count(*) > 0 then true else false end) from users
+  where lower(email) = lower(a_email);;
+$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+
+create or replace function
 find_user_by_email_and_password (
   a_email varchar(256),
   a_password text,

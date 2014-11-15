@@ -96,6 +96,14 @@ class UserModel(val db: String = "default") {
         ).headOption
     }
 
+  def userExists(email: String): Boolean = DB.withConnection(db) { implicit c =>
+    frontend.userExists.on(
+      'email -> email
+    )().map(row =>
+        row[Boolean]("user_exists")
+      ).head
+  }
+
   def findUserByEmail(email: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
     frontend.findUserByEmail.on(
       'email -> email
