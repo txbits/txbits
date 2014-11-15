@@ -489,13 +489,37 @@ $$ language plpgsql volatile security definer SET search_path = public, pg_temp 
 create or replace function
 user_change_password (
   a_user_id bigint,
-  a_password text
+  a_old_password text,
+  a_new_password text
 ) returns void as $$
+declare
+  password_mismatch boolean;;
 begin
   if a_user_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  insert into passwords (user_id, password) values (a_user_id, crypt(a_password, gen_salt('bf', 8)));;
+  select p.password != crypt(a_old_password, p.password) into password_mismatch from users u left join passwords p on u.id = p.user_id;;
+  if password_mismatch then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  insert into passwords (user_id, password) values (a_user_id, crypt(a_new_password, gen_salt('bf', 8)));;
+  return;;
+end;;
+$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+
+-- TODO: lock down access to this function
+create or replace function
+user_reset_password (
+  a_email varchar(256),
+  a_new_password text
+) returns void as $$
+declare
+  password_mismatch boolean;;
+begin
+  if a_email = '' then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  insert into passwords (user_id, password) select id, crypt(a_new_password, gen_salt('bf', 8)) from users where email = a_email;;
   return;;
 end;;
 $$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
@@ -609,15 +633,6 @@ end;;
 $$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
 
 create or replace function
-find_user_by_email (
-  a_email varchar(256),
-  out users
-) returns setof users as $$
-  select * from users
-  where lower(email) = lower(a_email);;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
-
-create or replace function
 user_exists (
   a_email varchar(256),
   out user_exists boolean
@@ -639,7 +654,8 @@ find_user_by_email_and_password (
     order by p.created desc
     limit 1
   )
-  select id, created, email, on_mailing_list, tfa_withdrawal, tfa_login, tfa_secret, tfa_type, verification, active from user_row where user_row.password = crypt(a_password, user_row.password);;
+  select id, created, email, on_mailing_list, tfa_withdrawal, tfa_login, tfa_secret, tfa_type, verification, active
+  from user_row where user_row.password = crypt(a_password, user_row.password);;
 $$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1151,7 +1167,8 @@ drop function if exists order_new (bigint, varchar(4), varchar(4), numeric(23,8)
 drop function if exists order_cancel (bigint, bigint) cascade;
 drop function if exists create_user (varchar(256), text, bool) cascade;
 drop function if exists update_user (bigint, varchar(256), bool) cascade;
-drop function if exists user_change_password (bigint, text) cascade;
+drop function if exists user_change_password (bigint, text, text) cascade;
+drop function if exists user_reset_password (varchar(256), text) cascade;
 drop function if exists turnon_tfa (bigint) cascade;
 drop function if exists update_tfa_secret (bigint, varchar(256), varchar(6)) cascade;
 drop function if exists turnoff_tfa (bigint) cascade;

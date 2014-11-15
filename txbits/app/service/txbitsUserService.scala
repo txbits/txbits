@@ -16,19 +16,6 @@ object txbitsUserService {
     globals.userModel.findUserById(id)
   }
 
-  /**
-   * Finds a user by email and provider id.
-   *
-   * Note: If you do not plan to use the UsernamePassword provider just provide en empty
-   * implementation.
-   *
-   * @param email - the user email
-   * @return
-   */
-  def findByEmail(email: String): Option[SocialUser] = {
-    globals.userModel.findUserByEmail(email)
-  }
-
   def userExists(email: String): Boolean = {
     globals.userModel.userExists(email)
   }
@@ -59,9 +46,14 @@ object txbitsUserService {
     user
   }
 
-  def change_pass(user: SocialUser, password: String): SocialUser = {
-    globals.userModel.userChangePass(user.id, password)
+  def change_pass(user: SocialUser, old_password: String, new_password: String): SocialUser = {
+    globals.userModel.userChangePass(user.id, old_password, new_password)
     user
+  }
+
+  // TODO: only the wallet should be able to run this, so maybe we should move this to the wallet code
+  def reset_pass(email: String, password: String) {
+    globals.userModel.userResetPass(email, password)
   }
 
   /**

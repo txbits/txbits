@@ -62,9 +62,9 @@ object Mailer {
     sendEmail(Messages(PasswordResetSubject), email, txtAndHtml)
   }
 
-  def sendPasswordChangedNotice(user: SocialUser)(implicit request: RequestHeader) {
-    val txtAndHtml = SecureSocialTemplates.getPasswordChangedNoticeEmail(user)
-    sendEmail(Messages(PasswordResetOkSubject), user.email, txtAndHtml)
+  def sendPasswordChangedNotice(email: String)(implicit request: RequestHeader) {
+    val txtAndHtml = SecureSocialTemplates.getPasswordChangedNoticeEmail(email)
+    sendEmail(Messages(PasswordResetOkSubject), email, txtAndHtml)
   }
 
   private def sendEmail(subject: String, recipient: String, body: (Option[Txt], Option[Html])) {

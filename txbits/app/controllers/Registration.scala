@@ -256,16 +256,16 @@ object Registration extends Controller {
         BadRequest(SecureSocialTemplates.getResetPasswordPage(request, errors, token))
       },
         p => {
-          val (toFlash, eventSession) = txbitsUserService.findByEmail(t.email) match {
-            case Some(user) => {
-              val updated = txbitsUserService.change_pass(user, p._1)
+          val toFlash = txbitsUserService.userExists(t.email) match {
+            case true => {
+              txbitsUserService.reset_pass(t.email, p._1)
               txbitsUserService.deleteToken(token)
-              Mailer.sendPasswordChangedNotice(updated)
-              (Success -> Messages(PasswordUpdated), updated)
+              Mailer.sendPasswordChangedNotice(t.email)
+              Success -> Messages(PasswordUpdated)
             }
-            case _ => {
+            case false => {
               Logger.error("[securesocial] could not find user with email %s during password reset".format(t.email))
-              (Error -> Messages(ErrorUpdatingPassword), None)
+              Error -> Messages(ErrorUpdatingPassword)
             }
           }
           Redirect(onHandleResetPasswordGoTo).flashing(toFlash)

@@ -55,8 +55,8 @@ object SecureSocialTemplates {
     (Some(views.txt.auth.mails.passwordResetEmail(email, token)), None)
   }
 
-  def getPasswordChangedNoticeEmail(user: SocialUser)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = {
-    (Some(views.txt.auth.mails.passwordChangedNotice(user)), None)
+  def getPasswordChangedNoticeEmail(email: String)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = {
+    (Some(views.txt.auth.mails.passwordChangedNotice(email)), None)
   }
 
   def getNotAuthorizedPage[A](implicit request: Request[A]): Html = {

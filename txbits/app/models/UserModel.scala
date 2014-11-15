@@ -104,23 +104,6 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
-  def findUserByEmail(email: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
-    frontend.findUserByEmail.on(
-      'email -> email
-    )().map(row =>
-        new SocialUser(
-          row[Long]("id"),
-          row[String]("email"),
-          row[Int]("verification"),
-          row[Boolean]("on_mailing_list"),
-          row[Boolean]("tfa_withdrawal"),
-          row[Boolean]("tfa_login"),
-          row[Option[String]]("tfa_secret"),
-          row[Option[Symbol]]("tfa_type")
-        )
-      ).headOption
-  }
-
   def findUserByEmailAndPassword(email: String, password: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
     frontend.findUserByEmailAndPassword.on(
       'email -> email,
@@ -254,9 +237,17 @@ class UserModel(val db: String = "default") {
     ).execute()
   }
 
-  def userChangePass(id: Long, password: String) = DB.withConnection(db) { implicit c =>
+  def userChangePass(id: Long, old_password: String, new_password: String) = DB.withConnection(db) { implicit c =>
     frontend.userChangePassword.on(
       'user_id -> id,
+      'old_password -> old_password,
+      'new_password -> new_password
+    ).execute()
+  }
+
+  def userResetPass(email: String, password: String) = DB.withConnection(db) { implicit c =>
+    frontend.userResetPassword.on(
+      'email -> email,
       'password -> password
     ).execute()
   }

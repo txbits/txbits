@@ -25,7 +25,12 @@ object frontend {
 
   val userChangePassword = SQL(
     """
-    | select * from user_change_password({user_id}, {password})
+    | select * from user_change_password({user_id}, {old_password}, {new_password})
+    |""".stripMargin)
+
+  val userResetPassword = SQL(
+    """
+    | select * from user_reset_password({email}, {password})
     |""".stripMargin)
 
   val turnonTfa = SQL(
@@ -66,11 +71,6 @@ object frontend {
   val findUserById = SQL(
     """
     | select * from find_user_by_id({id})
-    |""".stripMargin)
-
-  val findUserByEmail = SQL(
-    """
-    | select * from find_user_by_email({email})
     |""".stripMargin)
 
   val findUserByEmailAndPassword = SQL(
