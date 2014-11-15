@@ -444,6 +444,12 @@ create aggregate last (
 );
 
 create or replace function
+generate_random_user_id(
+) returns bigint as $$
+  select abs((right(b::text, 17))::bit(64)::bigint) as id from gen_random_bytes(8) as b;;
+$$ language sql volatile security definer cost 100;
+
+create or replace function
 create_user (
   a_email varchar(256),
   a_password text,
@@ -453,7 +459,7 @@ create_user (
   with new_user_row as (
     insert into users(id, email, on_mailing_list)
     values (
-      (select abs(('x' || right(b::text, 16))::bit(64)::bigint) as id from gen_random_bytes(8) as b),
+      generate_random_user_id(),
       a_email,
       a_onMailingList
     )

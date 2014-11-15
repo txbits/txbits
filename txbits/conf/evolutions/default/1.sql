@@ -30,9 +30,8 @@ create table trade_fees (
     linear numeric(23,8) not null check(linear >= 0)
 );
 
-create sequence users_id_seq;
 create table users (
-    id bigint default nextval('users_id_seq') primary key,
+    id bigint primary key,
     created timestamp default current_timestamp not null,
     email varchar(256) not null,
     on_mailing_list bool default false,
@@ -295,7 +294,6 @@ drop table if exists event_log cascade;
 drop table if exists withdrawal_limits cascade;
 drop sequence if exists order_id_seq cascade;
 drop sequence if exists deposit_id_seq cascade;
-drop sequence if exists users_id_seq cascade;
 drop sequence if exists withdrawal_id_seq cascade;
 drop sequence if exists market_id_seq cascade;
 drop sequence if exists event_log_id_seq cascade;
