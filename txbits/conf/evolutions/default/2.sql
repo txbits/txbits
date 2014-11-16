@@ -641,6 +641,7 @@ begin
 end;;
 $$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
 
+-- THIS FUNCTION MUST NOT HAVE "security definer"!!!
 create or replace function
 add_fake_money (
   a_uid bigint,
@@ -649,8 +650,9 @@ add_fake_money (
 ) returns void as $$
   insert into deposits(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
   select transfer_funds(null, a_uid, a_currency, a_amount);;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile SET search_path = public, pg_temp cost 100;
 
+-- THIS FUNCTION MUST NOT HAVE "security definer"!!!
 create or replace function
 remove_fake_money (
   a_uid bigint,
@@ -659,7 +661,7 @@ remove_fake_money (
 ) returns void as $$
   insert into withdrawals(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
   select transfer_funds(a_uid, null, a_currency, a_amount);;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile SET search_path = public, pg_temp cost 100;
 
 create or replace function
 find_user_by_id (
