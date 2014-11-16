@@ -10,6 +10,7 @@ import com.googlecode.jsonrpc4j.JsonRpcHttpClient
 import controllers.API.CryptoAddress
 import java.net.{ PasswordAuthentication, Authenticator, URL }
 import play.api.mvc.Result
+import play.api.Play.current
 import play.filters.csrf.CSRFFilter
 import play.filters.headers.SecurityHeadersFilter
 import scala.concurrent.duration._
@@ -24,6 +25,7 @@ import play.libs.Akka
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import service.txbitsUserService
+import usertrust.{ UserTrustModel, UserTrustService }
 import wallet.{ WalletModel, Wallet }
 
 package object globals {
@@ -75,14 +77,23 @@ package object globals {
   }
 
   val masterDB = "default"
-  val walletDB = "wallet"
+  val masterDBWallet = "wallet"
+  val masterDBTrusted = "trust"
 
   val userModel = new UserModel(masterDB)
   val metaModel = new MetaModel(masterDB)
   val engineModel = new EngineModel(masterDB)
   val logModel = new LogModel(masterDB)
 
-  val walletModel = new WalletModel(walletDB)
+  val walletModel = new WalletModel(masterDBWallet)
+
+  val userTrustModel = new UserTrustModel(masterDBTrusted)
+
+  // create UserTrust actor
+  val userTrustActor = current.configuration.getBoolean("usertrustservice.enabled").getOrElse(false) match {
+    case true => Some(Akka.system.actorOf(UserTrustService.props(userTrustModel)))
+    case false => None
+  }
 
   // set up rpc authenticator for wallets
   val rpcAuth = DefaultAuthenticator.getInstance()

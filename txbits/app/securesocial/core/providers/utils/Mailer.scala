@@ -40,14 +40,16 @@ object Mailer {
   val UnknownEmailNoticeSubject = "mails.unknownEmail.subject"
   val PasswordResetOkSubject = "mails.passwordResetOk.subject"
 
-  def sendAlreadyRegisteredEmail(email: String)(implicit request: RequestHeader) {
-    val txtAndHtml = SecureSocialTemplates.getAlreadyRegisteredEmail(email)
+  def sendAlreadyRegisteredEmail(email: String) {
+    val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/")
+    val txtAndHtml = SecureSocialTemplates.getAlreadyRegisteredEmail(email, url)
     sendEmail(Messages(AlreadyRegisteredSubject), email, txtAndHtml)
 
   }
 
-  def sendSignUpEmail(to: String, token: String)(implicit request: RequestHeader) {
-    val txtAndHtml = SecureSocialTemplates.getSignUpEmail(token)
+  def sendSignUpEmail(to: String, token: String) {
+    val url = current.configuration.getString("url.signup").getOrElse("http://localhost:9000/signup/") + token
+    val txtAndHtml = SecureSocialTemplates.getSignUpEmail(token, url)
     sendEmail(Messages(SignUpEmailSubject), to, txtAndHtml)
   }
 
@@ -57,8 +59,9 @@ object Mailer {
 
   }
 
-  def sendPasswordResetEmail(email: String, token: String)(implicit request: RequestHeader) {
-    val txtAndHtml = SecureSocialTemplates.getSendPasswordResetEmail(email, token)
+  def sendPasswordResetEmail(email: String, token: String) {
+    val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/") + token
+    val txtAndHtml = SecureSocialTemplates.getSendPasswordResetEmail(email, url)
     sendEmail(Messages(PasswordResetSubject), email, txtAndHtml)
   }
 

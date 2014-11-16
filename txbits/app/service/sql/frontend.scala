@@ -8,9 +8,9 @@ import anorm._
 
 object frontend {
 
-  val createUser = SQL(
+  val createUserComplete = SQL(
     """
-    | select * from create_user({email}, {password}, {onMailingList})
+    | select create_user_complete as id from create_user_complete({email}, {password}, {onMailingList}, {token})
     |""".stripMargin)
 
   val updateUser = SQL(
@@ -30,18 +30,12 @@ object frontend {
 
   val userResetPasswordComplete = SQL(
     """
-    | select * from user_reset_password_complete({email}, {token}, {password})
+    | select user_reset_password_complete as success from user_reset_password_complete({email}, {token}, {password})
     |""".stripMargin)
 
-  val userResetPasswordStart = SQL(
+  val trustedActionStart = SQL(
     """
-    | select * from user_reset_password_start({email})
-    |""".stripMargin)
-
-  // this needs to be run as superuser
-  val userResetPasswordStarted = SQL(
-    """
-    | delete from password_reset_requests where email = {email}
+    | select trusted_action_start as success from trusted_action_start({email}, {is_signup})
     |""".stripMargin)
 
   val turnonTfa = SQL(
@@ -87,13 +81,6 @@ object frontend {
   val findUserByEmailAndPassword = SQL(
     """
     | select * from find_user_by_email_and_password({email}, {password})
-    |""".stripMargin)
-
-  // this must be run as superuser
-  val saveToken = SQL(
-    """
-    | insert into tokens (token, email, creation, expiration, is_signup)
-    | values ({token}, {email}, {creation}, {expiration}, {is_signup})
     |""".stripMargin)
 
   val findToken = SQL(

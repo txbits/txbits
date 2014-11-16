@@ -449,27 +449,49 @@ generate_random_user_id(
   select abs((right(b::text, 17))::bit(64)::bigint) as id from gen_random_bytes(8) as b;;
 $$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
 
+-- NOT "security definer", must be privileged user to use this function directly
 create or replace function
 create_user (
   a_email varchar(256),
   a_password text,
-  a_onMailingList bool,
-  out id bigint
+  a_onMailingList bool
 ) returns bigint as $$
-  with new_user_row as (
-    insert into users(id, email, on_mailing_list)
-    values (
+declare
+  new_user_id bigint;;
+begin
+  insert into users(id, email, on_mailing_list) values (
       generate_random_user_id(),
       a_email,
       a_onMailingList
-    )
-    returning id
-  )
+    ) returning id into new_user_id;;
   insert into passwords (user_id, password) values (
-    (select id from new_user_row),
+    new_user_id,
     crypt(a_password, gen_salt('bf', 8))
-  ) returning (select id from new_user_row);;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+  );;
+  return new_user_id;;
+end;;
+$$ language plpgsql volatile SET search_path = public, pg_temp cost 100;
+
+create or replace function
+create_user_complete (
+  a_email varchar(256),
+  a_password text,
+  a_onMailingList bool,
+  a_token varchar(256)
+) returns bigint as $$
+declare
+  invalid_token boolean;;
+begin
+  if a_email = '' then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+  select count(*) <= 0 into invalid_token from tokens where token = a_token and email = a_email and is_signup = true and expiration >= current_timestamp ;;
+  if invalid_token or invalid_token is null then
+    return -1;;
+  end if;;
+  return create_user(a_email, a_password, a_onMailingList);;
+end;;
+$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
 
 create or replace function
 update_user (
@@ -508,17 +530,18 @@ end;;
 $$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
 
 create or replace function
-user_reset_password_start (
-  a_email varchar(256)
+trusted_action_start (
+  a_email varchar(256),
+  a_is_signup boolean
 ) returns boolean as $$
 declare
   email_exists boolean;;
 begin
-  select true into email_exists from password_reset_requests where email = a_email;;
+  select true into email_exists from trusted_action_requests where email = a_email and is_signup = a_is_signup;;
   if email_exists then
     return false;;
   end if;;
-  insert into password_reset_requests values (a_email);;
+  insert into trusted_action_requests values (a_email, a_is_signup);;
   return true;;
 end;;
 $$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
@@ -1158,6 +1181,7 @@ $$ language plpgsql volatile security definer SET search_path = public, pg_temp 
 
 # --- !Downs
 
+drop function if exists create_user (varchar(256), text, bool) cascade;
 drop function if exists match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) cascade;
 drop function if exists transfer_funds(bigint, bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists user_insert() cascade;
@@ -1171,12 +1195,13 @@ drop aggregate if exists first(anyelement);
 drop aggregate if exists last(anyelement);
 drop aggregate if exists array_agg_mult(anyarray);
 
+-- security definer functions
 drop function if exists order_new (bigint, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) cascade;
 drop function if exists order_cancel (bigint, bigint) cascade;
-drop function if exists create_user (varchar(256), text, bool) cascade;
+drop function if exists create_user_complete (varchar(256), text, bool, varchar(256)) cascade;
 drop function if exists update_user (bigint, varchar(256), bool) cascade;
 drop function if exists user_change_password (bigint, text, text) cascade;
-drop function if exists user_reset_password_start (varchar(256)) cascade;
+drop function if exists trusted_action_start (varchar(256)) cascade;
 drop function if exists user_reset_password_complete (varchar(256), varchar(256), text) cascade;
 drop function if exists turnon_tfa (bigint) cascade;
 drop function if exists update_tfa_secret (bigint, varchar(256), varchar(6)) cascade;

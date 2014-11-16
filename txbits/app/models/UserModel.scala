@@ -36,11 +36,12 @@ class UserModel(val db: String = "default") {
   import globals.symbolColumn
   import globals.bigDecimalColumn
 
-  def create(email: String, password: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
-    frontend.createUser.on(
+  def create(email: String, password: String, onMailingList: Boolean, token: String) = DB.withConnection(db) { implicit c =>
+    frontend.createUserComplete.on(
       'email -> email,
       'password -> password,
-      'onMailingList -> onMailingList
+      'onMailingList -> onMailingList,
+      'token -> token
     ).map(row => row[Long]("id")).list.headOption
   }
 
@@ -151,24 +152,6 @@ class UserModel(val db: String = "default") {
   }
 
   /**
-   * Note: If you do not plan to use the UsernamePassword provider just provide en empty
-   * implementation
-   *
-   * @param token The token to save
-   * @return A string with a uuid that will be embedded in the welcome email.
-   */
-  def saveToken(token: Token) =
-    DB.withConnection(db) { implicit c =>
-      frontend.saveToken.on(
-        'email -> token.email,
-        'token -> token.uuid,
-        'creation -> new Timestamp(token.creationTime.getMillis),
-        'expiration -> new Timestamp(token.expirationTime.getMillis),
-        'is_signup -> token.isSignUp
-      ).execute
-    }
-
-  /**
    * Finds a token
    *
    * Note: If you do not plan to use the UsernamePassword provider just provide en empty
@@ -251,22 +234,17 @@ class UserModel(val db: String = "default") {
       'token -> token,
       'password -> password
     )().map(row =>
-        row[Boolean]("user_reset_password_complete")
+        row[Boolean]("success")
       ).head
   }
 
-  def userResetPassStart(email: String) = DB.withConnection(db) { implicit c =>
-    frontend.userResetPasswordStart.on(
-      'email -> email
+  def trustedActionStart(email: String, is_signup: Boolean) = DB.withConnection(db) { implicit c =>
+    frontend.trustedActionStart.on(
+      'email -> email,
+      'is_signup -> is_signup
     )().map(row =>
-        row[Boolean]("user_reset_password_start")
+        row[Boolean]("success")
       ).head
-  }
-
-  def userResetPassStarted(email: String) = DB.withConnection(db) { implicit c =>
-    frontend.userResetPasswordStarted.on(
-      'email -> email
-    ).execute()
   }
 
   def genTFASecret(uid: Long, typ: String) = DB.withConnection(db) { implicit c =>

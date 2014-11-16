@@ -53,8 +53,10 @@ create table passwords (
     primary key (user_id, created)
 );
 
-create table password_reset_requests (
-    email varchar(256) primary key
+create table trusted_action_requests (
+    email varchar(256),
+    is_signup boolean not null,
+    primary key (email, is_signup)
 );
 
 create table totp_tokens_blacklist (
@@ -297,7 +299,7 @@ drop table if exists trade_fees cascade;
 drop table if exists totp_tokens_blacklist cascade;
 drop table if exists event_log cascade;
 drop table if exists withdrawal_limits cascade;
-drop table if exists password_reset_requests cascade;
+drop table if exists trusted_action_requests cascade;
 drop sequence if exists order_id_seq cascade;
 drop sequence if exists deposit_id_seq cascade;
 drop sequence if exists withdrawal_id_seq cascade;

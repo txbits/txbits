@@ -39,20 +39,20 @@ object SecureSocialTemplates {
     views.html.auth.passwordChange(form)
   }
 
-  def getSignUpEmail(token: String)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = {
-    (Some(views.txt.auth.mails.signUpEmail(token)), None)
+  def getSignUpEmail(token: String, url: String): (Option[Txt], Option[Html]) = {
+    (Some(views.txt.auth.mails.signUpEmail(token, url)), None)
   }
 
-  def getAlreadyRegisteredEmail(email: String)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = {
-    (Some(views.txt.auth.mails.alreadyRegisteredEmail(email)), None)
+  def getAlreadyRegisteredEmail(email: String, url: String): (Option[Txt], Option[Html]) = {
+    (Some(views.txt.auth.mails.alreadyRegisteredEmail(email, url)), None)
   }
 
   def getWelcomeEmail(user: SocialUser)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = {
     (Some(views.txt.auth.mails.welcomeEmail(user)), None)
   }
 
-  def getSendPasswordResetEmail(email: String, token: String)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = {
-    (Some(views.txt.auth.mails.passwordResetEmail(email, token)), None)
+  def getSendPasswordResetEmail(email: String, url: String): (Option[Txt], Option[Html]) = {
+    (Some(views.txt.auth.mails.passwordResetEmail(email, url)), None)
   }
 
   def getPasswordChangedNoticeEmail(email: String)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = {

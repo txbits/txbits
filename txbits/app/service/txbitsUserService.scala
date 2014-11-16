@@ -24,8 +24,8 @@ object txbitsUserService {
     globals.userModel.findUserByEmailAndPassword(email, password)
   }
 
-  def create(user: SocialUser, password: String): SocialUser = {
-    val user_id = globals.userModel.create(user.email, password, user.onMailingList)
+  def create(user: SocialUser, password: String, token: String): SocialUser = {
+    val user_id = globals.userModel.create(user.email, password, user.onMailingList, token)
 
     user_id match {
       case Some(id) => {
@@ -51,19 +51,12 @@ object txbitsUserService {
     globals.userModel.userResetPass(email, token, password)
   }
 
-  def resetPassStart(email: String) {
-    globals.userModel.userResetPassStart(email)
+  def signupStart(email: String) {
+    globals.userModel.trustedActionStart(email, is_signup = true)
   }
 
-  /**
-   * Note: If you do not plan to use the UsernamePassword provider just provide en empty
-   * implementation
-   *
-   * @param token The token to save
-   * @return A string with a uuid that will be embedded in the welcome email.
-   */
-  def save(token: Token) = {
-    globals.userModel.saveToken(token)
+  def resetPassStart(email: String) {
+    globals.userModel.trustedActionStart(email, is_signup = false)
   }
 
   /**
