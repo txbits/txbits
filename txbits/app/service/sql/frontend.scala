@@ -8,6 +8,12 @@ import anorm._
 
 object frontend {
 
+  // This function requires superuser database permissions
+  val createUserInsecure = SQL(
+    """
+    | select create_user as id from create_user({email}, {password}, {onMailingList})
+    |""".stripMargin)
+
   val createUserComplete = SQL(
     """
     | select create_user_complete as id from create_user_complete({email}, {password}, {onMailingList}, {token})

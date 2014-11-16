@@ -45,6 +45,15 @@ class UserModel(val db: String = "default") {
     ).map(row => row[Long]("id")).list.headOption
   }
 
+  // insecure version, usable only in tests
+  def create(email: String, password: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
+    frontend.createUserInsecure.on(
+      'email -> email,
+      'password -> password,
+      'onMailingList -> onMailingList
+    ).map(row => row[Long]("id")).list.headOption
+  }
+
   def addFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
     if (Play.current.configuration.getBoolean("fakeexchange").get) {
       try {
