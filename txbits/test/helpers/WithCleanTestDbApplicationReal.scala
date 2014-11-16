@@ -11,6 +11,7 @@ abstract class WithCleanTestDbApplicationReal extends WithCleanDbApplication()(F
   additionalConfiguration = Map(
     "db.default.url" -> "postgres://user:password@localhost/txbits_test",
     "db.wallet.url" -> "postgres://user:password@localhost/txbits_test",
+    "db.trust.url" -> "postgres://user:password@localhost/txbits_test",
     "fakeexchange" -> false,
     "litecoin.actor.enabled" -> false,
     "bitcoin.actor.enabled" -> false
