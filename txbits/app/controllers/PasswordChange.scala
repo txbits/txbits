@@ -31,7 +31,7 @@ import service.txbitsUserService
 object PasswordChange extends Controller with SecureSocial {
   val CurrentPassword = "currentPassword"
   val InvalidPasswordMessage = "securesocial.passwordChange.invalidPassword"
-  val NewPassword = "newPassword"
+  val Password = "password"
   val Password1 = "password1"
   val Password2 = "password2"
   val Success = "success"
@@ -47,7 +47,7 @@ object PasswordChange extends Controller with SecureSocial {
     controllers.routes.PasswordChange.page().url
   )
 
-  case class ChangeInfo(currentPassword: String, newPassword: String)
+  case class ChangeInfo(currentPassword: String, password: String)
 
   def checkCurrentPassword[A](currentPassword: String)(implicit request: SecuredRequest[A]): Boolean = {
     txbitsUserService.findByEmailAndPassword(request.user.email, currentPassword).isDefined
@@ -58,13 +58,13 @@ object PasswordChange extends Controller with SecureSocial {
       mapping(
         CurrentPassword -> nonEmptyText.verifying(
           Messages(InvalidPasswordMessage), checkCurrentPassword(_)),
-        NewPassword ->
+        Password ->
           tuple(
             Password1 -> nonEmptyText.verifying(PasswordValidator.validator),
             Password2 -> nonEmptyText
           ).verifying(Messages(Registration.PasswordsDoNotMatch), passwords => passwords._1 == passwords._2)
 
-      )((currentPassword, newPassword) => ChangeInfo(currentPassword, newPassword._1))((changeInfo: ChangeInfo) => Some("", ("", "")))
+      )((currentPassword, password) => ChangeInfo(currentPassword, password._1))((changeInfo: ChangeInfo) => Some("", ("", "")))
     )
 
     f(request, form)
@@ -82,7 +82,7 @@ object PasswordChange extends Controller with SecureSocial {
         errors => BadRequest(SecureSocialTemplates.getPasswordChangePage(request, errors)),
         info => {
           import scala.language.reflectiveCalls
-          val u = txbitsUserService.change_pass(request.user, info.newPassword)
+          val u = txbitsUserService.change_pass(request.user, info.password)
           Mailer.sendPasswordChangedNotice(u)(request)
           Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
         }
