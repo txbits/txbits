@@ -104,7 +104,7 @@ begin
 
     return true;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- cancel an order and release any holds left open
 create or replace function
@@ -145,7 +145,7 @@ begin
 
     return true;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- when a new match is inserted, we reduce the orders and release the holds
 create or replace function 
@@ -242,7 +242,7 @@ begin
     end if;;
 
 end;;
-$$ language plpgsql volatile cost 100;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 -- when a deposit is confirmed, we add money to the account
 create or replace function deposit_complete() returns trigger as $$
@@ -270,7 +270,7 @@ begin
       );;
     return null;;
 end;;
-$$ language plpgsql volatile cost 100;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create trigger deposit_complete_crypto
     after update on deposits_crypto
@@ -324,7 +324,7 @@ begin
       );;
     return null;;
 end;;
-$$ language plpgsql volatile cost 100;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create trigger withdrawal_insert
     after insert on withdrawals
@@ -358,7 +358,7 @@ begin
       end if;;
     end if;;
 end;;
-$$ language plpgsql volatile cost 100;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 -- create balances associated with users
 create or replace function user_insert() returns trigger as $$
@@ -368,7 +368,7 @@ begin
   insert into balances (user_id, currency) select new.id, currency from currencies;;
   return null;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create trigger user_insert
   after insert on users
@@ -383,7 +383,7 @@ begin
 
   return null;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create trigger wallets_crypto_retire
   after update on wallets_crypto
@@ -399,7 +399,7 @@ begin
   insert into balances (user_id, currency) select id, new.currency from users;;
   return null;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create trigger currency_insert
   after insert on currencies
@@ -447,7 +447,7 @@ create or replace function
 generate_random_user_id(
 ) returns bigint as $$
   select abs((right(b::text, 17))::bit(64)::bigint) as id from gen_random_bytes(8) as b;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- NOT "security definer", must be privileged user to use this function directly
 create or replace function
@@ -470,7 +470,7 @@ begin
   );;
   return new_user_id;;
 end;;
-$$ language plpgsql volatile SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 create_user_complete (
@@ -491,7 +491,7 @@ begin
   end if;;
   return create_user(a_email, a_password, a_onMailingList);;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 update_user (
@@ -506,7 +506,7 @@ begin
   update users set email=a_email, on_mailing_list=a_onMailingList where id=a_id;;
   return;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 user_change_password (
@@ -527,7 +527,7 @@ begin
   insert into passwords (user_id, password) values (a_user_id, crypt(a_new_password, gen_salt('bf', 8)));;
   return true;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 trusted_action_start (
@@ -544,7 +544,7 @@ begin
   insert into trusted_action_requests values (a_email, a_is_signup);;
   return true;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 user_reset_password_complete (
@@ -565,7 +565,7 @@ begin
   insert into passwords (user_id, password) select id, crypt(a_new_password, gen_salt('bf', 8)) from users where email = a_email;;
   return true;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 turnon_tfa (
@@ -579,7 +579,7 @@ begin
   where id=a_id;;
   return;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 update_tfa_secret (
@@ -596,7 +596,7 @@ begin
   where id=a_id;;
   return;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 turnoff_tfa (
@@ -611,7 +611,7 @@ begin
   where id=a_id;;
   return;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 turnon_emails (
@@ -625,7 +625,7 @@ begin
   where id=a_id;;
   return;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 turnoff_emails (
@@ -639,7 +639,7 @@ begin
   where id=a_id;;
   return;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- THIS FUNCTION MUST NOT HAVE "security definer"!!!
 create or replace function
@@ -650,7 +650,7 @@ add_fake_money (
 ) returns void as $$
   insert into deposits(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
   select transfer_funds(null, a_uid, a_currency, a_amount);;
-$$ language sql volatile SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
 
 -- THIS FUNCTION MUST NOT HAVE "security definer"!!!
 create or replace function
@@ -661,7 +661,7 @@ remove_fake_money (
 ) returns void as $$
   insert into withdrawals(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
   select transfer_funds(a_uid, null, a_currency, a_amount);;
-$$ language sql volatile SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 find_user_by_id (
@@ -675,7 +675,7 @@ begin
   return query select * from users
   where id = a_id;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 user_exists (
@@ -684,7 +684,7 @@ user_exists (
 ) returns boolean as $$
   select (case when count(*) > 0 then true else false end) from users
   where lower(email) = lower(a_email);;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 find_user_by_email_and_password (
@@ -701,7 +701,7 @@ find_user_by_email_and_password (
   )
   select id, created, email, on_mailing_list, tfa_withdrawal, tfa_login, tfa_secret, tfa_type, verification, active
   from user_row where user_row.password = crypt(a_password, user_row.password);;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 find_token (
@@ -709,20 +709,20 @@ find_token (
   out tokens
 ) returns setof tokens as $$
   select token, email, creation, expiration, is_signup from tokens where token = a_token;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 delete_token (
   a_token varchar(256)
 ) returns void as $$
   delete from tokens where token = a_token;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 delete_expired_tokens (
 ) returns void as $$
   delete from tokens where expiration < current_timestamp;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 totp_token_is_blacklisted (
@@ -736,7 +736,7 @@ begin
   end if;;
   return query select true from totp_tokens_blacklist where user_id = a_user and token = a_token and expiration >= current_timestamp;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 blacklist_totp_token (
@@ -751,13 +751,13 @@ begin
   insert into totp_tokens_blacklist(user_id, token, expiration) values (a_user, a_token, a_expiration);;
   return;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 delete_expired_totp_blacklist_tokens (
 ) returns void as $$
   delete from totp_tokens_blacklist where expiration < current_timestamp;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 new_log (
@@ -777,7 +777,7 @@ begin
   values (a_user_id, a_email, a_ipv4, a_browser_headers, a_browser_id, a_ssl_info, a_type);;
   return;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 login_log (
@@ -794,7 +794,7 @@ begin
     and user_id = a_user_id
   order by created desc;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 balance (
@@ -810,7 +810,7 @@ begin
   return query select c.currency, coalesce(b.balance, 0) as amount, b.hold from currencies c
   left outer join balances b on c.currency = b.currency and user_id = a_uid;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_required_confirmations (
@@ -819,7 +819,7 @@ get_required_confirmations (
 ) returns setof record as $$
   select currency, min_deposit_confirmations
   from currencies_crypto where active = true;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_addresses (
@@ -851,7 +851,7 @@ begin
     where user_id = a_uid and currency = a_currency
     order by assigned desc;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_all_addresses (
@@ -892,7 +892,7 @@ begin
                                 )
     order by assigned desc;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_all_withdrawals (
@@ -913,7 +913,7 @@ begin
   where w.user_id = a_uid and withdrawals_crypto_tx_id is null
   order by created desc;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_all_deposits (
@@ -934,7 +934,7 @@ begin
   where d.user_id = a_uid and dc.confirmed is null
   order by created desc;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 user_pending_trades (
@@ -955,7 +955,7 @@ begin
   where user_id = a_uid and closed = false and o.remains > 0
   order by created desc;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 recent_trades (
@@ -973,7 +973,7 @@ recent_trades (
   where base = a_base and counter = a_counter
   order by created desc
   limit 40;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100 rows 40;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100 rows 40;
 
 create or replace function
 trade_history (
@@ -998,7 +998,7 @@ begin
       from matches m where ask_user_id = a_id
   ) as th order by created desc;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 deposit_withdraw_history (
@@ -1030,7 +1030,7 @@ begin
   ) as a
   order by created desc;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 open_asks (
@@ -1044,7 +1044,7 @@ open_asks (
   select sum(remains) as amount, price, base, counter from orders
   where not is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
   group by price, base, counter order by price asc limit 40;;
-$$ language sql stable SET search_path = public, pg_temp cost 100 rows 40;
+$$ language sql stable set search_path = public, pg_temp cost 100 rows 40;
 
 create or replace function
 open_bids (
@@ -1058,7 +1058,7 @@ open_bids (
   select sum(remains) as amount, price, base, counter from orders
   where is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
   group by price, base, counter order by price desc limit 40;;
-$$ language sql volatile SET search_path = public, pg_temp cost 100 rows 40;
+$$ language sql volatile security invoker set search_path = public, pg_temp cost 100 rows 40;
 
 create aggregate array_agg_mult (anyarray) (
    sfunc     = array_cat
@@ -1093,42 +1093,42 @@ get_recent_matches (
   from matches m
   where m.created > a_last_match
   order by m.created desc;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_currencies (
   out currency varchar(4)
 ) returns setof varchar(4) as $$
   select currency from currencies order by position;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 dw_fees (
   out dw_fees
 ) returns setof dw_fees as $$
   select * from dw_fees;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 trade_fees (
   out trade_fees
 ) returns setof trade_fees as $$
   select * from trade_fees;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 dw_limits (
   out withdrawal_limits
 ) returns setof withdrawal_limits as $$
   select * from withdrawal_limits;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_pairs (
   out markets
 ) returns setof markets as $$
   select * from markets order by position;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 chart_from_db (
@@ -1151,7 +1151,7 @@ chart_from_db (
   where base = a_base and counter = a_counter and created >= (current_timestamp - interval '24 hours' )
   group by start_of_period
   order by start_of_period ASC;;
-$$ language sql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 withdraw_crypto (
@@ -1179,7 +1179,7 @@ begin
 
   return next;;
 end;;
-$$ language plpgsql volatile security definer SET search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 # --- !Downs
 
