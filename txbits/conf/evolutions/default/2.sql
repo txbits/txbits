@@ -480,13 +480,13 @@ create_user_complete (
   a_token varchar(256)
 ) returns bigint as $$
 declare
-  invalid_token boolean;;
+  valid_token boolean;;
 begin
   if a_email = '' then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  select count(*) <= 0 into invalid_token from tokens where token = a_token and email = a_email and is_signup = true and expiration >= current_timestamp ;;
-  if invalid_token or invalid_token is null then
+  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = true and expiration >= current_timestamp ;;
+  if valid_token is null then
     return -1;;
   end if;;
   return create_user(a_email, a_password, a_onMailingList);;
@@ -553,13 +553,13 @@ user_reset_password_complete (
   a_new_password text
 ) returns boolean as $$
 declare
-  invalid_token boolean;;
+  valid_token boolean;;
 begin
   if a_email = '' then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  select count(*) <= 0 into invalid_token from tokens where token = a_token and email = a_email and is_signup = false and expiration >= current_timestamp ;;
-  if invalid_token or invalid_token is null then
+  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = false and expiration >= current_timestamp ;;
+  if valid_token is null then
     return false;;
   end if;;
   insert into passwords (user_id, password) select id, crypt(a_new_password, gen_salt('bf', 8)) from users where email = a_email;;
@@ -1072,13 +1072,13 @@ orders_depth(
   a_counter varchar(4),
   out asks numeric(23,8)[][],
   out bids numeric(23,8)[][]
-) returns setof record as $$
+) returns record as $$
     select (
       nullif((select array_agg_mult(array[array[price, amount]]) from open_asks(a_base, a_counter)), array[]::numeric(23,8)[])
     ), (
       nullif((select array_agg_mult(array[array[price, amount]]) from open_bids(a_base, a_counter)), array[]::numeric(23,8)[])
     );;
-$$ language sql volatile security definer cost 100 rows 40;
+$$ language sql volatile security definer cost 100;
 
 create or replace function
 get_recent_matches (

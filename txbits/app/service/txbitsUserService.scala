@@ -52,11 +52,11 @@ object txbitsUserService {
   }
 
   def signupStart(email: String) {
-    globals.userModel.trustedActionStart(email, is_signup = true)
+    globals.userModel.trustedActionStart(email, isSignup = true)
   }
 
   def resetPassStart(email: String) {
-    globals.userModel.trustedActionStart(email, is_signup = false)
+    globals.userModel.trustedActionStart(email, isSignup = false)
   }
 
   /**

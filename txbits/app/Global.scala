@@ -184,6 +184,7 @@ object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with Gl
 
   override def onStart(app: Application) {
     Logger.info("Application has started")
+    // This is a somewhat hacky way to exit after statup so that we can apply database changes without stating the app
     if (Play.current.configuration.getBoolean("meta.exitimmediately").getOrElse(false)) {
       Logger.warn("Exiting because of meta.exitimmediately config set to true.")
       System.exit(0)

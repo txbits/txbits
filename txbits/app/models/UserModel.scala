@@ -229,11 +229,11 @@ class UserModel(val db: String = "default") {
     ).execute()
   }
 
-  def userChangePass(id: Long, old_password: String, new_password: String) = DB.withConnection(db) { implicit c =>
+  def userChangePass(id: Long, oldPassword: String, newPassword: String) = DB.withConnection(db) { implicit c =>
     frontend.userChangePassword.on(
       'user_id -> id,
-      'old_password -> old_password,
-      'new_password -> new_password
+      'old_password -> oldPassword,
+      'new_password -> newPassword
     ).execute()
   }
 
@@ -247,10 +247,10 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
-  def trustedActionStart(email: String, is_signup: Boolean) = DB.withConnection(db) { implicit c =>
+  def trustedActionStart(email: String, isSignup: Boolean) = DB.withConnection(db) { implicit c =>
     frontend.trustedActionStart.on(
       'email -> email,
-      'is_signup -> is_signup
+      'is_signup -> isSignup
     )().map(row =>
         row[Boolean]("success")
       ).head
