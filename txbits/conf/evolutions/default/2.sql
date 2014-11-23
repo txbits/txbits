@@ -648,9 +648,14 @@ add_fake_money (
   a_currency varchar(4),
   a_amount numeric(23,8)
 ) returns void as $$
-  insert into deposits(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
+declare
+  deposit_id bigint;;
+begin
+  insert into deposits(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0) returning id into deposit_id;;
+  insert into deposits_other(id, reason) values (deposit_id, 'fake money');;
   select transfer_funds(null, a_uid, a_currency, a_amount);;
-$$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 -- THIS FUNCTION MUST NOT HAVE "security definer"!!!
 create or replace function
@@ -659,9 +664,14 @@ remove_fake_money (
   a_currency varchar(4),
   a_amount numeric(23,8)
 ) returns void as $$
-  insert into withdrawals(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0);;
+declare
+  withdrawal_id bigint;;
+begin
+  insert into withdrawals(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0) returning id into withdrawal_id;;
+  insert into withdrawals_other(id, reason) values (withdrawal_id, 'fake money');;
   select transfer_funds(a_uid, null, a_currency, a_amount);;
-$$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 find_user_by_id (

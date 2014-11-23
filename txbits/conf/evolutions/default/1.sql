@@ -216,6 +216,12 @@ create table deposits_crypto (
 );
 create index deposits_crypto_address_idx on deposits_crypto(address);
 
+create table deposits_other (
+    id bigint not null primary key,
+    reason text not null,
+    foreign key (id) references deposits(id)
+);
+
 create sequence withdrawal_id_seq;
 create table withdrawals (
     id bigint default nextval('withdrawal_id_seq') primary key,
@@ -265,6 +271,12 @@ create table withdrawals_crypto (
 );
 create index withdrawals_crypto_tx_idx on withdrawals_crypto(withdrawals_crypto_tx_id);
 
+create table withdrawals_other (
+    id bigint not null primary key,
+    reason text not null,
+    foreign key (id) references withdrawals(id)
+);
+
 create table tokens (
     token varchar(256) not null primary key,
     email varchar(256) not null,
@@ -281,6 +293,7 @@ drop table if exists orders cascade;
 drop table if exists currencies cascade;
 drop table if exists deposits cascade;
 drop table if exists deposits_crypto cascade;
+drop table if exists deposits_other cascade;
 drop table if exists matches cascade;
 drop table if exists markets cascade;
 drop table if exists tokens cascade;
