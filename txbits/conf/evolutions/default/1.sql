@@ -301,6 +301,7 @@ drop table if exists passwords cascade;
 drop table if exists users cascade;
 drop table if exists users_addresses cascade;
 drop table if exists withdrawals cascade;
+drop table if exists withdrawals_other cascade;
 drop table if exists withdrawals_crypto cascade;
 drop table if exists withdrawals_crypto_tx cascade;
 drop table if exists withdrawals_crypto_tx_cold_storage cascade;
