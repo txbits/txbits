@@ -50,8 +50,6 @@ GET         /api/1/recent_trades/:first/:second        controllers.API.APIv1.rec
 GET         /api/1/deposit_withdraw_history            controllers.API.APIv1.depositWithdrawHistory
 GET         /api/1/trade_history                       controllers.API.APIv1.tradeHistory
 GET         /api/1/pending_trades                      controllers.API.APIv1.pendingTrades
-#POST        /api/1/add_fake_money                      controllers.API.APIv1.addFakeMoney
-#POST        /api/1/subtract_fake_money                 controllers.API.APIv1.subtractFakeMoney
 GET         /api/1/login_history                       controllers.API.APIv1.loginHistory
 GET         /api/1/user                                controllers.API.APIv1.user
 POST        /api/1/turnoff_tfa                         controllers.API.APIv1.turnOffTFA

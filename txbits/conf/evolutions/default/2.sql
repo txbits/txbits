@@ -653,7 +653,7 @@ declare
 begin
   insert into deposits(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0) returning id into deposit_id;;
   insert into deposits_other(id, reason) values (deposit_id, 'fake money');;
-  select transfer_funds(null, a_uid, a_currency, a_amount);;
+  perform transfer_funds(null, a_uid, a_currency, a_amount);;
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
@@ -669,7 +669,7 @@ declare
 begin
   insert into withdrawals(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0) returning id into withdrawal_id;;
   insert into withdrawals_other(id, reason) values (withdrawal_id, 'fake money');;
-  select transfer_funds(a_uid, null, a_currency, a_amount);;
+  perform transfer_funds(a_uid, null, a_currency, a_amount);;
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
