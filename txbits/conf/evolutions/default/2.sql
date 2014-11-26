@@ -487,7 +487,7 @@ begin
   end if;;
   select true into valid_token from tokens where token = a_token and email = a_email and is_signup = true and expiration >= current_timestamp ;;
   if valid_token is null then
-    return -1;;
+    return null;;
   end if;;
   return create_user(a_email, a_password, a_onMailingList);;
 end;;

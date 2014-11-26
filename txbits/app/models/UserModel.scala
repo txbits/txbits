@@ -42,7 +42,7 @@ class UserModel(val db: String = "default") {
       'password -> password,
       'onMailingList -> onMailingList,
       'token -> token
-    ).map(row => row[Long]("id")).list.headOption
+    ).map(row => row[Option[Long]]("id")).list.head
   }
 
   // insecure version, usable only in tests
