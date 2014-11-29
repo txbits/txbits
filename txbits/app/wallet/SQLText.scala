@@ -127,9 +127,10 @@ object SQLText {
 
   val isConfirmedDeposit = SQL(
     """
-      |select exists (select 1 from deposits_crypto where
-      |address = {address} and tx_hash = {tx_hash} and
-      |confirmed is not NULL) as exists
+      |select exists (select 1
+      |from deposits d inner join deposits_crypto dc on d.id = dc.id
+      |where dc.address = {address} and dc.tx_hash = {tx_hash} and
+      |d.amount = {amount} and confirmed is not NULL) as exists
     """.stripMargin)
 
   val getPendingDeposits = SQL(

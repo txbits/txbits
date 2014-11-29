@@ -92,6 +92,7 @@ class WalletModel(val db: String = "default") {
   def isConfirmedDeposit(deposit: Deposit) = DB.withConnection(db) { implicit c =>
     SQLText.isConfirmedDeposit.on(
       'address -> deposit.address,
+      'amount -> deposit.amount,
       'tx_hash -> deposit.txHash
     )().map(row => row[Boolean]("exists")).head
   }

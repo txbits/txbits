@@ -200,7 +200,7 @@ create table deposits (
 
 create table deposits_crypto (
     id bigint not null primary key,
-    tx_hash varchar(64) not null unique,
+    tx_hash varchar(64) not null,
     address varchar(34) not null,
     confirmed timestamp,
     foreign key (address) references users_addresses(address),

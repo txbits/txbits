@@ -527,5 +527,91 @@ class WalletSpec extends Specification with Mockito {
       originalTxHash shouldEqual "sha256txhash"
       mutatedTxHash shouldEqual "mutatedtxhash"
     }
+
+    "handle multiple deposits with the same tx hash" in new WithCleanTestDbApplication {
+      val uid = globals.userModel.create("test@test.test", "", false).get
+
+      // we are testing an actor
+      implicit val actorSystem = Akka.system()
+
+      val feeAmt = 1
+      val feePct = 0.01
+      globals.engineModel.setFees("LTC", "blockchain", feeAmt, feePct, 0, 0)
+
+      // assemble a mock rpc to make calls into
+      val rpc = mock[JsonRpcHttpClient]
+
+      // Associate the address manually
+      globals.walletModel.addNewAddress(Wallet.CryptoCurrency.LTC, 0, "masdfasdfasdf")
+      // Retrieves addresses and assigns a new one if needed
+      globals.engineModel.addresses(uid, Wallet.CryptoCurrency.LTC.toString)
+
+      // first we fake the call to get the block number
+      val blockCount = 99999999
+      rpc.invoke("getblockcount", null, classOf[Int]) returns blockCount
+      rpc.invoke("getbalance", null, classOf[BigDecimal]) returns BigDecimal(9999)
+
+      // we mock the call to get the transactions
+      val m = new ObjectMapper()
+      val list = m.readTree(
+        """
+          {
+            "transactions": [
+              {
+                "account": "",
+                "address": "masdfasdfasdf",
+                "category": "receive",
+                "amount": 12.34,
+                "confirmations": 100,
+                "txid": "sha256txhash",
+                "time": 1400000000,
+                "timereceived": 1400000000
+              },
+              {
+                "account": "",
+                "address": "masdfasdfasdf",
+                "category": "receive",
+                "amount": 1.23,
+                "confirmations": 100,
+                "txid": "sha256txhash",
+                "time": 1400000000,
+                "timereceived": 1400000000
+              },
+              {
+                "account": "",
+                "address": "masdfasdfasdf",
+                "category": "receive",
+                "amount": 1.23,
+                "confirmations": 100,
+                "txid": "sha256txhash",
+                "time": 1400000000,
+                "timereceived": 1400000000
+              },
+              {
+                "account": "",
+                "address": "munassignedaddress",
+                "category": "receive",
+                "amount": 1.23,
+                "confirmations": 100,
+                "txid": "sha256txhash",
+                "time": 1400000000,
+                "timereceived": 1400000000
+              }
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+      rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) returns list
+
+      // this is our system under test with mocked out engine and rpc parameters
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel))
+      val wallet = walletActor.underlyingActor
+
+      wallet.update()
+
+      // make sure the correct deposit was made
+      val result = globals.engineModel.balance(uid)
+      // balance should equal the user's 12.34 + 1.23 deposit, the duplicate 1.23 deposit is intentionally not credited
+      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (BigDecimal((12.34 - feeAmt - 12.34 * feePct) + (1.23 - feeAmt - 1.23 * feePct)), BigDecimal(0)))
+    }
   }
 }
