@@ -22,9 +22,10 @@ import play.api.data.validation.{ Invalid, Valid, Constraint }
 
 object PasswordValidator {
   import PasswordValidator._
+  val min_len = 12
 
   val validator = Constraint[String](Some("Password complexity constraint"), "") {
-    case password: String if password.length >= 12 => Valid
+    case password: String if password.length >= min_len => Valid
     case password => Invalid(Messages("securesocial.signup.invalidPassword", 12))
   }
 }

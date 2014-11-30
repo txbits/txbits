@@ -4,6 +4,7 @@
 @implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
 
 @scripts = {
+    <script src="@routes.Assets.at("js/password-form.js")"></script>
     <script src="@routes.Assets.at("js/vendor/zxcvbn-async.js")"></script>
     <script src="@routes.Assets.at("js/zxcvbn-indicator.js")"></script>
 }
@@ -12,13 +13,15 @@
 
     @request.flash.get("error").map { msg =>
         <div class="alert alert-danger">
-            @msg
+            @Messages(msg)
         </div>
     }
 
     <form action="@controllers.routes.Registration.handleSignUp(token).absoluteURL(UsernamePasswordProvider.sslEnabled)"
           autocomplete= "off"
           method="POST"
+          class="password-form"
+          data-password-length="@securesocial.core.providers.utils.PasswordValidator.min_len"
     >
         @CSRF.formField
 
