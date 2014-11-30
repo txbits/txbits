@@ -49,6 +49,8 @@ error.date=Please enter a valid date.
 emails.off.title=Unsubscribe from mailing list
 emails.on.title=Subscribe to mailing list
 
+text.password.advice=Tip: Use a randomly generated password and save it in a password manager or write it down.
+
 terminology.verificationLevel=Verification Level
 
 tfa.off.explanation=Type your current two factor authentication code below to confirm this is you and you really want to turn off two factor authentication. This will make your account easier to steal.
