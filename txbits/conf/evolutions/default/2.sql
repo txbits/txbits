@@ -485,10 +485,11 @@ begin
   if a_email = '' then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = true and expiration >= current_timestamp ;;
+  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = true and expiration >= current_timestamp;;
   if valid_token is null then
     return null;;
   end if;;
+  delete from tokens where email = a_email and is_signup = true;;
   return create_user(a_email, a_password, a_onMailingList);;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -558,10 +559,11 @@ begin
   if a_email = '' then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = false and expiration >= current_timestamp ;;
+  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = false and expiration >= current_timestamp;;
   if valid_token is null then
     return false;;
   end if;;
+  delete from tokens where email = a_email and is_signup = false;;
   insert into passwords (user_id, password) select id, crypt(a_new_password, gen_salt('bf', 8)) from users where email = a_email;;
   return true;;
 end;;
