@@ -37,46 +37,4 @@ $(function(){
 
         $('#big-tickers').html(tickers_template(tickers));
     });
-
-    /*
-    var fakemoney_template = Handlebars.compile($("#fake-money-form-template").html());
-    API.currencies().success(function(data){
-        $('#fake-money-form').html(fakemoney_template(data.result));
-
-        //TODO: make this work with the keyboard
-        $('#fake-money-form').find('.add').click(function(e){
-            var $form = $('#fake-money-form');
-            var currency = $form.find("#currency").val();
-            var amount = Number($form.find("#amount").val());
-            API.add_fake_money(currency, amount).success(function(){
-                $.pnotify({
-                    title: 'Fake money added.',
-                    text: 'currency:' + currency + ', amount:' + amount,
-                    styling: 'bootstrap',
-                    type: 'success',
-                    text_escape: true
-                });
-                show_balance();
-            });
-            e.preventDefault();
-        });
-
-        //TODO: make this work with the keyboard
-        $('#fake-money-form').find('.subtract').click(function(e){
-            var $form = $('#fake-money-form');
-            var currency = $form.find("#currency").val();
-            var amount = Number($form.find("#amount").val());
-            API.subtract_fake_money(currency, amount).success(function(){
-                $.pnotify({
-                    title: 'Fake money subtracted.',
-                    text: 'currency:' + currency + ', amount:' + amount,
-                    styling: 'bootstrap',
-                    type: 'success',
-                    text_escape: true
-                });
-            });
-            e.preventDefault();
-            show_balance();
-        });
-    });*/
 });

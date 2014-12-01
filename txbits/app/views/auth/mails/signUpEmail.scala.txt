@@ -1,9 +1,9 @@
-@(token: String)(implicit request: RequestHeader, lang: Lang)
+@(token: String, url: String)
 @import securesocial.core.UsernamePasswordProvider
 Hello,
 
 Please follow this link to complete your registration.
 
-@controllers.routes.Registration.signUp(token).absoluteURL(UsernamePasswordProvider.sslEnabled)
+@url
 
 @_footer()

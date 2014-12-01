@@ -112,24 +112,6 @@ var API;
             return $.get('/api/1/pending_trades', 'json');
         }),
 
-        add_fake_money: APIWrap(function(currency, amount) {
-            return $.ajax('/api/1/add_fake_money', {
-                type: 'POST',
-                data: JSON.stringify({currency: currency, amount: amount}),
-                dataType: 'json',
-                contentType: 'application/json'
-            });
-        }),
-
-        subtract_fake_money: APIWrap(function(currency, amount) {
-            return $.ajax('/api/1/subtract_fake_money', {
-                type: 'POST',
-                data: JSON.stringify({currency: currency, amount: amount}),
-                dataType: 'json',
-                contentType: 'application/json'
-            });
-        }),
-
         trade_fees: APIWrap(function() {
             return $.get('/api/1/trade_fees', 'json');
         }),

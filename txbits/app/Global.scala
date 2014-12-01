@@ -10,6 +10,7 @@ import com.googlecode.jsonrpc4j.JsonRpcHttpClient
 import controllers.API.CryptoAddress
 import java.net.{ PasswordAuthentication, Authenticator, URL }
 import play.api.mvc.Result
+import play.api.Play.current
 import play.filters.csrf.CSRFFilter
 import play.filters.headers.SecurityHeadersFilter
 import scala.concurrent.duration._
@@ -24,6 +25,7 @@ import play.libs.Akka
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import service.txbitsUserService
+import usertrust.{ UserTrustModel, UserTrustService }
 import wallet.{ WalletModel, Wallet }
 
 package object globals {
@@ -75,11 +77,23 @@ package object globals {
   }
 
   val masterDB = "default"
+  val masterDBWallet = "wallet"
+  val masterDBTrusted = "trust"
+
   val userModel = new UserModel(masterDB)
   val metaModel = new MetaModel(masterDB)
   val engineModel = new EngineModel(masterDB)
   val logModel = new LogModel(masterDB)
-  val walletModel = new WalletModel(masterDB)
+
+  val walletModel = new WalletModel(masterDBWallet)
+
+  val userTrustModel = new UserTrustModel(masterDBTrusted)
+
+  // create UserTrust actor
+  val userTrustActor = current.configuration.getBoolean("usertrustservice.enabled").getOrElse(false) match {
+    case true => Some(Akka.system.actorOf(UserTrustService.props(userTrustModel)))
+    case false => None
+  }
 
   // set up rpc authenticator for wallets
   val rpcAuth = DefaultAuthenticator.getInstance()
@@ -170,6 +184,11 @@ object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with Gl
 
   override def onStart(app: Application) {
     Logger.info("Application has started")
+    // This is a somewhat hacky way to exit after statup so that we can apply database changes without stating the app
+    if (Play.current.configuration.getBoolean("meta.exitimmediately").getOrElse(false)) {
+      Logger.warn("Exiting because of meta.exitimmediately config set to true.")
+      System.exit(0)
+    }
     txbitsUserService.onStart()
     controllers.StatsAPI.APIv1.onStart()
   }

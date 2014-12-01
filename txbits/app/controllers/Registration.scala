@@ -57,10 +57,7 @@ object Registration extends Controller {
   val Success = "success"
   val Error = "error"
 
-  val TokenDurationKey = "securesocial.userpass.tokenDuration"
   val RegistrationEnabled = "securesocial.registrationEnabled"
-  val DefaultDuration = 60
-  val TokenDuration = Play.current.configuration.getInt(TokenDurationKey).getOrElse(DefaultDuration)
 
   /** The redirect target of the handleStartSignUp action. */
   val onHandleStartSignUpGoTo = stringConfig("securesocial.onStartSignUpGoTo", controllers.routes.LoginPage.login().url)
@@ -119,20 +116,6 @@ object Registration extends Controller {
 
   val random = new SecureRandom()
 
-  private def createToken(email: String, isSignUp: Boolean): (String, Token) = {
-    val tokenId = use[IdGenerator].generate
-    val now = DateTime.now
-
-    val token = Token(
-      tokenId, email,
-      now,
-      now.plusMinutes(TokenDuration),
-      isSignUp = isSignUp
-    )
-    txbitsUserService.save(token)
-    (tokenId, token)
-  }
-
   def handleStartSignUp = Action { implicit request =>
     if (registrationEnabled) {
       startForm.bindFromRequest.fold(
@@ -140,17 +123,7 @@ object Registration extends Controller {
           BadRequest(SecureSocialTemplates.getStartSignUpPage(request, errors))
         },
         email => {
-          // check if there is already an account for this email address
-          txbitsUserService.findByEmail(email) match {
-            case Some(user) => {
-              // user signed up already, send an email offering to login/recover password
-              Mailer.sendAlreadyRegisteredEmail(user)
-            }
-            case None => {
-              val token = createToken(email, isSignUp = true)
-              Mailer.sendSignUpEmail(email, token._1)
-            }
-          }
+          txbitsUserService.signupStart(email)
           Redirect(onHandleStartSignUpGoTo).flashing(Success -> Messages(ThankYouCheckEmail), Email -> email)
         }
       )
@@ -203,7 +176,7 @@ object Registration extends Controller {
               t.email,
               0, //not verified
               info.mailingList
-            ), info.password)
+            ), info.password, token)
             txbitsUserService.deleteToken(t.uuid)
             if (UsernamePasswordProvider.sendWelcomeEmail) {
               Mailer.sendWelcomeEmail(user)
@@ -230,12 +203,11 @@ object Registration extends Controller {
         BadRequest(SecureSocialTemplates.getStartResetPasswordPage(request, errors))
       },
       email => {
-        txbitsUserService.findByEmail(email) match {
-          case Some(user) => {
-            val token = createToken(email, isSignUp = false)
-            Mailer.sendPasswordResetEmail(user, token._1)
+        txbitsUserService.userExists(email) match {
+          case true => {
+            txbitsUserService.resetPassStart(email)
           }
-          case None => {
+          case false => {
             // The user wasn't registered. Oh, well.
           }
         }
@@ -256,16 +228,17 @@ object Registration extends Controller {
         BadRequest(SecureSocialTemplates.getResetPasswordPage(request, errors, token))
       },
         p => {
-          val (toFlash, eventSession) = txbitsUserService.findByEmail(t.email) match {
-            case Some(user) => {
-              val updated = txbitsUserService.change_pass(user, p._1)
+          val toFlash = txbitsUserService.userExists(t.email) match {
+            case true => {
+              // this should never actually fail because we checked the token already
+              txbitsUserService.resetPass(t.email, token, p._1)
               txbitsUserService.deleteToken(token)
-              Mailer.sendPasswordChangedNotice(updated)
-              (Success -> Messages(PasswordUpdated), updated)
+              Mailer.sendPasswordChangedNotice(t.email)
+              Success -> Messages(PasswordUpdated)
             }
-            case _ => {
+            case false => {
               Logger.error("[securesocial] could not find user with email %s during password reset".format(t.email))
-              (Error -> Messages(ErrorUpdatingPassword), None)
+              Error -> Messages(ErrorUpdatingPassword)
             }
           }
           Redirect(onHandleResetPasswordGoTo).flashing(toFlash)

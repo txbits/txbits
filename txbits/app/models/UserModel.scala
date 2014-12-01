@@ -36,8 +36,18 @@ class UserModel(val db: String = "default") {
   import globals.symbolColumn
   import globals.bigDecimalColumn
 
+  def create(email: String, password: String, onMailingList: Boolean, token: String) = DB.withConnection(db) { implicit c =>
+    frontend.createUserComplete.on(
+      'email -> email,
+      'password -> password,
+      'onMailingList -> onMailingList,
+      'token -> token
+    ).map(row => row[Option[Long]]("id")).list.head
+  }
+
+  // insecure version, usable only in tests
   def create(email: String, password: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
-    frontend.createUser.on(
+    frontend.createUserInsecure.on(
       'email -> email,
       'password -> password,
       'onMailingList -> onMailingList
@@ -96,21 +106,12 @@ class UserModel(val db: String = "default") {
         ).headOption
     }
 
-  def findUserByEmail(email: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
-    frontend.findUserByEmail.on(
+  def userExists(email: String): Boolean = DB.withConnection(db) { implicit c =>
+    frontend.userExists.on(
       'email -> email
     )().map(row =>
-        new SocialUser(
-          row[Long]("id"),
-          row[String]("email"),
-          row[Int]("verification"),
-          row[Boolean]("on_mailing_list"),
-          row[Boolean]("tfa_withdrawal"),
-          row[Boolean]("tfa_login"),
-          row[Option[String]]("tfa_secret"),
-          row[Option[Symbol]]("tfa_type")
-        )
-      ).headOption
+        row[Boolean]("user_exists")
+      ).head
   }
 
   def findUserByEmailAndPassword(email: String, password: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
@@ -158,24 +159,6 @@ class UserModel(val db: String = "default") {
           row[Option[String]]("address").getOrElse(""))
       ).toList
   }
-
-  /**
-   * Note: If you do not plan to use the UsernamePassword provider just provide en empty
-   * implementation
-   *
-   * @param token The token to save
-   * @return A string with a uuid that will be embedded in the welcome email.
-   */
-  def saveToken(token: Token) =
-    DB.withConnection(db) { implicit c =>
-      frontend.saveToken.on(
-        'email -> token.email,
-        'token -> token.uuid,
-        'creation -> new Timestamp(token.creationTime.getMillis),
-        'expiration -> new Timestamp(token.expirationTime.getMillis),
-        'is_signup -> token.isSignUp
-      ).execute
-    }
 
   /**
    * Finds a token
@@ -246,11 +229,31 @@ class UserModel(val db: String = "default") {
     ).execute()
   }
 
-  def userChangePass(id: Long, password: String) = DB.withConnection(db) { implicit c =>
+  def userChangePass(id: Long, oldPassword: String, newPassword: String) = DB.withConnection(db) { implicit c =>
     frontend.userChangePassword.on(
       'user_id -> id,
-      'password -> password
+      'old_password -> oldPassword,
+      'new_password -> newPassword
     ).execute()
+  }
+
+  def userResetPass(email: String, token: String, password: String) = DB.withConnection(db) { implicit c =>
+    frontend.userResetPasswordComplete.on(
+      'email -> email,
+      'token -> token,
+      'password -> password
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
+  }
+
+  def trustedActionStart(email: String, isSignup: Boolean) = DB.withConnection(db) { implicit c =>
+    frontend.trustedActionStart.on(
+      'email -> email,
+      'is_signup -> isSignup
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
   }
 
   def genTFASecret(uid: Long, typ: String) = DB.withConnection(db) { implicit c =>

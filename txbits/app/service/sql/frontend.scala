@@ -7,9 +7,16 @@ package service.sql
 import anorm._
 
 object frontend {
-  val createUser = SQL(
+
+  // This function requires superuser database permissions
+  val createUserInsecure = SQL(
     """
-    | select * from create_user({password}, {email}, {onMailingList})
+    | select create_user as id from create_user({email}, {password}, {onMailingList})
+    |""".stripMargin)
+
+  val createUserComplete = SQL(
+    """
+    | select create_user_complete as id from create_user_complete({email}, {password}, {onMailingList}, {token})
     |""".stripMargin)
 
   val updateUser = SQL(
@@ -17,9 +24,24 @@ object frontend {
     | select * from update_user({id}, {email}, {onMailingList})
     |""".stripMargin)
 
+  val userExists = SQL(
+    """
+    | select * from user_exists({email});
+    |""".stripMargin)
+
   val userChangePassword = SQL(
     """
-    | select * from user_change_password({user_id}, {password})
+    | select * from user_change_password({user_id}, {old_password}, {new_password})
+    |""".stripMargin)
+
+  val userResetPasswordComplete = SQL(
+    """
+    | select user_reset_password_complete as success from user_reset_password_complete({email}, {token}, {password})
+    |""".stripMargin)
+
+  val trustedActionStart = SQL(
+    """
+    | select trusted_action_start as success from trusted_action_start({email}, {is_signup})
     |""".stripMargin)
 
   val turnonTfa = SQL(
@@ -62,19 +84,9 @@ object frontend {
     | select * from find_user_by_id({id})
     |""".stripMargin)
 
-  val findUserByEmail = SQL(
-    """
-    | select * from find_user_by_email({email})
-    |""".stripMargin)
-
   val findUserByEmailAndPassword = SQL(
     """
     | select * from find_user_by_email_and_password({email}, {password})
-    |""".stripMargin)
-
-  val saveToken = SQL(
-    """
-    | select * from save_token({token}, {email}, {is_signup}, {creation}, {expiration})
     |""".stripMargin)
 
   val findToken = SQL(

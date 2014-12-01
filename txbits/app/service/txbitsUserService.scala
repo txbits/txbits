@@ -16,25 +16,16 @@ object txbitsUserService {
     globals.userModel.findUserById(id)
   }
 
-  /**
-   * Finds a user by email and provider id.
-   *
-   * Note: If you do not plan to use the UsernamePassword provider just provide en empty
-   * implementation.
-   *
-   * @param email - the user email
-   * @return
-   */
-  def findByEmail(email: String): Option[SocialUser] = {
-    globals.userModel.findUserByEmail(email)
+  def userExists(email: String): Boolean = {
+    globals.userModel.userExists(email)
   }
 
   def findByEmailAndPassword(email: String, password: String): Option[SocialUser] = {
     globals.userModel.findUserByEmailAndPassword(email, password)
   }
 
-  def create(user: SocialUser, password: String): SocialUser = {
-    val user_id = globals.userModel.create(user.email, password, user.onMailingList)
+  def create(user: SocialUser, password: String, token: String): SocialUser = {
+    val user_id = globals.userModel.create(user.email, password, user.onMailingList, token)
 
     user_id match {
       case Some(id) => {
@@ -55,20 +46,17 @@ object txbitsUserService {
     user
   }
 
-  def change_pass(user: SocialUser, password: String): SocialUser = {
-    globals.userModel.userChangePass(user.id, password)
-    user
+  // this function requires higher database privileges
+  def resetPass(email: String, token: String, password: String) {
+    globals.userModel.userResetPass(email, token, password)
   }
 
-  /**
-   * Note: If you do not plan to use the UsernamePassword provider just provide en empty
-   * implementation
-   *
-   * @param token The token to save
-   * @return A string with a uuid that will be embedded in the welcome email.
-   */
-  def save(token: Token) = {
-    globals.userModel.saveToken(token)
+  def signupStart(email: String) {
+    globals.userModel.trustedActionStart(email, isSignup = true)
+  }
+
+  def resetPassStart(email: String) {
+    globals.userModel.trustedActionStart(email, isSignup = false)
   }
 
   /**

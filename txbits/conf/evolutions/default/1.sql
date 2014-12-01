@@ -8,6 +8,9 @@
 
 create extension pgcrypto;
 
+grant select on play_evolutions to public;
+revoke create on schema public from public;
+
 create table currencies (
     currency varchar(4) not null primary key,
     position int not null -- used for displaying
@@ -28,9 +31,8 @@ create table trade_fees (
     linear numeric(23,8) not null check(linear >= 0)
 );
 
-create sequence users_id_seq;
 create table users (
-    id bigint default nextval('users_id_seq') primary key,
+    id bigint primary key,
     created timestamp default current_timestamp not null,
     email varchar(256) not null,
     on_mailing_list bool default false,
@@ -49,6 +51,12 @@ create table passwords (
     created timestamp default current_timestamp not null,
     foreign key (user_id) references users(id),
     primary key (user_id, created)
+);
+
+create table trusted_action_requests (
+    email varchar(256),
+    is_signup boolean not null,
+    primary key (email, is_signup)
 );
 
 create table totp_tokens_blacklist (
@@ -208,6 +216,12 @@ create table deposits_crypto (
 );
 create index deposits_crypto_address_idx on deposits_crypto(address);
 
+create table deposits_other (
+    id bigint not null primary key,
+    reason text not null,
+    foreign key (id) references deposits(id)
+);
+
 create sequence withdrawal_id_seq;
 create table withdrawals (
     id bigint default nextval('withdrawal_id_seq') primary key,
@@ -257,6 +271,12 @@ create table withdrawals_crypto (
 );
 create index withdrawals_crypto_tx_idx on withdrawals_crypto(withdrawals_crypto_tx_id);
 
+create table withdrawals_other (
+    id bigint not null primary key,
+    reason text not null,
+    foreign key (id) references withdrawals(id)
+);
+
 create table tokens (
     token varchar(256) not null primary key,
     email varchar(256) not null,
@@ -273,6 +293,7 @@ drop table if exists orders cascade;
 drop table if exists currencies cascade;
 drop table if exists deposits cascade;
 drop table if exists deposits_crypto cascade;
+drop table if exists deposits_other cascade;
 drop table if exists matches cascade;
 drop table if exists markets cascade;
 drop table if exists tokens cascade;
@@ -280,6 +301,7 @@ drop table if exists passwords cascade;
 drop table if exists users cascade;
 drop table if exists users_addresses cascade;
 drop table if exists withdrawals cascade;
+drop table if exists withdrawals_other cascade;
 drop table if exists withdrawals_crypto cascade;
 drop table if exists withdrawals_crypto_tx cascade;
 drop table if exists withdrawals_crypto_tx_cold_storage cascade;
@@ -291,9 +313,9 @@ drop table if exists trade_fees cascade;
 drop table if exists totp_tokens_blacklist cascade;
 drop table if exists event_log cascade;
 drop table if exists withdrawal_limits cascade;
+drop table if exists trusted_action_requests cascade;
 drop sequence if exists order_id_seq cascade;
 drop sequence if exists deposit_id_seq cascade;
-drop sequence if exists users_id_seq cascade;
 drop sequence if exists withdrawal_id_seq cascade;
 drop sequence if exists market_id_seq cascade;
 drop sequence if exists event_log_id_seq cascade;
