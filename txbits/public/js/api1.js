@@ -6,24 +6,19 @@ var API;
     var APIWrap = function(fn) {
         return function () {
             return fn.apply(this, arguments).error( function (res) {
+                var err_text = '';
                 try {
-                    var obj = JSON.parse(res.responseText);
-                    $.pnotify({
-                        title: 'API Error',
-                        text: obj.error,
-                        styling: 'bootstrap',
-                        type: 'error',
-                        text_escape: true
-                    });
+                    err_text = JSON.parse(res.responseText).message
                 } catch (e) {
-                    $.pnotify({
-                        title: 'API Error',
-                        text: res.responseText,
-                        styling: 'bootstrap',
-                        type: 'error',
-                        text_escape: true
-                    });
+                    err_text = res.responseText;
                 }
+                $.pnotify({
+                    title: 'API Error',
+                    text: err_text,
+                    styling: 'bootstrap',
+                    type: 'error',
+                    text_escape: true
+                });
             });
         };
     };

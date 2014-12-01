@@ -2,8 +2,7 @@ $(function(){
     var template = Handlebars.compile($("#balance-template").html());
 
     function show_balance(){
-        API.balance().success(function(data){
-            var balances = data.result;
+        API.balance().success(function(balances){
             for (var i = 0; i < balances.length; i++) {
                 balances[i].available = zerosToSpaces(Number(balances[i].amount) - Number(balances[i].hold));
                 balances[i].amount = zerosToSpaces(balances[i].amount);
@@ -16,8 +15,7 @@ $(function(){
 
     var tickers_template = Handlebars.compile($("#big-tickers-template").html());
 
-    API.ticker().success(function(data){
-        var tickers = data.result;
+    API.ticker().success(function(tickers){
         for (var i = 0; i < tickers.length; i++) {
             if (Number(tickers[i].last) > Number(tickers[i].first)) {
                 tickers[i].color = "green";

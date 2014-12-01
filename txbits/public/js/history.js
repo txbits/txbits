@@ -4,49 +4,49 @@ $(function(){
     var login_history_template = Handlebars.compile($("#login-history-template").html());
     API.deposit_withdraw_history().success(function(data){
         var i;
-        for (i = 0; i < data.result.length; i++){
-            data.result[i].created = moment(Number(data.result[i].created)).format("YYYY-MM-DD HH:mm:ss");
-            data.result[i].amount = zerosToSpaces(data.result[i].amount);
-            data.result[i].fee = zerosToSpaces(data.result[i].fee);
-            data.result[i].address = data.result[i].address ? data.result[i].address : "N/A";
-            if (data.result[i].typ == 'd') {
-                data.result[i].typ = "Deposit";
-                data.result[i].klass = "success";
+        for (i = 0; i < data.length; i++){
+            data[i].created = moment(Number(data[i].created)).format("YYYY-MM-DD HH:mm:ss");
+            data[i].amount = zerosToSpaces(data[i].amount);
+            data[i].fee = zerosToSpaces(data[i].fee);
+            data[i].address = data[i].address ? data[i].address : "N/A";
+            if (data[i].typ == 'd') {
+                data[i].typ = "Deposit";
+                data[i].klass = "success";
             } else {
-                data.result[i].typ = "Withdrawal";
-                data.result[i].klass = "danger";
+                data[i].typ = "Withdrawal";
+                data[i].klass = "danger";
             }
         }
-        var html = dw_template(data.result);
+        var html = dw_template(data);
         $('#deposit-withdraw-history').html(html);
     });
     API.trade_history().success(function(data){
         var i;
-        for (i = 0; i < data.result.length; i++){
-            data.result[i].value = zerosToSpaces(Number(data.result[i].amount) * Number(data.result[i].price));
-            data.result[i].amount = zerosToSpaces(data.result[i].amount);
-            data.result[i].price = zerosToSpaces(data.result[i].price);
-            data.result[i].created = moment(Number(data.result[i].created)).format("YYYY-MM-DD HH:mm:ss");
-            data.result[i].fee = zerosToSpaces(data.result[i].fee);
-            if (data.result[i].typ == "ask") {
-                data.result[i].fee_currency = data.result[i].counter;
-                data.result[i].order_type = "Sell";
-                data.result[i].klass = "danger";
+        for (i = 0; i < data.length; i++){
+            data[i].value = zerosToSpaces(Number(data[i].amount) * Number(data[i].price));
+            data[i].amount = zerosToSpaces(data[i].amount);
+            data[i].price = zerosToSpaces(data[i].price);
+            data[i].created = moment(Number(data[i].created)).format("YYYY-MM-DD HH:mm:ss");
+            data[i].fee = zerosToSpaces(data[i].fee);
+            if (data[i].typ == "ask") {
+                data[i].fee_currency = data[i].counter;
+                data[i].order_type = "Sell";
+                data[i].klass = "danger";
             } else {
-                data.result[i].fee_currency = data.result[i].base;
-                data.result[i].order_type = "Buy";
-                data.result[i].klass = "success";
+                data[i].fee_currency = data[i].base;
+                data[i].order_type = "Buy";
+                data[i].klass = "success";
             }
         }
-        var html = trade_template(data.result);
+        var html = trade_template(data);
         $('#trade-history').html(html);
     });
     API.login_history().success(function(data){
         var i;
-        for (i = 0; i < data.result.length; i++){
-            data.result[i].created = moment(Number(data.result[i].created)).format("YYYY-MM-DD HH:mm:ss");
+        for (i = 0; i < data.length; i++){
+            data[i].created = moment(Number(data[i].created)).format("YYYY-MM-DD HH:mm:ss");
         }
-        var html = login_history_template(data.result);
+        var html = login_history_template(data);
         $('#login-history').html(html);
     });
 });

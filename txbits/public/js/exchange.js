@@ -6,9 +6,9 @@ $(function(){
     var bid_template = Handlebars.compile($("#bid-template").html());
     var ask_template = Handlebars.compile($("#ask-template").html());
     API.pairs().success(function(data){
-        exchangeModel.pairs = data.result;
+        exchangeModel.pairs = data;
 
-        $('#pair-picker').html(pp_template(data.result));
+        $('#pair-picker').html(pp_template(data));
         $('#pair-picker a').click(function(e){
             var $this = $(this);
             //TODO: mark as active only after the page is done loading; maybe show some kind of spinner
@@ -18,7 +18,7 @@ $(function(){
             e.preventDefault();
         });
 
-        pick_pair(data.result[0].base, data.result[0].counter);
+        pick_pair(data[0].base, data[0].counter);
     });
 
     function pick_pair(base, counter) {
@@ -31,9 +31,8 @@ $(function(){
         }
 
         var pt_template = Handlebars.compile($("#pending-trades-template").html());
-        API.pending_trades().success(function(data){
+        API.pending_trades().success(function(trades){
             var i;
-            var trades = data.result;
             for (i = 0; i < trades.length; i++){
                 trades[i].value = zerosToSpaces((Number(trades[i].amount) * Number(trades[i].price)));
                 trades[i].amount = zerosToSpaces(trades[i].amount);
@@ -69,9 +68,7 @@ $(function(){
 
         var ob_template = Handlebars.compile($("#open-bids-template").html());
         var oa_template = Handlebars.compile($("#open-asks-template").html());
-        API.balance().success(function(data){
-            var balances = data.result;
-
+        API.balance().success(function(balances){
             var balance_base = "0.00000000";
             var balance_counter = "0.00000000";
 
@@ -86,12 +83,12 @@ $(function(){
             }
 
             API.trade_fees().success().success(function(data){
-                var fee = data.result;
+                var fee = data;
 
                 API.open_trades(base, counter).success(function(data){
                     var i;
                     var bids = {};
-                    bids.orders = data.result.bids;
+                    bids.orders = data.bids;
                     bids.base = base;
                     bids.counter = counter;
                     for (i = 0; i < bids.orders.length; i++){
@@ -100,7 +97,7 @@ $(function(){
                         bids.orders[i].price = zerosToSpaces(bids.orders[i].price);
                     }
                     var asks = {};
-                    asks.orders = data.result.asks;
+                    asks.orders = data.asks;
                     asks.base = base;
                     asks.counter = counter;
                     for (i = 0; i < asks.orders.length; i++){
@@ -190,7 +187,7 @@ $(function(){
         API.recent_trades(base, counter).success(function(data){
             var i;
             var trades = {};
-            trades.orders = data.result;
+            trades.orders = data;
             trades.base = base;
             trades.counter = counter;
             for (i = 0; i < trades.orders.length; i++){
@@ -215,12 +212,12 @@ $(function(){
             var d2 = [];
             var d3 = [];
             var max = 0;
-            if (data.result.length) {
-                var min = data.result[0][2];
-                var last = data.result[data.result.length-1][1];
+            if (data.length) {
+                var min = data[0][2];
+                var last = data[data.length-1][1];
             }
-            for (i=0; i < data.result.length; i++){
-                var d = data.result[i];
+            for (i=0; i < data.length; i++){
+                var d = data[i];
                 max = Math.max(d[1], max);
                 min = Math.min(d[2], min);
                 d2.push([d[0], d[1], d[2], d[3], d[4]]);

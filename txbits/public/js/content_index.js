@@ -1,8 +1,7 @@
 $(function(){
     var tickers_template = Handlebars.compile($("#big-tickers-template").html());
 
-    API.ticker().success(function(data){
-        var tickers = data.result;
+    API.ticker().success(function(tickers){
         for (var i = 0; i < tickers.length; i++) {
             if (Number(tickers[i].last) > Number(tickers[i].first)) {
                 tickers[i].color = "green";

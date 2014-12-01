@@ -7,13 +7,13 @@ $(function(){
     function reload(){
         API.user().success(function(data){
             var verificationText = "";
-            switch (data.result.verification) {
+            switch (data.verification) {
                 case -1: verificationText = "Identity verification pending"; break;
                 case 0: verificationText = "Not verified"; break;
                 default : verificationText = "Verified";
             }
-            data.result.verification = verificationText;
-            $('#acct-info').html(info_template(data.result));
+            data.verification = verificationText;
+            $('#acct-info').html(info_template(data));
 
             //TODO: internationalize javascript messages
             $('#turnoff-emails').click(function(e){
@@ -61,8 +61,8 @@ $(function(){
                         });
                         e.preventDefault();
                     }
-                    $("#tfa-enable-modal .modal-body").html(totp_secret_template(data.result)).find('form').submit(enable);
-                    $("#tfa-enable-qr").qrcode({render: "div", size: 200, text: data.result.otpauth});
+                    $("#tfa-enable-modal .modal-body").html(totp_secret_template(data)).find('form').submit(enable);
+                    $("#tfa-enable-qr").qrcode({render: "div", size: 200, text: data.otpauth});
                     $("#tfa-enable-modal").modal().find('.btn-primary').off("click").click(enable);
                 });
                 e.preventDefault();

@@ -20,43 +20,42 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   implicit val rds_cancel = (__ \ 'order).read[Long]
 
   def index = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.obj("status" -> "ok"))
+    Ok(Json.obj())
   }
 
   def pairs = Action { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> globals.metaModel.allPairsJson))
+    Ok(Json.toJson(globals.metaModel.allPairsJson))
   }
 
   def currencies = Action { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> globals.metaModel.currencies))
+    Ok(Json.toJson(globals.metaModel.currencies))
   }
 
   def tradeFees = Action { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> globals.metaModel.tradeFees))
+    Ok(Json.toJson(globals.metaModel.tradeFees))
   }
 
   def dwFees = Action { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> globals.metaModel.dwFees))
+    Ok(Json.toJson(globals.metaModel.dwFees))
   }
 
   def dwLimits = Action { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> globals.metaModel.dwLimits))
+    Ok(Json.toJson(globals.metaModel.dwLimits))
   }
 
   def requiredConfirms = Action { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> globals.metaModel.getRequiredConfirmations))
+    Ok(Json.toJson(globals.metaModel.getRequiredConfirmations))
   }
 
   def balance = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     val balances = globals.engineModel.balance(request.user.id)
-    Ok(Json.obj("status" -> "ok",
-      "result" -> balances.map({ c =>
-        Json.obj(
-          "currency" -> c._1,
-          "amount" -> c._2._1.bigDecimal.toPlainString,
-          "hold" -> c._2._2.bigDecimal.toPlainString
-        )
-      })
+    Ok(Json.toJson(balances.map({ c =>
+      Json.obj(
+        "currency" -> c._1,
+        "amount" -> c._2._1.bigDecimal.toPlainString,
+        "hold" -> c._2._2.bigDecimal.toPlainString
+      )
+    })
     ))
   }
 
@@ -74,26 +73,26 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
             case Some((active, minAmount)) if active && amount >= minAmount =>
               val res = globals.engineModel.askBid(request.user.id, base, counter, amount, price, isBid = false)
               if (res) {
-                Ok(Json.obj("status" -> "ok"))
+                Ok(Json.obj())
               } else {
-                BadRequest(Json.obj("error" -> "Non-sufficient funds."))
+                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
               }
             case Some((active, minAmount)) if active =>
-              BadRequest(Json.obj("error" -> "Amount must be at least %s.".format(minAmount)))
+              BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))
             case Some((active, minAmount)) =>
-              BadRequest(Json.obj("error" -> "Trading suspended on %s/%s.".format(base, counter)))
+              BadRequest(Json.obj("message" -> "Trading suspended on %s/%s.".format(base, counter)))
             case _ =>
-              BadRequest(Json.obj("error" -> "Invalid pair."))
+              BadRequest(Json.obj("message" -> "Invalid pair."))
           }
         } else {
-          BadRequest(Json.obj("error" -> "The price and amount must be positive."))
+          BadRequest(Json.obj("message" -> "The price and amount must be positive."))
         }
       }).getOrElse(
-        BadRequest(Json.obj("error" -> "Failed to parse input."))
+        BadRequest(Json.obj("message" -> "Failed to parse input."))
       )
     } catch {
       case _: Throwable =>
-        BadRequest(Json.obj("error" -> "Failed to place ask."))
+        BadRequest(Json.obj("message" -> "Failed to place ask."))
     }
   }
 
@@ -111,26 +110,26 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
             case Some((active, minAmount)) if active && amount >= minAmount =>
               val res = globals.engineModel.askBid(request.user.id, base, counter, amount, price, isBid = true)
               if (res) {
-                Ok(Json.obj("status" -> "ok"))
+                Ok(Json.obj())
               } else {
-                BadRequest(Json.obj("error" -> "Non-sufficient funds."))
+                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
               }
             case Some((active, minAmount)) if active =>
-              BadRequest(Json.obj("error" -> "Amount must be at least %s.".format(minAmount)))
+              BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))
             case Some((active, minAmount)) =>
-              BadRequest(Json.obj("error" -> "Trading suspended on %s/%s.".format(base, counter)))
+              BadRequest(Json.obj("message" -> "Trading suspended on %s/%s.".format(base, counter)))
             case _ =>
-              BadRequest(Json.obj("error" -> "Invalid pair."))
+              BadRequest(Json.obj("message" -> "Invalid pair."))
           }
         } else {
-          BadRequest(Json.obj("error" -> "The price and amount must be positive."))
+          BadRequest(Json.obj("message" -> "The price and amount must be positive."))
         }
       }).getOrElse(
-        BadRequest(Json.obj("error" -> "Failed to parse input."))
+        BadRequest(Json.obj("message" -> "Failed to parse input."))
       )
     } catch {
       case _: Throwable =>
-        BadRequest(Json.obj("error" -> "Failed to place bid."))
+        BadRequest(Json.obj("message" -> "Failed to place bid."))
     }
   }
 
@@ -139,12 +138,12 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
       case (order) =>
         val res = globals.engineModel.cancel(request.user.id, order)
         if (res) {
-          Ok(Json.obj("status" -> "ok"))
+          Ok(Json.obj())
         } else {
-          BadRequest(Json.obj("error" -> "Failed to cancel order."))
+          BadRequest(Json.obj("message" -> "Failed to cancel order."))
         }
     }.getOrElse(
-      BadRequest(Json.obj("error" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> "Failed to parse input."))
     )
   }
 
@@ -155,91 +154,89 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     val (asks, bids) = globals.engineModel.ordersDepth(base, counter)
 
     Ok(Json.obj(
-      "status" -> "ok",
-      "result" -> Json.obj(
-        "asks" -> asks.map { a: Array[java.math.BigDecimal] =>
-          Json.obj(
-            "amount" -> a(AmountIndex).toPlainString,
-            "price" -> a(PriceIndex).toPlainString
-          )
-        },
-        "bids" -> bids.map { b: Array[java.math.BigDecimal] =>
-          Json.obj(
-            "amount" -> b(AmountIndex).toPlainString,
-            "price" -> b(PriceIndex).toPlainString
-          )
-        }
-      )
-    ))
+      "asks" -> asks.map { a: Array[java.math.BigDecimal] =>
+        Json.obj(
+          "amount" -> a(AmountIndex).toPlainString,
+          "price" -> a(PriceIndex).toPlainString
+        )
+      },
+      "bids" -> bids.map { b: Array[java.math.BigDecimal] =>
+        Json.obj(
+          "amount" -> b(AmountIndex).toPlainString,
+          "price" -> b(PriceIndex).toPlainString
+        )
+      }
+    )
+    )
   }
 
   def recentTrades(base: String, counter: String) = Action { implicit request =>
     // a specific pair will be given as an argument
-    Ok(Json.obj("status" -> "ok", "result" -> engineModel.recentTrades(base, counter)))
+    Ok(Json.toJson(engineModel.recentTrades(base, counter)))
   }
 
   def depositWithdrawHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> userModel.depositWithdrawHistory(request.user.id)))
+    Ok(Json.toJson(userModel.depositWithdrawHistory(request.user.id)))
   }
 
   def tradeHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> userModel.tradeHistory(request.user.id)))
+    Ok(Json.toJson(userModel.tradeHistory(request.user.id)))
   }
 
   def loginHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> Json.toJson(globals.logModel.getLoginEvents(request.user.id))))
+    Ok(Json.toJson(globals.logModel.getLoginEvents(request.user.id)))
   }
 
   def pendingTrades = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     val orders = globals.engineModel.userPendingTrades(request.user.id)
-    Ok(Json.obj("status" -> "ok", "result" -> Json.toJson(orders)))
+    Ok(Json.toJson(orders))
   }
 
   def depositCrypto(currency: String) = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     val res = globals.engineModel.addresses(request.user.id, currency)
     if (res.isEmpty) {
-      Ok(Json.obj("status" -> "ok", "result" -> Json.arr()))
+      Ok(Json.arr())
     } else {
-      Ok(Json.obj("status" -> "ok", "result" -> res))
+      Ok(Json.toJson(res))
     }
   }
 
   def depositCryptoAll = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     val res = globals.engineModel.addresses(request.user.id)
     if (res.isEmpty) {
-      Ok(Json.obj("status" -> "ok", "result" -> Json.obj()))
+      Ok(Json.obj())
     } else {
-      Ok(Json.obj("status" -> "ok", "result" -> res))
+      Ok(Json.toJson(res))
     }
   }
 
   def user = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.obj("status" -> "ok", "result" -> request.user))
+    Ok(Json.toJson(request.user))
     //Do not display the tfasecret / qr code from this api call. The QR code needs to be protected better
     //.asInstanceOf[JsObject].+("qr", JsString(QrCodeGen.userTotpQrCode(request.user).getOrElse("")))))
   }
 
   def turnOffTFA() = SecuredAction(ajaxCall = true, Authorization2fa)(parse.json) { implicit request =>
     if (globals.userModel.turnOffTFA(request.user.id)) {
-      Ok(Json.obj("status" -> "ok"))
+      Ok(Json.obj())
     } else {
-      BadRequest(Json.obj("error" -> "Failed to turn off two factor auth."))
+      BadRequest(Json.obj("message" -> "Failed to turn off two factor auth."))
     }
   }
 
   def turnOnEmails() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     if (globals.userModel.turnOnEmails(request.user.id)) {
-      Ok(Json.obj("status" -> "ok"))
+      Ok(Json.obj())
     } else {
-      BadRequest(Json.obj("error" -> "Failed to add to mailing list."))
+      BadRequest(Json.obj("message" -> "Failed to add to mailing list."))
     }
   }
 
   def turnOffEmails() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     if (globals.userModel.turnOffEmails(request.user.id)) {
-      Ok(Json.obj("status" -> "ok"))
+      Ok(Json.obj())
     } else {
-      BadRequest(Json.obj("error" -> "Failed to remove from mailing list."))
+      BadRequest(Json.obj("message" -> "Failed to remove from mailing list."))
     }
   }
 
@@ -249,18 +246,18 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   def genTOTPSecret() = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     if (!request.user.TFALogin) {
       val secret = globals.userModel.genTFASecret(request.user.id, "TOTP")
-      Ok(Json.obj("status" -> "ok", "result" -> Json.obj("secret" -> secret.toBase32, "otpauth" -> TOTPUrl.totpSecretToUrl(request.user.email, secret))))
+      Ok(Json.obj("secret" -> secret.toBase32, "otpauth" -> TOTPUrl.totpSecretToUrl(request.user.email, secret)))
     } else {
-      BadRequest(Json.obj("error" -> "Two factor authentication is already enabled."))
+      BadRequest(Json.obj("message" -> "Two factor authentication is already enabled."))
     }
   }
 
   // This enables 2fa for login AND withdrawal
   def turnOnTFA() = SecuredAction(ajaxCall = true, Authorization2fa)(parse.json) { implicit request =>
     if (globals.userModel.turnOnTFA(request.user.id)) {
-      Ok(Json.obj("status" -> "ok"))
+      Ok(Json.obj())
     } else {
-      BadRequest(Json.obj("error" -> "Failed to turn on two factor auth."))
+      BadRequest(Json.obj("message" -> "Failed to turn on two factor auth."))
     }
   }
 
@@ -275,13 +272,13 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         try {
           val res = globals.engineModel.withdraw(request.user.id, currency, amount, address)
           if (res.isDefined) {
-            Ok(Json.obj("status" -> "ok"))
+            Ok(Json.obj())
           } else {
-            BadRequest(Json.obj("error" -> "Failed to withdraw"))
+            BadRequest(Json.obj("message" -> "Failed to withdraw"))
           }
         } catch {
           case e: PSQLException => {
-            BadRequest(Json.obj("error" -> (e.getServerErrorMessage.getMessage match {
+            BadRequest(Json.obj("message" -> (e.getServerErrorMessage.getMessage match {
               case "new row for relation \"balances\" violates check constraint \"no_hold_above_balance\"" => "Non-sufficient funds."
               case _: String => {
                 Logger.error(e.toString + e.getStackTrace)
@@ -291,21 +288,21 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
           }
         }
       } else {
-        BadRequest(Json.obj("error" -> "Invalid address"))
+        BadRequest(Json.obj("message" -> "Invalid address"))
       }
     }).getOrElse(
-      BadRequest(Json.obj("error" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> "Failed to parse input."))
     )
   }
 
   def pendingWithdrawalsAll = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     val res = globals.engineModel.pendingWithdrawals(request.user.id)
-    Ok(Json.obj("status" -> "ok", "result" -> res))
+    Ok(Json.toJson(res))
   }
 
   def pendingDepositsAll = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     val res = globals.engineModel.pendingDeposits(request.user.id)
-    Ok(Json.obj("status" -> "ok", "result" -> res))
+    Ok(Json.toJson(res))
   }
 
 }

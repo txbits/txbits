@@ -114,7 +114,7 @@ object APIv1 extends Controller {
   }
 
   def ticker = Action {
-    Ok(Json.obj("status" -> "ok", "result" -> Json.toJson(tickerFromDb)))
+    Ok(Json.toJson(tickerFromDb))
   }
 
   //TODO: display a ticker instead of the last trade
@@ -158,6 +158,6 @@ object APIv1 extends Controller {
   }
 
   def chart(base: String, counter: String) = Action {
-    Ok(Json.obj("result" -> chartFromDB(base, counter)))
+    Ok(Json.toJson(chartFromDB(base, counter)))
   }
 }

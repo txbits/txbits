@@ -6,8 +6,7 @@ $(function(){
         var template = Handlebars.compile($ttemplate.html());
 
         refresh_ticker = function(){
-            API.ticker().success(function(res){
-                var tickers = res.result;
+            API.ticker().success(function(tickers){
                 for (var i = 0; i < tickers.length; i++) {
                     if (Number(tickers[i].last) > Number(tickers[i].first)) {
                         tickers[i].color = "green";
@@ -22,14 +21,6 @@ $(function(){
                     tickers[i].last = zerosTrim(tickers[i].last);
                 }
                 $('#ticker').html(template(tickers));
-            }).error(function(){
-                $.pnotify({
-                    title: 'Failed to load ticker.',
-                    text: 'Reason: ' + (JSON.parse(res.responseText)).error,
-                    styling: 'bootstrap',
-                    type: 'error',
-                    text_escape: true
-                });
             });
         };
         refresh_ticker();
