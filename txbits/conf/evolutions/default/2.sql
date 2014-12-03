@@ -676,6 +676,89 @@ end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
+base32_decode (
+  a_in text
+) returns bytea as $$
+declare
+  byte bigint;;
+  tmp bigint;;
+  result bit varying(200);;
+  out bytea;;
+begin
+  if length(a_in) % 8 != 0 then
+    raise 'Failed to base32 decode a string that is not a multiple of 8 bytes long. The string is % bytes long.', length(a_in);;
+  end if;;
+
+  select B'' into result;;
+  for i in 0..(length(a_in)-1) loop
+    select get_byte(a_in::bytea, i) into byte;;
+    -- handle upper case letters
+    if byte >= 65 and byte <= 90 then
+      select byte - 65 into tmp;;
+    -- handle numbers
+    elsif byte >= 50 and byte <= 55 then
+      select byte - 24 into tmp;;
+    -- handle lowercase letters
+    elsif byte >= 97 and byte <= 122 then
+      select byte - 97 into tmp;;
+    else
+      raise 'Failed to base32 decode due to invalid character %s, code: ', chr(byte), byte;;
+    end if;;
+    select result || tmp::bit(5) into result;;
+  end loop;;
+
+  -- convert the bit string to a bytea 4 bytes at a time
+  select '\x'::bytea into out;;
+  for i in 1..(length(a_in)*5/8) loop
+    select out || substring(int4send(substring(result, ((i-1)*8+1), 8)::int), 4) into out;;
+  end loop;;
+  return out;;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+
+create or replace function
+hotp (
+  a_k bytea,  -- secret key
+  a_c bigint  -- counter
+) returns bigint as $$
+declare
+  hs bytea;;
+  off int;;
+begin
+  select hmac(int8send(a_c), a_k, 'sha1') into hs;;
+  select (get_byte(hs, length(hs)-1) & 'x0f'::bit(8)::int) into off;;
+  return (substring(substring(hs from off+1 for 4)::text, 2)::bit(32)::int & ('x7ffffffff'::bit(32)::int)) % (1000000);;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+
+create or replace function
+user_totp_check (
+  a_uid bigint,
+  a_totp bigint
+) returns boolean as $$
+declare
+  tc bigint;;
+  totp text;;
+  secret bytea;;
+  totpvalue bigint;;
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  select round(extract(epoch from now()) / 30) into tc;;
+  select base32_decode(tfa_secret) into secret from users where id = a_uid;;
+  return hotp(secret, tc) = a_totp
+         or hotp(secret, tc+1) = a_totp
+         or hotp(secret, tc+2) = a_totp
+         or hotp(secret, tc+3) = a_totp
+         or hotp(secret, tc-1) = a_totp
+         or hotp(secret, tc-2) = a_totp
+         or hotp(secret, tc-3) = a_totp;;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
 find_user_by_id (
   a_id bigint,
   out users
@@ -1220,12 +1303,15 @@ drop function if exists user_reset_password_complete (varchar(256), varchar(256)
 drop function if exists turnon_tfa (bigint) cascade;
 drop function if exists update_tfa_secret (bigint, varchar(256), varchar(6)) cascade;
 drop function if exists turnoff_tfa (bigint) cascade;
+drop function if exists user_totp_check (bigint, bigint) cascade;
+drop function if exists hotp (bytea, bigint) cascade;
+drop function if exists base32_decode (text) cascade;
 drop function if exists turnon_emails (bigint) cascade;
 drop function if exists turnoff_emails (bigint) cascade;
 drop function if exists add_fake_money (bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists remove_fake_money (bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists find_user_by_id (bigint) cascade;
-drop function if exists find_user_by_email (varchar(256)) cascade;
+drop function if exists user_exists (bigint) cascade;
 drop function if exists find_user_by_email_and_password (varchar(256), text) cascade;
 drop function if exists save_token (varchar(256), varchar(256), bool, timestamp, timestamp) cascade;
 drop function if exists find_token (varchar(256)) cascade;
