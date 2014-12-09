@@ -50,7 +50,7 @@ object PasswordChange extends Controller with SecureSocial {
   case class ChangeInfo(currentPassword: String, password: String)
 
   def checkCurrentPassword[A](currentPassword: String)(implicit request: SecuredRequest[A]): Boolean = {
-    txbitsUserService.findByEmailAndPassword(request.user.email, currentPassword).isDefined
+    globals.userModel.findUserByEmailAndPassword(request.user.email, currentPassword).isDefined
   }
 
   private def execute[A](f: (SecuredRequest[A], Form[ChangeInfo]) => Result)(implicit request: SecuredRequest[A]): Result = {

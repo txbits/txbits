@@ -91,15 +91,14 @@
         <p>@Messages("exchange.account.mailinglist"): off</p>
         <button type="submit" class="btn btn-default" id="turnon-emails">@Messages("emails.on.title")</button>
         {{/onMailingList}}
-        <p>@Messages("exchange.account.tfa_type"): {{TFAType}}</p>
-        {{#TFALogin}}
+        {{#TFAEnabled}}
             <p>@Messages("exchange.account.tfa_login"): on</p>
             <button type="submit" class="btn btn-danger" id="turnoff-tfa">@Messages("tfa.off.title")</button>
-        {{/TFALogin}}
-        {{^TFALogin}}
+        {{/TFAEnabled}}
+        {{^TFAEnabled}}
             <p>@Messages("exchange.account.tfa_login"): off</p>
             <button type="submit" class="btn btn-primary" id="turnon-tfa">@Messages("tfa.on.title")</button>
-        {{/TFALogin}}
+        {{/TFAEnabled}}
     </script>
 
 }

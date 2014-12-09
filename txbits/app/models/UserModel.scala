@@ -98,10 +98,7 @@ class UserModel(val db: String = "default") {
             row[String]("email"),
             row[Int]("verification"),
             row[Boolean]("on_mailing_list"),
-            row[Boolean]("tfa_withdrawal"),
-            row[Boolean]("tfa_login"),
-            row[Option[String]]("tfa_secret"),
-            row[Option[Symbol]]("tfa_type")
+            row[Boolean]("tfa_enabled")
           )
         ).headOption
     }
@@ -114,6 +111,39 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
+  def userHasTotp(email: String): Boolean = DB.withConnection(db) { implicit c =>
+    frontend.userHasTotp.on(
+      'email -> email
+    )().map(row =>
+        row[Boolean]("user_has_totp")
+      ).head
+  }
+
+  def totpLoginStep1(email: String, password: String): Option[String] = DB.withConnection(db) { implicit c =>
+    frontend.totpLoginStep1.on(
+      'email -> email,
+      'password -> password
+    )().map(row =>
+        row[String]("totp_hash")
+      ).headOption
+  }
+
+  def totpLoginStep2(email: String, totpHash: String, totpToken: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
+    frontend.totpLoginStep2.on(
+      'email -> email,
+      'totp_hash -> totpHash,
+      'totp_token -> totpToken.toLong
+    )().map(row =>
+        new SocialUser(
+          row[Long]("id"),
+          row[String]("email"),
+          row[Int]("verification"),
+          row[Boolean]("on_mailing_list"),
+          row[Boolean]("tfa_enabled")
+        )
+      ).headOption
+  }
+
   def findUserByEmailAndPassword(email: String, password: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
     frontend.findUserByEmailAndPassword.on(
       'email -> email,
@@ -124,10 +154,7 @@ class UserModel(val db: String = "default") {
           row[String]("email"),
           row[Int]("verification"),
           row[Boolean]("on_mailing_list"),
-          row[Boolean]("tfa_withdrawal"),
-          row[Boolean]("tfa_login"),
-          row[Option[String]]("tfa_secret"),
-          row[Option[Symbol]]("tfa_type")
+          row[Boolean]("tfa_enabled")
         )
       ).headOption
   }
@@ -206,21 +233,6 @@ class UserModel(val db: String = "default") {
     frontend.deleteExpiredTOTPBlacklistTokens.execute()
   }
 
-  def blacklistTOTPToken(user: Long, token: String, expiration: Timestamp) = DB.withConnection(db) { implicit c =>
-    frontend.blacklistTOTPToken.on(
-      'user -> user,
-      'token -> token,
-      'expiration -> expiration
-    ).execute()
-  }
-
-  def TOTPTokenIsBlacklisted(user: Long, token: String) = DB.withConnection(db) { implicit c =>
-    frontend.TOTPTokenIsBlacklisted.on(
-      'user -> user,
-      'token -> token
-    )().toList.length > 0
-  }
-
   def saveUser(id: Long, email: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
     frontend.updateUser.on(
       'id -> id,
@@ -256,26 +268,27 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
-  def genTFASecret(uid: Long, typ: String) = DB.withConnection(db) { implicit c =>
+  def genTFASecret(uid: Long) = DB.withConnection(db) { implicit c =>
     val secret = TOTPSecret()
     // everything is off by default
     frontend.updateTfaSecret.on(
       'id -> uid,
-      'secret -> secret.toBase32,
-      'typ -> typ
+      'secret -> secret.toBase32
     ).execute()
     secret
   }
 
-  def turnOffTFA(uid: Long) = DB.withConnection(db) { implicit c =>
+  def turnOffTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
     frontend.turnoffTfa.on(
-      'id -> uid
+      'id -> uid,
+      'tfa_code -> tfa_code.toLong
     ).execute()
   }
 
-  def turnOnTFA(uid: Long) = DB.withConnection(db) { implicit c =>
+  def turnOnTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
     frontend.turnonTfa.on(
-      'id -> uid
+      'id -> uid,
+      'tfa_code -> tfa_code.toLong
     ).execute()
   }
 

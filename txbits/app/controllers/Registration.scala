@@ -183,7 +183,7 @@ object Registration extends Controller {
             }
             globals.logModel.logEvent(LogEvent.fromRequest(Some(user.id), Some(user.email), request, LogType.SignupSuccess))
             if (UsernamePasswordProvider.signupSkipLogin) {
-              ProviderController.completeAuthentication(user, request2session)
+              ProviderController.completePasswordAuth(user.id, user.email)
             } else {
               Redirect(onHandleSignUpGoTo).flashing(Success -> Messages(SignUpDone)).withSession(request2session)
             }

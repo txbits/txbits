@@ -20,10 +20,6 @@ object txbitsUserService {
     globals.userModel.userExists(email)
   }
 
-  def findByEmailAndPassword(email: String, password: String): Option[SocialUser] = {
-    globals.userModel.findUserByEmailAndPassword(email, password)
-  }
-
   def create(user: SocialUser, password: String, token: String): SocialUser = {
     val user_id = globals.userModel.create(user.email, password, user.onMailingList, token)
 

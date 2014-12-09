@@ -36,21 +36,34 @@ create table users (
     created timestamp default current_timestamp not null,
     email varchar(256) not null,
     on_mailing_list bool default false,
-    tfa_withdrawal bool default false,
-    tfa_login bool default false,
-    tfa_secret varchar(256), -- todo: pick a size
-    tfa_type varchar(6), -- totp
+    tfa_enabled bool default false,
     verification int default 0 not null,
     active bool default true not null
 );
 create unique index unique_lower_email on users (lower(email));
 
-create table passwords (
+create table users_passwords (
     user_id bigint not null,
     password varchar(256) not null, -- salt is a part of the password field
     created timestamp default current_timestamp not null,
     foreign key (user_id) references users(id),
     primary key (user_id, created)
+);
+
+create table users_tfa_secrets (
+    user_id bigint not null,
+    tfa_secret varchar(256),
+    created timestamp default current_timestamp not null,
+    foreign key (user_id) references users(id),
+    primary key (user_id, created)
+);
+
+create table users_backup_otps (
+    user_id bigint not null,
+    otp varchar(256) not null,
+    created timestamp default current_timestamp not null,
+    foreign key (user_id) references users(id),
+    primary key (user_id, otp)
 );
 
 create table trusted_action_requests (
@@ -61,7 +74,7 @@ create table trusted_action_requests (
 
 create table totp_tokens_blacklist (
     user_id bigint not null,
-    token char(6) not null,
+    token int not null,
     expiration timestamp not null,
     foreign key (user_id) references users(id)
 );
@@ -297,8 +310,10 @@ drop table if exists deposits_other cascade;
 drop table if exists matches cascade;
 drop table if exists markets cascade;
 drop table if exists tokens cascade;
-drop table if exists passwords cascade;
 drop table if exists users cascade;
+drop table if exists users_passwords cascade;
+drop table if exists users_backup_otps cascade;
+drop table if exists users_tfa_secrets cascade;
 drop table if exists users_addresses cascade;
 drop table if exists withdrawals cascade;
 drop table if exists withdrawals_other cascade;
