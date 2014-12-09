@@ -15,198 +15,93 @@ object SQLText {
 
   val addNewAddress = SQL(
     """
-      |insert into users_addresses (address, currency, node_id)
-      |values ({address}, {currency}, {node_id})
+      |select add_new_address({address}, {currency}, {node_id})
     """.stripMargin)
 
   val getFreeAddressCount = SQL(
     """
-      |select count(1) from users_addresses
-      |where assigned is NULL and user_id = 0 and
-      |currency = {currency} and node_id = {node_id}
+      |select free_address_count({currency}, {node_id})
     """.stripMargin)
 
   val getMinConfirmations = SQL(
     """
-      |select active, min_deposit_confirmations, min_withdrawal_confirmations
-      |from currencies_crypto where currency = {currency}
+      |select * from get_min_confirmations({currency})
     """.stripMargin)
 
   val getNodeInfo = SQL(
     """
-      |select retired, balance_min, balance_warn, balance_target, balance_max
-      |from wallets_crypto where currency = {currency} and
-      |node_id = {node_id}
+      |select * from get_node_info({currency}, {node_id})
     """.stripMargin)
 
   val getLastBlockRead = SQL(
     """
-      |select last_block_read, last_withdrawal_time_received from wallets_crypto
-      |where currency = {currency} and node_id = {node_id}
+      |select * from get_last_block_read({currency}, {node_id})
     """.stripMargin)
 
   val setLastBlockRead = SQL(
     """
-      |update wallets_crypto set last_block_read = {block_count},
-      |last_withdrawal_time_received = {last_withdrawal_time_received},
-      |balance = {balance} where currency = {currency} and
-      |node_id = {node_id}
+      |select set_last_block_read({currency}, {node_id},
+      |{block_count}, {last_withdrawal_time_received}, {balance})
     """.stripMargin)
 
   val createDeposit = SQL(
     """
-      with null_rows as (
-        update users_addresses set assigned = current_timestamp
-        where assigned is NULL and user_id = 0 and currency = {currency} and node_id = {node_id} and address = {address}
-        returning user_id
-      ), zero_rows as (
-        insert into users_addresses (currency, node_id, address, assigned)
-        select {currency}, {node_id}, {address}, current_timestamp where not exists
-          (select 1 from null_rows
-            union
-           select 1 from users_addresses
-            where assigned is not NULL and currency = {currency} and node_id = {node_id} and address = {address}
-          ) returning user_id
-      ), rows as (
-        insert into deposits (amount, user_id, currency, fee)
-          values (
-            {amount},
-            (
-              select user_id from null_rows
-               union
-              select user_id from zero_rows
-               union
-              select user_id from users_addresses
-               where assigned is not NULL and currency = {currency} and node_id = {node_id} and address = {address}
-            ),
-            {currency},
-            (
-              select deposit_constant + {amount} * deposit_linear from dw_fees where currency = {currency} and method = 'blockchain'
-            )
-          ) returning id
-      )
-      insert into deposits_crypto (id, tx_hash, address)
-        values ((select id from rows), {tx_hash}, {address}) returning id
-    """)
+      |select create_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash}, {fee})
+    """.stripMargin)
 
   val createConfirmedDeposit = SQL(
     """
-      with null_rows as (
-        update users_addresses set assigned = current_timestamp
-        where assigned is NULL and user_id = 0 and currency = {currency} and node_id = {node_id} and address = {address}
-        returning user_id
-      ), zero_rows as (
-        insert into users_addresses (currency, node_id, address, assigned)
-        select {currency}, {node_id}, {address}, current_timestamp where not exists
-          (select 1 from null_rows
-            union
-           select 1 from users_addresses
-            where assigned is not NULL and currency = {currency} and node_id = {node_id} and address = {address}
-          ) returning user_id
-      ), rows as (
-        insert into deposits (amount, user_id, currency, fee)
-          values (
-            {amount},
-            (
-              select user_id from null_rows
-               union
-              select user_id from zero_rows
-               union
-              select user_id from users_addresses
-               where assigned is not NULL and currency = {currency} and node_id = {node_id} and address = {address}
-            ),
-            {currency},
-            (
-              select deposit_constant + {amount} * deposit_linear from dw_fees where currency = {currency} and method = 'blockchain'
-            )
-          ) returning id
-      )
-      insert into deposits_crypto (id, tx_hash, address, confirmed)
-        values ((select id from rows), {tx_hash}, {address}, current_timestamp)
-    """)
+      |select create_confirmed_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash}, {fee})
+    """.stripMargin)
 
   val isConfirmedDeposit = SQL(
     """
-      |select exists (select 1
-      |from deposits d inner join deposits_crypto dc on d.id = dc.id
-      |where dc.address = {address} and dc.tx_hash = {tx_hash} and
-      |d.amount = {amount} and confirmed is not NULL) as exists
+      |select is_confirmed_deposit({address}, {amount}, {tx_hash})
     """.stripMargin)
 
   val getPendingDeposits = SQL(
     """
-      |select d.id, d.amount, dc.tx_hash, dc.address
-      |from deposits d inner join deposits_crypto dc on d.id = dc.id
-      |inner join users_addresses a on a.address = dc.address and
-      |a.user_id = d.user_id and a.currency = d.currency
-      |where d.currency = {currency} and
-      |node_id = {node_id} and confirmed is NULL
+      |select * from get_pending_deposits({currency}, {node_id})
     """.stripMargin)
 
   val confirmedDeposit = SQL(
     """
-      |update deposits_crypto set confirmed = current_timestamp
-      |where id = {id} and address = {address} and
-      |tx_hash = {tx_hash} and confirmed is NULL
+      |select confirmed_deposit({id}, {address}, {tx_hash})
     """.stripMargin)
 
   val getUnconfirmedWithdrawalTx = SQL(
     """
-      |select id, tx_hash from withdrawals_crypto_tx
-      |where id = (select max(id) from withdrawals_crypto_tx
-      |where currency = {currency} and node_id = {node_id}) and
-      |sent is not NULL and confirmed is NULL
+      |select * from get_unconfirmed_withdrawal_tx({currency}, {node_id})
     """.stripMargin)
 
   val createWithdrawalTx = SQL(
     """
-      |with rows as (
-      |insert into withdrawals_crypto_tx (currency, node_id)
-      |select {currency}, {node_id} where exists (select w.id
-      |from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
-      |where currency = {currency} and withdrawals_crypto_tx_id
-      |is NULL) returning id
-      |)
-      |update withdrawals_crypto
-      |set withdrawals_crypto_tx_id = (select id from rows)
-      |where exists (select id from rows) and
-      |withdrawals_crypto_tx_id is NULL and
-      |id = any (select w.id
-      |from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
-      |where currency = {currency} and
-      |withdrawals_crypto_tx_id is NULL)
-      |returning withdrawals_crypto_tx_id
+      |select create_withdrawal_tx({currency}, {node_id})
     """.stripMargin)
 
   val getWithdrawalTx = SQL(
     """
-      |select address, sum(amount - fee) as value
-      |from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
-      |where withdrawals_crypto_tx_id = {tx_id} group by address
+      |select * from get_withdrawal_tx({tx_id})
     """.stripMargin)
 
   val sentWithdrawalTx = SQL(
     """
-      |update withdrawals_crypto_tx set sent = current_timestamp,
-      |tx_hash = {tx_hash} where id = {tx_id} and sent is NULL
+      |select sent_withdrawal_tx({tx_id}, {tx_hash})
     """.stripMargin)
 
   val confirmedWithdrawalTx = SQL(
     """
-      |update withdrawals_crypto_tx set confirmed = current_timestamp,
-      |tx_fee = {tx_fee} where id = {tx_id} and confirmed is NULL
+      |select confirmed_withdrawal_tx({tx_id}, {tx_fee})
     """.stripMargin)
 
   val createColdStorageTransfer = SQL(
     """
-      |insert into withdrawals_crypto_tx_cold_storage (id, address, value)
-      |values ({tx_id}, {address}, {value})
+      |select create_cold_storage_transfer({tx_id}, {address}, {value})
     """.stripMargin)
 
   val setWithdrawalTxHashMutated = SQL(
     """
-      |insert into withdrawals_crypto_tx_mutated (id, tx_hash_mutated)
-      |values ({tx_id}, {tx_hash})
+      |select set_withdrawal_tx_hash_mutated({tx_id}, {tx_hash})
     """.stripMargin)
 
 }

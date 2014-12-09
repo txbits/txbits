@@ -269,7 +269,7 @@ create table withdrawals_crypto (
     foreign key (id) references withdrawals(id),
     foreign key (withdrawals_crypto_tx_id) references withdrawals_crypto_tx(id)
 );
-create index withdrawals_crypto_tx_idx on withdrawals_crypto(withdrawals_crypto_tx_id);
+create index withdrawals_crypto_tx_idx on withdrawals_crypto(withdrawals_crypto_tx_id, address);
 
 create table withdrawals_other (
     id bigint not null primary key,

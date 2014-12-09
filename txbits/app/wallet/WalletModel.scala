@@ -29,7 +29,7 @@ class WalletModel(val db: String = "default") {
   }
 
   def getFreeAddressCount(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.getFreeAddressCount.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[Long]("count")).head
+    SQLText.getFreeAddressCount.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[Long]("free_address_count")).head
   }
 
   def getMinConfirmations(currency: CryptoCurrency) = DB.withConnection(db) { implicit c =>
@@ -75,7 +75,7 @@ class WalletModel(val db: String = "default") {
       'amount -> deposit.amount.bigDecimal,
       'tx_hash -> deposit.txHash,
       'fee -> new java.math.BigDecimal(0)
-    )().map(row => row[Long]("id")).head
+    )().map(row => row[Long]("create_deposit")).head
   }
 
   def createConfirmedDeposit(currency: CryptoCurrency, nodeId: Int, deposit: Deposit) = DB.withConnection(db) { implicit c =>
@@ -94,7 +94,7 @@ class WalletModel(val db: String = "default") {
       'address -> deposit.address,
       'amount -> deposit.amount,
       'tx_hash -> deposit.txHash
-    )().map(row => row[Boolean]("exists")).head
+    )().map(row => row[Boolean]("is_confirmed_deposit")).head
   }
 
   def getPendingDeposits(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
@@ -108,11 +108,14 @@ class WalletModel(val db: String = "default") {
   }
 
   def getUnconfirmedWithdrawalTx(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.getUnconfirmedWithdrawalTx.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[Long]("id") -> row[String]("tx_hash")).headOption
+    SQLText.getUnconfirmedWithdrawalTx.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[Option[Long]]("id") -> row[Option[String]]("tx_hash")).head match {
+      case (Some(id: Long), Some(txHash: String)) => Some(id, txHash)
+      case _ => None
+    }
   }
 
   def createWithdrawalTx(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.createWithdrawalTx.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[Long]("withdrawals_crypto_tx_id")).headOption
+    SQLText.createWithdrawalTx.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[Option[Long]]("create_withdrawal_tx")).head
   }
 
   def getWithdrawalTx(txId: Long) = DB.withConnection(db) { implicit c =>
