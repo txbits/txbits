@@ -572,7 +572,7 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 turnon_tfa (
   a_id bigint,
-  a_totp bigint
+  a_totp int
 ) returns boolean as $$
 begin
   if a_id = 0 then
@@ -612,7 +612,7 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 turnoff_tfa (
   a_id bigint,
-  a_totp bigint
+  a_totp int
 ) returns boolean as $$
 begin
   if a_id = 0 then
@@ -741,12 +741,12 @@ begin
   select (get_byte(hs, length(hs)-1) & 'x0f'::bit(8)::int) into off;;
   return (substring(substring(hs from off+1 for 4)::text, 2)::bit(32)::int & ('x7ffffffff'::bit(32)::int)) % (1000000);;
 end;;
-$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+$$ language plpgsql immutable strict security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 user_totp_check (
   a_uid bigint,
-  a_totp bigint
+  a_totp int
 ) returns boolean as $$
 declare
   tc bigint;;
@@ -835,7 +835,7 @@ create or replace function
 totp_login_step2 (
   a_email varchar(256),
   a_secret_hash text,
-  a_tfa_code bigint
+  a_tfa_code int
 ) returns users as $$
 declare
   u users%rowtype;;

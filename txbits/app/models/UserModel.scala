@@ -132,7 +132,7 @@ class UserModel(val db: String = "default") {
     frontend.totpLoginStep2.on(
       'email -> email,
       'totp_hash -> totpHash,
-      'totp_token -> totpToken.toLong
+      'totp_token -> totpToken.toInt
     )().map(row =>
         new SocialUser(
           row[Long]("id"),
@@ -281,14 +281,14 @@ class UserModel(val db: String = "default") {
   def turnOffTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
     frontend.turnoffTfa.on(
       'id -> uid,
-      'tfa_code -> tfa_code.toLong
+      'tfa_code -> tfa_code.toInt
     ).execute()
   }
 
   def turnOnTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
     frontend.turnonTfa.on(
       'id -> uid,
-      'tfa_code -> tfa_code.toLong
+      'tfa_code -> tfa_code.toInt
     ).execute()
   }
 
