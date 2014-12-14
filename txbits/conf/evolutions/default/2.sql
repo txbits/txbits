@@ -590,10 +590,12 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 update_tfa_secret (
   a_id bigint,
-  a_secret varchar(256)
+  a_secret varchar(256),
+  a_otps text
 ) returns boolean as $$
 declare
   enabled boolean;;
+  otps_arr int[10];;
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
@@ -603,6 +605,13 @@ begin
   if enabled then
     return false;;
   end if;;
+
+  delete from users_backup_otps where user_id = a_id;;
+  -- We assume that we are given 10 otps. Any less is an error, any more are ignored
+  otps_arr = string_to_array(a_otps, ',');;
+  for i in 1..10 loop
+    insert into users_backup_otps(user_id, otp) values (a_id, otps_arr[i]);;
+  end loop;;
 
   insert into users_tfa_secrets(user_id, tfa_secret) values (a_id, a_secret);;
   return true;;
@@ -754,6 +763,7 @@ declare
   secret bytea;;
   totpvalue bigint;;
   success boolean;;
+  found_otp boolean;;
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
@@ -776,6 +786,14 @@ begin
 
   if success then
     insert into totp_tokens_blacklist(user_id, token, expiration) values (a_uid, a_totp, current_timestamp + interval '24 hours');;
+  else
+    -- check the backup otps
+    select (count(*) > 0) into found_otp from users_backup_otps where user_id = a_uid and otp = a_totp;;
+
+    if found_otp then
+      delete from users_backup_otps where user_id = a_uid and otp = a_totp;;
+      success = true;;
+    end if;;
   end if;;
   return success;;
 end;;
@@ -1405,12 +1423,10 @@ drop function if exists find_user_by_id (bigint) cascade;
 drop function if exists user_exists (bigint) cascade;
 drop function if exists user_has_totp (bigint) cascade;
 drop function if exists find_user_by_email_and_password (varchar(256), text) cascade;
-drop function if exists save_token (varchar(256), varchar(256), bool, timestamp, timestamp) cascade;
 drop function if exists find_token (varchar(256)) cascade;
 drop function if exists delete_token (varchar(256)) cascade;
 drop function if exists delete_expired_tokens () cascade;
 drop function if exists totp_token_is_blacklisted (bigint, bigint) cascade;
-drop function if exists blacklist_totp_token (varchar(256), bigint, timestamp) cascade;
 drop function if exists delete_expired_totp_blacklist_tokens () cascade;
 drop function if exists new_log (bigint, text, varchar(256), text, text, int, text) cascade;
 drop function if exists login_log (bigint) cascade;

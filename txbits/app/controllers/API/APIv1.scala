@@ -247,7 +247,11 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   def genTOTPSecret() = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     if (!request.user.TFAEnabled) {
       val secret = globals.userModel.genTFASecret(request.user.id)
-      Ok(Json.obj("secret" -> secret.toBase32, "otpauth" -> TOTPUrl.totpSecretToUrl(request.user.email, secret)))
+      if (secret.isEmpty) {
+        BadRequest(Json.obj("message" -> "Two factor authentication is already enabled."))
+      } else {
+        Ok(Json.obj("secret" -> secret.get._1.toBase32, "otps" -> secret.get._2, "otpauth" -> TOTPUrl.totpSecretToUrl(request.user.email, secret.get._1)))
+      }
     } else {
       BadRequest(Json.obj("message" -> "Two factor authentication is already enabled."))
     }

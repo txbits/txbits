@@ -51,27 +51,27 @@ object frontend {
 
   val turnonTfa = SQL(
     """
-    | select * from turnon_tfa({id}, {tfa_code})
+    | select turnon_tfa as success from turnon_tfa({id}, {tfa_code})
     |""".stripMargin)
 
   val updateTfaSecret = SQL(
     """
-    | select * from update_tfa_secret({id}, {secret})
+    | select update_tfa_secret as success from update_tfa_secret({id}, {secret}, {otps})
     |""".stripMargin)
 
   val turnoffTfa = SQL(
     """
-    | select * from turnoff_tfa({id}, {tfa_code})
+    | select turnoff_tfa as success from turnoff_tfa({id}, {tfa_code})
     |""".stripMargin)
 
   val turnonEmails = SQL(
     """
-    | select * from turnon_emails({id})
+    | select turnon_emails as success from turnon_emails({id})
     |""".stripMargin)
 
   val turnoffEmails = SQL(
     """
-    | select * from turnoff_emails({id})
+    | select turnoff_emails as success from turnoff_emails({id})
     |""".stripMargin)
 
   val addFakeMoney = SQL(

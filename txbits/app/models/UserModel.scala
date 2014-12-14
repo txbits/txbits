@@ -15,6 +15,7 @@ import securesocial.core.{ Token, SocialUser }
 import service.sql.frontend
 import service.TOTPSecret
 import play.api.libs.json.Json
+import java.security.SecureRandom
 
 case class TradeHistory(amount: String, fee: String, created: DateTime, price: String, base: String, counter: String, typ: String)
 
@@ -270,38 +271,57 @@ class UserModel(val db: String = "default") {
 
   def genTFASecret(uid: Long) = DB.withConnection(db) { implicit c =>
     val secret = TOTPSecret()
+    val random = new SecureRandom
+    // build a string that will be parsed into an array in the postgres function
+    // generate a 6 digit random numeber that doesn't start with a 0
+    val otps = Seq.fill(10)((random.nextInt(9) + 1).toString concat "%05d".format(random.nextInt(100000)))
     // everything is off by default
-    frontend.updateTfaSecret.on(
+    val success = frontend.updateTfaSecret.on(
       'id -> uid,
-      'secret -> secret.toBase32
-    ).execute()
-    secret
+      'secret -> secret.toBase32,
+      'otps -> otps.mkString(",")
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
+    if (success) {
+      Some(secret, otps)
+    } else {
+      None
+    }
   }
 
   def turnOffTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
     frontend.turnoffTfa.on(
       'id -> uid,
       'tfa_code -> tfa_code.toInt
-    ).execute()
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
   }
 
   def turnOnTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
     frontend.turnonTfa.on(
       'id -> uid,
       'tfa_code -> tfa_code.toInt
-    ).execute()
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
   }
 
   def turnOffEmails(uid: Long) = DB.withConnection(db) { implicit c =>
     frontend.turnoffEmails.on(
       'id -> uid
-    ).execute()
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
   }
 
   def turnOnEmails(uid: Long) = DB.withConnection(db) { implicit c =>
     frontend.turnonEmails.on(
       'id -> uid
-    ).execute()
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
   }
 
 }

@@ -60,7 +60,7 @@ create table users_tfa_secrets (
 
 create table users_backup_otps (
     user_id bigint not null,
-    otp varchar(256) not null,
+    otp int not null,
     created timestamp default current_timestamp not null,
     foreign key (user_id) references users(id),
     primary key (user_id, otp)
