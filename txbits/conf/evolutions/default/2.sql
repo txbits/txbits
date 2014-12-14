@@ -763,16 +763,17 @@ begin
     return false;;
   end if;;
 
+  -- We use the same size of windows as Google: 30 seconds
   select round(extract(epoch from now()) / 30) into tc;;
   select base32_decode(tfa_secret) into strict secret from users_tfa_secrets where user_id = a_uid order by created desc limit 1;;
-  -- TODO: use a proper loop
-  select hotp(secret, tc) = a_totp
-         or hotp(secret, tc+1) = a_totp
-         or hotp(secret, tc+2) = a_totp
-         or hotp(secret, tc+3) = a_totp
-         or hotp(secret, tc-1) = a_totp
-         or hotp(secret, tc-2) = a_totp
-         or hotp(secret, tc-3) = a_totp into success;;
+
+  -- We use a (5+5+1) * 30 = 330 seconds = 5:30 minutes window to account for inaccurate clocks
+  for i in (tc-5)..(tc+5) loop
+    if hotp(secret, i) = a_totp then
+        select true into success;;
+    end if;;
+  end loop;;
+
   if success then
     insert into totp_tokens_blacklist(user_id, token, expiration) values (a_uid, a_totp, current_timestamp + interval '24 hours');;
   end if;;
