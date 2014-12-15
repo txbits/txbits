@@ -30,16 +30,6 @@
     <div class="modal fade" id="tfa-enable-modal" tabindex="-1" role="dialog" aria-labelledby="tfa-enable-modal" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title" id="tfa-enable-modal">@Messages("tfa.on.title")</h4>
-                </div>
-                <div class="modal-body">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
-                    <button type="button" class="btn btn-primary">@Messages("tfa.on.title")</button>
-                </div>
             </div>
         </div>
     </div>
@@ -61,14 +51,55 @@
         </div>
     </div>
 
+
+    <script id="totp-otps-template" type="text/x-handlebars-template">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" id="tfa-enable-modal">@Messages("tfa.on.title")</h4>
+        </div>
+        <div class="modal-body">
+            <p class="text-justify">@Messages("tfa.otps.explanation")</p>
+            <div class="center-block"><ol>{{#otps}}<li>{{.}}</li>{{/otps}}</ol></div>
+        <div class="modal-footer">
+            <nav>
+                <ul class="pager">
+                    <div class="pull-left">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
+                    </div>
+                    <li class="next"><a id="tfa-printing-complete" href="#">I have printed (or written down) these codes. <span aria-hidden="true">&rarr;</span></a></li>
+                </ul>
+            </nav>
+        </div>
+    </script>
+
     <script id="totp-secret-template" type="text/x-handlebars-template">
-        <p class="text-justify">@Messages("tfa.google.explanation")</p>
-        <div class="center-block qr-code" id="tfa-enable-qr"></div>
-        <div class="small text-center">{{secret}}</div>
-        <form role="form">
-            <label for="code" class="control-label">@Messages("terminology.code")</label>
-            <input class="form-control code" name="code" type="text"/>
-        </form>
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" id="tfa-enable-modal">@Messages("tfa.on.title")</h4>
+        </div>
+        <div class="modal-body">
+
+            <p class="text-justify">@Messages("tfa.google.explanation")</p>
+            <div class="center-block qr-code" id="tfa-enable-qr"></div>
+            <div class="small text-center">{{secret}}</div>
+            <form role="form">
+                <label for="code" class="control-label">@Messages("terminology.code")</label>
+                <input class="form-control code" name="code" type="text"/>
+            </form>
+            </div>
+
+        <div class="modal-footer">
+            <nav>
+                <ul class="pager">
+                    <li class="previous"><a id="tfa-printing-incomplete" href="#"><span aria-hidden="true">&larr;</span> Wait, I forgot to print the codes!</a></li>
+                    <li class="pull-right">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
+                        <button type="button" class="btn btn-primary">@Messages("tfa.on.title")</button>
+                    </li>
+                </ul>
+            </nav>
+
+        </div>
     </script>
 
     <script id="turn-off-tfa-template" type="text/x-handlebars-template">
