@@ -246,7 +246,7 @@ object frontend {
 
   val withdrawCrypto = SQL(
     """
-    | select * from withdraw_crypto({uid}, {amount}, {address}, {currency}, {tfa_code}, {typ})
+    | select withdraw_crypto as id from withdraw_crypto({uid}, {amount}, {address}, {currency}, {tfa_code})
     |""".stripMargin)
 }
 

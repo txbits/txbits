@@ -1364,7 +1364,7 @@ begin
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
 
-  select tfa_enabled into enabled from users where id = a_id;;
+  select tfa_enabled into enabled from users where id = a_uid;;
 
   if enabled then
     if not user_totp_check(a_uid, a_tfa_code) then

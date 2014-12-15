@@ -98,9 +98,8 @@ class EngineModel(val db: String = "default") {
       'currency -> currency,
       'amount -> amount.bigDecimal,
       'address -> address,
-      'tfa_code -> tfa_code,
-      'typ -> "totp"
-    ).map(row => row[Long]("o_id")).list.headOption
+      'tfa_code -> tfa_code.getOrElse("0").toInt
+    ).map(row => row[Long]("id")).list.headOption
   }
 
   def addresses(uid: Long, currency: String) = DB.withConnection(db) { implicit c =>
