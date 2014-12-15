@@ -529,6 +529,66 @@ begin
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
+
+create or replace function
+user_add_pgp (
+  a_user_id bigint,
+  a_password text,
+  a_tfa_code int,
+  a_pgp text
+) returns boolean as $$
+declare
+  password_tmp text;;
+begin
+  if a_user_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  if not user_totp_check(a_user_id, a_tfa_code) then
+    return false;;
+  end if;;
+
+  select "password" into password_tmp from passwords where user_id = a_user_id order by created desc limit 1;;
+
+  if password_tmp != crypt(a_password, password_tmp) then
+    return false;;
+  end if;;
+
+  update users set pgp = a_pgp where id = a_user_id;;
+  return true;;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+
+create or replace function
+user_remove_pgp (
+  a_user_id bigint,
+  a_password text,
+  a_tfa_code int
+) returns boolean as $$
+declare
+  password_tmp text;;
+begin
+  if a_user_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  if not user_totp_check(a_user_id, a_tfa_code) then
+    return false;;
+  end if;;
+
+  select "password" into password_tmp from passwords where user_id = a_user_id order by created desc limit 1;;
+
+  if password_tmp != crypt(a_password, password_tmp) then
+    return false;;
+  end if;;
+
+  update users set pgp = null where id = a_user_id;;
+  return true;;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+
 create or replace function
 trusted_action_start (
   a_email varchar(256),

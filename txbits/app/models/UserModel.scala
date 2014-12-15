@@ -305,6 +305,27 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
+  def addPGP(uid: Long, password: String, tfa_code: String, pgp: String) = DB.withConnection(db) { implicit c =>
+    frontend.userAddPgp.on(
+      'id -> uid,
+      'password -> password,
+      'tfa_code -> tfa_code.toInt,
+      'pgp -> pgp
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
+  }
+
+  def removePGP(uid: Long, password: String, tfa_code: String) = DB.withConnection(db) { implicit c =>
+    frontend.userAddPgp.on(
+      'id -> uid,
+      'password -> password,
+      'tfa_code -> tfa_code.toInt
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
+  }
+
   def turnOnTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
     frontend.turnonTfa.on(
       'id -> uid,

@@ -266,6 +266,27 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     }
   }
 
+  def addPgp() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    val tfa_code = (request.request.body \ "tfa_code").validate[String].get
+    val password = (request.request.body \ "password").validate[String].get
+    val pgp = (request.request.body \ "pgp").validate[String].get
+    if (globals.userModel.addPGP(request.user.id, password, tfa_code, pgp)) {
+      Ok(Json.obj())
+    } else {
+      BadRequest(Json.obj("message" -> "Failed to add pgp key check your password and two factor auth code if you use two factor auth."))
+    }
+  }
+
+  def removePgp() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    val tfa_code = (request.request.body \ "tfa_code").validate[String].get
+    val password = (request.request.body \ "password").validate[String].get
+    if (globals.userModel.removePGP(request.user.id, password, tfa_code)) {
+      Ok(Json.obj())
+    } else {
+      BadRequest(Json.obj("message" -> "Failed to remove pgp key check your password and two factor auth code if you use two factor auth."))
+    }
+  }
+
   def withdraw = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     val body = request.request.body
     (for (

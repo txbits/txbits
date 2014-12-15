@@ -32,6 +32,16 @@ object frontend {
   val userHasTotp = SQL(
     """
     | select * from user_has_totp({email});
+    """.stripMargin)
+
+  val userAddPgp = SQL(
+    """
+    | select user_add_pgp as success from user_add_pgp({id}, {password}, {tfa_code}, {pgp});
+    |""".stripMargin)
+
+  val userRemovePgp = SQL(
+    """
+    | select user_remove_pgp as success from user_remove_pgp({id}, {password}, {tfa_code});
     |""".stripMargin)
 
   val userChangePassword = SQL(
