@@ -514,13 +514,14 @@ user_change_password (
   a_new_password text
 ) returns boolean as $$
 declare
-  password_mismatch boolean;;
+  password_tmp text;;
 begin
   if a_user_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  select p.password != crypt(a_old_password, p.password) into password_mismatch from users u left join users_passwords p on u.id = p.user_id;;
-  if password_mismatch or password_mismatch is null then
+  select "password" into password_tmp from users_passwords where user_id = a_user_id order by created desc limit 1;;
+
+  if password_tmp != crypt(a_old_password, password_tmp) then
     return false;;
   end if;;
   insert into users_passwords (user_id, password) values (a_user_id, crypt(a_new_password, gen_salt('bf', 8)));;
