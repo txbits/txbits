@@ -144,7 +144,7 @@ var API;
             });
         }),
 
-        turnoff_emails: APIWrap(function(code) {
+        turnoff_emails: APIWrap(function() {
             return $.ajax('/api/1/turnoff_emails', {
                 type: 'POST',
                 data: "{}",
@@ -153,7 +153,7 @@ var API;
             });
         }),
 
-        turnon_emails: APIWrap(function(code) {
+        turnon_emails: APIWrap(function() {
             return $.ajax('/api/1/turnon_emails', {
                 type: 'POST',
                 data: "{}",
@@ -170,6 +170,24 @@ var API;
             return $.ajax('/api/1/turnon_tfa', {
                 type: 'POST',
                 data: JSON.stringify({tfa_code: code}),
+                dataType: 'json',
+                contentType: 'application/json'
+            });
+        }),
+
+        add_pgp: APIWrap(function(password, code, pgp) {
+            return $.ajax('/api/1/add_pgp', {
+                type: 'POST',
+                data: JSON.stringify({tfa_code: code, password: password, pgp: pgp}),
+                dataType: 'json',
+                contentType: 'application/json'
+            });
+        }),
+
+        remove_pgp: APIWrap(function(password, code) {
+            return $.ajax('/api/1/remove_pgp', {
+                type: 'POST',
+                data: JSON.stringify({tfa_code: code, password: password}),
                 dataType: 'json',
                 contentType: 'application/json'
             });

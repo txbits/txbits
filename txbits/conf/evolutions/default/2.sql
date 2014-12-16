@@ -509,22 +509,22 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 
 create or replace function
 user_change_password (
-  a_user_id bigint,
+  a_uid bigint,
   a_old_password text,
   a_new_password text
 ) returns boolean as $$
 declare
   password_tmp text;;
 begin
-  if a_user_id = 0 then
+  if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  select "password" into password_tmp from users_passwords where user_id = a_user_id order by created desc limit 1;;
+  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
 
   if password_tmp != crypt(a_old_password, password_tmp) then
     return false;;
   end if;;
-  insert into users_passwords (user_id, password) values (a_user_id, crypt(a_new_password, gen_salt('bf', 8)));;
+  insert into users_passwords (user_id, password) values (a_uid, crypt(a_new_password, gen_salt('bf', 8)));;
   return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -532,29 +532,34 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 
 create or replace function
 user_add_pgp (
-  a_user_id bigint,
+  a_uid bigint,
   a_password text,
   a_tfa_code int,
   a_pgp text
 ) returns boolean as $$
 declare
   password_tmp text;;
+  enabled boolean;;
 begin
-  if a_user_id = 0 then
+  if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
 
-  if not user_totp_check(a_user_id, a_tfa_code) then
-    return false;;
+  select tfa_enabled into enabled from users where id = a_uid;;
+
+  if enabled then
+      if not user_totp_check(a_uid, a_tfa_code) then
+      return false;;
+    end if;;
   end if;;
 
-  select "password" into password_tmp from passwords where user_id = a_user_id order by created desc limit 1;;
+  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
 
   if password_tmp != crypt(a_password, password_tmp) then
     return false;;
   end if;;
 
-  update users set pgp = a_pgp where id = a_user_id;;
+  update users set pgp = a_pgp where id = a_uid;;
   return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -562,28 +567,33 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 
 create or replace function
 user_remove_pgp (
-  a_user_id bigint,
+  a_uid bigint,
   a_password text,
   a_tfa_code int
 ) returns boolean as $$
 declare
   password_tmp text;;
+  enabled boolean;;
 begin
-  if a_user_id = 0 then
+  if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
 
-  if not user_totp_check(a_user_id, a_tfa_code) then
-    return false;;
+  select tfa_enabled into enabled from users where id = a_uid;;
+
+  if enabled then
+    if not user_totp_check(a_uid, a_tfa_code) then
+      return false;;
+    end if;;
   end if;;
 
-  select "password" into password_tmp from passwords where user_id = a_user_id order by created desc limit 1;;
+  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
 
   if password_tmp != crypt(a_password, password_tmp) then
     return false;;
   end if;;
 
-  update users set pgp = null where id = a_user_id;;
+  update users set pgp = null where id = a_uid;;
   return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -827,6 +837,7 @@ begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
+  success = false;;
 
   if totp_token_is_blacklisted(a_uid, a_totp) then
     return false;;
@@ -1017,7 +1028,7 @@ $$ language sql volatile security definer set search_path = public, pg_temp cost
 
 create or replace function
 new_log (
-  a_user_id bigint,
+  a_uid bigint,
   a_browser_headers text,
   a_email varchar(256),
   a_ssl_info text,
@@ -1026,28 +1037,28 @@ new_log (
   a_type text
 ) returns void as $$
 begin
-  if a_user_id = 0 then
+  if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
   insert into event_log (user_id, email, ipv4, browser_headers, browser_id, ssl_info, type)
-  values (a_user_id, a_email, a_ipv4, a_browser_headers, a_browser_id, a_ssl_info, a_type);;
+  values (a_uid, a_email, a_ipv4, a_browser_headers, a_browser_id, a_ssl_info, a_type);;
   return;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 login_log (
-  a_user_id bigint,
+  a_uid bigint,
   out event_log
 ) returns setof event_log as $$
 begin
-  if a_user_id = 0 then
+  if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
   return query select *
   from event_log
   where type in ('login_success', 'login_failure', 'logout', 'session_expired')
-    and user_id = a_user_id
+    and user_id = a_uid
   order by created desc;;
 end;;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
@@ -1484,6 +1495,8 @@ drop function if exists remove_fake_money (bigint, varchar(4), numeric(23,8)) ca
 drop function if exists find_user_by_id (bigint) cascade;
 drop function if exists user_exists (bigint) cascade;
 drop function if exists user_has_totp (bigint) cascade;
+drop function if exists user_add_pgp (bigint, text, int, text) cascade;
+drop function if exists user_remove_pgp (bigint, text, int) cascade;
 drop function if exists find_user_by_email_and_password (varchar(256), text) cascade;
 drop function if exists find_token (varchar(256)) cascade;
 drop function if exists delete_token (varchar(256)) cascade;

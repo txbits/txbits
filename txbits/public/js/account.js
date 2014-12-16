@@ -6,15 +6,9 @@ $(function(){
     var turnofftfa_template = Handlebars.compile($("#turn-off-tfa-template").html());
 
     function reload(){
-        API.user().success(function(data){
+        API.user().success(function(user){
             var verificationText = "";
-            switch (data.verification) {
-                case -1: verificationText = "Identity verification pending"; break;
-                case 0: verificationText = "Not verified"; break;
-                default : verificationText = "Verified";
-            }
-            data.verification = verificationText;
-            $('#acct-info').html(info_template(data));
+            $('#acct-info').html(info_template(user));
 
             //TODO: internationalize javascript messages
             $('#turnoff-emails').click(function(e){
@@ -42,6 +36,61 @@ $(function(){
                     });
                     reload();
                 });
+            });
+
+            $('#turnon-pgp').click(function(e){
+                function add(e) {
+                    var password = $("#pgp-add-modal").find('.password').val();
+                    var tfa_code = $("#pgp-add-modal").find('.code').val();
+                    var pgp = $("#pgp-add-modal").find('.pgpkey').val();
+                    //TODO: internationalize javascript messages
+                    API.add_pgp(password, tfa_code, pgp).success(function(){
+                        $.pnotify({
+                            title: 'PGP key added',
+                            text: 'PGP key added. Emails will now be encrypted.',
+                            styling: 'bootstrap',
+                            type: 'success',
+                            text_escape: true
+                        });
+                        reload();
+                        $("#pgp-add-modal").modal('hide');
+                    });
+                    e.preventDefault();
+                }
+                if (user.TFAEnabled) {
+                    $("#pgp-add-modal .code-group").show();
+                } else {
+                    $("#pgp-add-modal .code-group").hide();
+                }
+                $("#pgp-add-modal .modal-content").find('form').off('submit').submit(add);
+                $("#pgp-add-modal").modal().find('.btn-primary').off('click').click(add);
+            });
+
+            $('#turnoff-pgp').click(function(e){
+                function remove(e) {
+                    var password = $("#pgp-remove-modal").find('.password').val();
+                    var tfa_code = $("#pgp-remove-modal").find('.code').val();
+                    //TODO: internationalize javascript messages
+                    API.remove_pgp(password, tfa_code).success(function(){
+                        $.pnotify({
+                            title: 'PGP key removed',
+                            text: 'PGP key removed. Emails will no longer be encrypted.',
+                            styling: 'bootstrap',
+                            type: 'success',
+                            text_escape: true
+                        });
+                        reload();
+                        $("#pgp-remove-modal").modal('hide');
+                    });
+                    e.preventDefault();
+                }
+                if (user.TFAEnabled) {
+                    $("#pgp-remove-modal .code-group").show();
+                } else {
+                    $("#pgp-remove-modal .code-group").hide();
+                }
+                $("#pgp-remove-modal .modal-content").find('form').off('submit').submit(remove);
+                $("#pgp-remove-modal").modal().find('.btn-primary').off('click').click(remove);
             });
 
             $('#turnon-tfa').click(function(e){
