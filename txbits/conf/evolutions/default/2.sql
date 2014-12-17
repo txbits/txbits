@@ -762,13 +762,12 @@ declare
   totp text;;
   secret bytea;;
   totpvalue bigint;;
-  success boolean;;
+  success boolean not null default false;;
   found_otp boolean;;
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  success = false;;
 
   if totp_token_is_blacklisted(a_uid, a_totp) then
     return false;;
