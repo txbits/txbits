@@ -768,6 +768,7 @@ begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
+  success = false;;
 
   if totp_token_is_blacklisted(a_uid, a_totp) then
     return false;;
@@ -855,7 +856,7 @@ totp_login_step2 (
   a_email varchar(256),
   a_secret_hash text,
   a_tfa_code int
-) returns users as $$
+) returns setof users as $$
 declare
   u users%rowtype;;
   matched boolean;;
@@ -867,11 +868,11 @@ begin
     raise 'Internal error. Invalid secret hash.';;
   end if;;
 
-  if not user_totp_check(u.id, a_tfa_code) then
-    return null;;
+  if user_totp_check(u.id, a_tfa_code) then
+    return next u;;
+  else
+    return;;
   end if;;
-
-  return u;;
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
@@ -880,10 +881,13 @@ find_user_by_email_and_password (
   a_email varchar(256),
   a_password text
 ) returns setof users as $$
+declare
+  enabled boolean;;
 begin
   if user_has_totp(a_email) then
     raise 'Internal error. Cannot find user by email and password if totp is enabled.';;
   end if;;
+
   return query select * from find_user_by_email_and_password_invoker(a_email, a_password);;
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
@@ -1367,7 +1371,7 @@ begin
   select tfa_enabled into enabled from users where id = a_uid;;
 
   if enabled then
-    if not user_totp_check(a_uid, a_tfa_code) then
+    if user_totp_check(a_uid, a_tfa_code) = false then
       return -1;;
     end if;;
   end if;;

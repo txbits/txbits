@@ -10,7 +10,7 @@ $(function(){
     Handlebars.registerPartial("crypto-deposit", $("#crypto-deposit-template").html());
 
     API.user().success(function(user){
-        if (user.TFAWithdrawal) {
+        if (user.TFAEnabled) {
             $('#withdraw-confirm-tfa-form').show();
         } else {
             $('#withdraw-confirm-tfa-form').hide();

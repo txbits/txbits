@@ -93,12 +93,16 @@ class EngineModel(val db: String = "default") {
   }
 
   def withdraw(uid: Long, currency: String, amount: BigDecimal, address: String, tfa_code: Option[String]) = DB.withConnection(db) { implicit c =>
+    var code = tfa_code.getOrElse("0")
+    if (code == "") {
+      code = "0"
+    }
     frontend.withdrawCrypto.on(
       'uid -> uid,
       'currency -> currency,
       'amount -> amount.bigDecimal,
       'address -> address,
-      'tfa_code -> tfa_code.getOrElse("0").toInt
+      'tfa_code -> code.toInt
     ).map(row => row[Long]("id")).list.headOption
   }
 

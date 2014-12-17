@@ -105,7 +105,8 @@ trait SecureSocial extends Controller {
         implicit val req = request
         val result = for (
           authenticator <- SecureSocial.authenticatorFromRequest;
-          user <- txbitsUserService.find(authenticator.uid.get) if (authenticator.uid.isDefined)
+          uid <- authenticator.uid;
+          user <- txbitsUserService.find(uid)
         ) yield {
           touch(authenticator)
           block(SecuredRequest(user, request))
@@ -141,7 +142,8 @@ trait SecureSocial extends Controller {
         implicit val req = request
         val user = for (
           authenticator <- SecureSocial.authenticatorFromRequest;
-          user <- txbitsUserService.find(authenticator.uid.get) if (authenticator.uid.isDefined) //TODO: this triggers on the login page too!
+          uid <- authenticator.uid;
+          user <- txbitsUserService.find(uid) //TODO: this triggers on the login page too!
         ) yield {
           touch(authenticator)
           user
@@ -194,7 +196,8 @@ object SecureSocial {
       case userAware: RequestWithUser[_] => userAware.user
       case _ => for (
         authenticator <- authenticatorFromRequest;
-        user <- txbitsUserService.find(authenticator.uid.get) if (authenticator.uid.isDefined)
+        uid <- authenticator.uid;
+        user <- txbitsUserService.find(uid)
       ) yield {
         user
       }

@@ -279,9 +279,13 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         try {
           val res = globals.engineModel.withdraw(request.user.id, currency, amount, address, tfa_code)
           if (res.isDefined) {
-            Ok(Json.obj())
+            if (res.get != -1) {
+              Ok(Json.obj())
+            } else {
+              BadRequest(Json.obj("message" -> "Wrong two factor auth code."))
+            }
           } else {
-            BadRequest(Json.obj("message" -> "Failed to withdraw"))
+            BadRequest(Json.obj("message" -> "Failed to withdraw."))
           }
         } catch {
           case e: PSQLException => {
