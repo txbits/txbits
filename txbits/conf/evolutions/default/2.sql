@@ -855,7 +855,7 @@ totp_login_step2 (
   a_email varchar(256),
   a_secret_hash text,
   a_tfa_code int
-) returns setof users as $$
+) returns users as $$
 declare
   u users%rowtype;;
   matched boolean;;
@@ -868,9 +868,9 @@ begin
   end if;;
 
   if user_totp_check(u.id, a_tfa_code) then
-    return next u;;
+    return u;;
   else
-    return;;
+    return null;;
   end if;;
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;

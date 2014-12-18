@@ -135,14 +135,20 @@ class UserModel(val db: String = "default") {
       'totp_hash -> totpHash,
       'totp_token -> totpToken.toInt
     )().map(row =>
-        new SocialUser(
-          row[Long]("id"),
-          row[String]("email"),
-          row[Int]("verification"),
-          row[Boolean]("on_mailing_list"),
-          row[Boolean]("tfa_enabled")
-        )
-      ).headOption
+        if (row[Option[Long]]("id").isEmpty) {
+          None
+        } else {
+          Some(
+            new SocialUser(
+              row[Option[Long]]("id").get,
+              row[Option[String]]("email").get,
+              row[Option[Int]]("verification").get,
+              row[Option[Boolean]]("on_mailing_list").get,
+              row[Option[Boolean]]("tfa_enabled").get
+            )
+          )
+        }
+      ).head
   }
 
   def findUserByEmailAndPassword(email: String, password: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
