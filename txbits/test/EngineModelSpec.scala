@@ -223,7 +223,7 @@ class EngineModelSpec extends Specification with Mockito {
 
       globals.userModel.addFakeMoney(uid, "LTC", 1000)
 
-      globals.engineModel.withdraw(uid, "LTC", 12.3, "addr") mustNotEqual None
+      globals.engineModel.withdraw(uid, "LTC", 12.3, "addr", None) mustNotEqual None
       val pending = globals.engineModel.pendingWithdrawals(uid)
 
       pending("LTC").head.amount must beEqualTo("12.30000000")

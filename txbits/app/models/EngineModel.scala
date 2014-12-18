@@ -92,12 +92,18 @@ class EngineModel(val db: String = "default") {
     frontend.orderCancel.on('uid -> uid, 'id -> orderId)().map(row => row[Boolean]("order_cancel")).head
   }
 
-  def withdraw(uid: Long, currency: String, amount: BigDecimal, address: String) = DB.withConnection(db) { implicit c =>
+  def withdraw(uid: Long, currency: String, amount: BigDecimal, address: String, tfa_code: Option[String]) = DB.withConnection(db) { implicit c =>
+    var code = tfa_code.getOrElse("0")
+    if (code == "") {
+      code = "0"
+    }
     frontend.withdrawCrypto.on(
       'uid -> uid,
       'currency -> currency,
       'amount -> amount.bigDecimal,
-      'address -> address).map(row => row[Long]("o_id")).list.headOption
+      'address -> address,
+      'tfa_code -> code.toInt
+    ).map(row => row[Long]("id")).list.headOption
   }
 
   def addresses(uid: Long, currency: String) = DB.withConnection(db) { implicit c =>

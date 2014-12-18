@@ -13,7 +13,9 @@ object misc {
       |begin;
       |delete from balances;
       |delete from users_addresses;
-      |delete from passwords;
+      |delete from users_tfa_secrets;
+      |delete from users_backup_otps;
+      |delete from users_passwords;
       |delete from users;
       |commit;
     """.stripMargin)
@@ -23,10 +25,13 @@ object misc {
       |delete from deposits_crypto;
       |delete from deposits_other;
       |delete from deposits;
-      |delete from passwords;
+      |delete from users_passwords;
+      |delete from users_tfa_secrets;
+      |delete from users_backup_otps;
       |delete from users_addresses;
       |delete from dw_fees;
       |delete from trade_fees;
+      |delete from totp_tokens_blacklist;
       |delete from withdrawals_other;
       |delete from withdrawals_crypto;
       |delete from withdrawals_crypto_tx_mutated;

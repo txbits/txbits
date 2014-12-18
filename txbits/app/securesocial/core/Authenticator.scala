@@ -34,8 +34,8 @@ import play.api.mvc.{ DiscardingCookie, Cookie }
  * @param lastUsed The last used timestamp
  * @param expirationDate The expiration time
  */
-case class Authenticator(id: String, uid: Long, creationDate: DateTime,
-    lastUsed: DateTime, expirationDate: DateTime, needsTFA: Boolean) {
+case class Authenticator(id: String, uid: Option[Long], creationDate: DateTime,
+    lastUsed: DateTime, expirationDate: DateTime, totpSecret: Option[String], email: String) {
 
   /**
    * Creates a cookie representing this authenticator
@@ -79,7 +79,7 @@ case class Authenticator(id: String, uid: Long, creationDate: DateTime,
    * @return A new authenticator instance with the new timestamp.
    */
   def touch: Authenticator = this.copy(lastUsed = DateTime.now())
-  def complete2fa: Authenticator = this.copy(needsTFA = false)
+  def complete2fa(uid: Long): Authenticator = this.copy(uid = Some(uid), totpSecret = None)
 }
 
 /**
@@ -129,7 +129,7 @@ abstract class AuthenticatorStore(app: Application) extends Plugin {
    * @param authenticator the authenticator
    * @return Error if there was a problem saving the authenticator or Unit if all went ok
    */
-  def save(authenticator: Authenticator): Either[Error, Unit]
+  def save(authenticator: Authenticator): Unit
 
   /**
    * Finds an authenticator by id in the store
@@ -137,7 +137,7 @@ abstract class AuthenticatorStore(app: Application) extends Plugin {
    * @param id the authenticator id
    * @return Error if there was a problem finding the authenticator or an optional authenticator if all went ok
    */
-  def find(id: String): Either[Error, Option[Authenticator]]
+  def find(id: String): Option[Authenticator]
 
   /**
    * Deletes an authenticator from the store
@@ -145,7 +145,7 @@ abstract class AuthenticatorStore(app: Application) extends Plugin {
    * @param id the authenticator id
    * @return Error if there was a problem deleting the authenticator or Unit if all went ok
    */
-  def delete(id: String): Either[Error, Unit]
+  def delete(id: String): Unit
 }
 
 /**
@@ -155,16 +155,14 @@ abstract class AuthenticatorStore(app: Application) extends Plugin {
  * @param app
  */
 class DefaultAuthenticatorStore(app: Application) extends AuthenticatorStore(app) {
-  def save(authenticator: Authenticator): Either[Error, Unit] = {
+  def save(authenticator: Authenticator) {
     Cache.set(authenticator.id, authenticator, Authenticator.absoluteTimeoutInSeconds)
-    Right(())
   }
-  def find(id: String): Either[Error, Option[Authenticator]] = {
-    Right(Cache.getAs[Authenticator](id))
+  def find(id: String): Option[Authenticator] = {
+    Cache.getAs[Authenticator](id)
   }
-  def delete(id: String): Either[Error, Unit] = {
+  def delete(id: String) {
     Cache.remove(id)
-    Right(())
   }
 }
 
@@ -206,17 +204,17 @@ object Authenticator {
   /**
    * Creates a new authenticator id for the specified user
    *
-   * @param user the user Identity
+   * @param uid the id of the user if no two factor auth or None
+   * @param totpSecret the secret to complete two factor auth or None
    * @return an authenticator or error if there was a problem creating it
    */
-  def create(user: SocialUser): Either[Error, Authenticator] = {
+  def create(uid: Option[Long], totpSecret: Option[String], email: String): Authenticator = {
     val id = use[IdGenerator].generate
     val now = DateTime.now()
     val expirationDate = now.plusMinutes(absoluteTimeout)
-    val authenticator = Authenticator(id, user.id, now, now, expirationDate, user.TFALogin && user.TFAType.isDefined)
-    val r = use[AuthenticatorStore].save(authenticator)
-    val result = r.fold(e => Left(e), _ => Right(authenticator))
-    result
+    val authenticator = Authenticator(id, uid, now, now, expirationDate, totpSecret, email)
+    use[AuthenticatorStore].save(authenticator)
+    authenticator
   }
 
   /**
@@ -225,7 +223,7 @@ object Authenticator {
    * @param authenticator the authenticator
    * @return Error if there was a problem saving the authenticator or Unit if all went ok
    */
-  def save(authenticator: Authenticator): Either[Error, Unit] = {
+  def save(authenticator: Authenticator) {
     use[AuthenticatorStore].save(authenticator)
   }
   /**
@@ -234,7 +232,7 @@ object Authenticator {
    * @param id the authenticator id
    * @return Error if there was a problem finding the authenticator or an optional authenticator if all went ok
    */
-  def find(id: String): Either[Error, Option[Authenticator]] = {
+  def find(id: String): Option[Authenticator] = {
     use[AuthenticatorStore].find(id)
   }
 
@@ -244,7 +242,7 @@ object Authenticator {
    * @param id the authenticator id
    * @return Error if there was a problem deleting the authenticator or Unit if all went ok
    */
-  def delete(id: String): Either[Error, Unit] = {
+  def delete(id: String) {
     use[AuthenticatorStore].delete(id)
   }
 }

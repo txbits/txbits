@@ -60,29 +60,6 @@ class UsernamePasswordProvider(application: Application) extends Plugin with Reg
 
   def authMethod = AuthenticationMethod.UserPassword
 
-  val InvalidCredentials = "securesocial.login.invalidCredentials"
-
-  def doAuth[A]()(implicit request: Request[A]): Either[Result, SocialUser] = {
-    val form = UsernamePasswordProvider.loginForm.bindFromRequest()
-    form.fold(
-      errors => Left(badRequest(errors, request)),
-      credentials => {
-        val email = credentials._1.trim
-        val user = txbitsUserService.findByEmailAndPassword(email, credentials._2)
-        if (user.isEmpty) {
-          globals.logModel.logEvent(LogEvent.fromRequest(user.map(u => Some(u.id)).getOrElse(None), Some(email), request, LogType.LoginFailure))
-          Left(badRequest(UsernamePasswordProvider.loginForm, request, Some(InvalidCredentials)))
-        } else {
-          Right(user.get)
-        }
-      }
-    )
-  }
-
-  private def badRequest[A](f: Form[(String, String)], request: Request[A], msg: Option[String] = None): Result = {
-    Results.BadRequest(SecureSocialTemplates.getLoginPage(request, f, msg))
-  }
-
   /**
    * Reads a property from the application.conf
    * @param property
@@ -94,22 +71,6 @@ class UsernamePasswordProvider(application: Application) extends Plugin with Reg
       Logger.error("[securesocial] Missing property " + property + " for provider " + id)
     }
     result
-  }
-
-  /**
-   * Authenticates the user and fills the profile information. Returns either a User if all went
-   * ok or a Result that the controller sends to the browser (eg: in the case of OAuth for example
-   * where the user needs to be redirected to the service provider)
-   *
-   * @param request
-   * @tparam A
-   * @return
-   */
-  def authenticate[A]()(implicit request: Request[A]): Either[Result, SocialUser] = {
-    doAuth().fold(
-      result => Left(result),
-      u => Right(u)
-    )
   }
 
   protected def throwMissingPropertiesException() {

@@ -58,10 +58,6 @@ trait SecureSocial extends Controller {
     Unauthorized(Json.toJson(Map("error" -> "Credentials required"))).as(JSON)
   }
 
-  private def ajaxCallNotAuthorized[A](implicit request: Request[A]): Result = {
-    Forbidden(Json.toJson(Map("error" -> "Not authorized"))).as(JSON)
-  }
-
   /**
    * A secured action.  If there is no user in the session the request is redirected
    * to the login page
@@ -70,27 +66,27 @@ trait SecureSocial extends Controller {
     /**
      * Creates a secured action
      */
-    def apply[A]() = new SecuredActionBuilder[A](false, None)
+    def apply[A]() = new SecuredActionBuilder[A](false)
 
     /**
      * Creates a secured action
      *
      * @param ajaxCall a boolean indicating whether this is an ajax call or not
      */
-    def apply[A](ajaxCall: Boolean) = new SecuredActionBuilder[A](ajaxCall, None)
+    def apply[A](ajaxCall: Boolean) = new SecuredActionBuilder[A](ajaxCall)
 
     /**
      * Creates a secured action
      * @param authorize an Authorize object that checks if the user is authorized to invoke the action
      */
-    def apply[A](authorize: Authorization) = new SecuredActionBuilder[A](false, Some(authorize))
+    //def apply[A](authorize: Authorization) = new SecuredActionBuilder[A](false, Some(authorize))
 
     /**
      * Creates a secured action
      * @param ajaxCall a boolean indicating whether this is an ajax call or not
      * @param authorize an Authorize object that checks if the user is authorized to invoke the action
      */
-    def apply[A](ajaxCall: Boolean, authorize: Authorization) = new SecuredActionBuilder[A](ajaxCall, Some(authorize))
+    //def apply[A](ajaxCall: Boolean, authorize: Authorization) = new SecuredActionBuilder[A](ajaxCall, Some(authorize))
   }
 
   /**
@@ -100,29 +96,20 @@ trait SecureSocial extends Controller {
    * @param authorize an Authorize object that checks if the user is authorized to invoke the action
    * @tparam A
    */
-  class SecuredActionBuilder[A](ajaxCall: Boolean = false, authorize: Option[Authorization] = None)
+  class SecuredActionBuilder[A](ajaxCall: Boolean = false)
       extends ActionBuilder[({ type R[A] = SecuredRequest[A] })#R] {
 
-    def invokeSecuredBlock[A](ajaxCall: Boolean, authorize: Option[Authorization], request: Request[A],
+    def invokeSecuredBlock[A](ajaxCall: Boolean, request: Request[A],
       block: SecuredRequest[A] => Future[Result]): Future[Result] =
       {
         implicit val req = request
         val result = for (
           authenticator <- SecureSocial.authenticatorFromRequest;
-          user <- txbitsUserService.find(authenticator.uid) if (!authenticator.needsTFA)
+          uid <- authenticator.uid;
+          user <- txbitsUserService.find(uid)
         ) yield {
           touch(authenticator)
-          if (authorize.isEmpty || authorize.get.isAuthorized(SecuredRequest(user, request), authenticator)) {
-            block(SecuredRequest(user, request))
-          } else {
-            Future.successful {
-              if (ajaxCall) {
-                ajaxCallNotAuthorized(request)
-              } else {
-                Redirect(controllers.routes.ProviderController.notAuthorized.absoluteURL(UsernamePasswordProvider.sslEnabled))
-              }
-            }
-          }
+          block(SecuredRequest(user, request))
         }
 
         result.getOrElse({
@@ -142,7 +129,7 @@ trait SecureSocial extends Controller {
       }
 
     def invokeBlock[A](request: Request[A], block: SecuredRequest[A] => Future[Result]) =
-      invokeSecuredBlock(ajaxCall, authorize, request, block)
+      invokeSecuredBlock(ajaxCall, request, block)
   }
 
   /**
@@ -155,7 +142,8 @@ trait SecureSocial extends Controller {
         implicit val req = request
         val user = for (
           authenticator <- SecureSocial.authenticatorFromRequest;
-          user <- txbitsUserService.find(authenticator.uid) if (!authenticator.needsTFA) //TODO: this triggers on the login page too!
+          uid <- authenticator.uid;
+          user <- txbitsUserService.find(uid) //TODO: this triggers on the login page too!
         ) yield {
           touch(authenticator)
           user
@@ -164,39 +152,8 @@ trait SecureSocial extends Controller {
       }
   }
 
-  /**
-   * Not quite authenticated fully, but at least partially logged in
-   */
-  object TFAAction extends ActionBuilder[SecuredRequest] {
-    def invokeBlock[A](request: Request[A],
-      block: (SecuredRequest[A]) => Future[Result]): Future[Result] =
-      {
-        implicit val req = request
-        val res = for (
-          authenticator <- SecureSocial.authenticatorFromRequest;
-          user <- txbitsUserService.find(authenticator.uid)
-        ) yield {
-          touch(authenticator)
-          block(SecuredRequest(user, request))
-        }
-
-        res.getOrElse({
-          if (Logger.isDebugEnabled) {
-            Logger.debug("[securesocial] anonymous user trying to access : '%s'".format(request.uri))
-          }
-          Future.successful(Redirect(controllers.routes.LoginPage.login().absoluteURL(UsernamePasswordProvider.sslEnabled))
-            .flashing("error" -> Messages("securesocial.loginRequired"))
-            .withSession(request2session).discardingCookies(Authenticator.discardingCookie))
-        })
-      }
-  }
-
   def touch(authenticator: Authenticator) {
     Authenticator.save(authenticator.touch)
-  }
-
-  def complete2fa(authenticator: Authenticator) {
-    Authenticator.save(authenticator.complete2fa)
   }
 }
 
@@ -206,8 +163,7 @@ object SecureSocial {
   def authenticatorFromRequest(implicit request: RequestHeader): Option[Authenticator] = {
     val result = for {
       cookie <- request.cookies.get(Authenticator.cookieName)
-      maybeAuthenticator <- Authenticator.find(cookie.value).fold(e => None, Some(_))
-      authenticator <- maybeAuthenticator
+      authenticator <- Authenticator.find(cookie.value)
     } yield {
       authenticator
     }
@@ -216,7 +172,7 @@ object SecureSocial {
       case Some(a) => {
         if (!a.isValid) {
           Authenticator.delete(a.id)
-          globals.logModel.logEvent(LogEvent.fromRequest(Some(a.uid), None, request, LogType.SessionExpired))
+          globals.logModel.logEvent(LogEvent.fromRequest(a.uid, None, request, LogType.SessionExpired))
           None
         } else {
           Some(a)
@@ -240,7 +196,8 @@ object SecureSocial {
       case userAware: RequestWithUser[_] => userAware.user
       case _ => for (
         authenticator <- authenticatorFromRequest;
-        user <- txbitsUserService.find(authenticator.uid) if (!authenticator.needsTFA)
+        uid <- authenticator.uid;
+        user <- txbitsUserService.find(uid)
       ) yield {
         user
       }

@@ -29,6 +29,11 @@ object frontend {
     | select * from user_exists({email});
     |""".stripMargin)
 
+  val userHasTotp = SQL(
+    """
+    | select * from user_has_totp({email});
+    |""".stripMargin)
+
   val userChangePassword = SQL(
     """
     | select * from user_change_password({user_id}, {old_password}, {new_password})
@@ -46,27 +51,27 @@ object frontend {
 
   val turnonTfa = SQL(
     """
-    | select * from turnon_tfa({id})
+    | select turnon_tfa as success from turnon_tfa({id}, {tfa_code})
     |""".stripMargin)
 
   val updateTfaSecret = SQL(
     """
-    | select * from update_tfa_secret({id}, {secret}, {typ})
+    | select update_tfa_secret as success from update_tfa_secret({id}, {secret}, {otps})
     |""".stripMargin)
 
   val turnoffTfa = SQL(
     """
-    | select * from turnoff_tfa({id})
+    | select turnoff_tfa as success from turnoff_tfa({id}, {tfa_code})
     |""".stripMargin)
 
   val turnonEmails = SQL(
     """
-    | select * from turnon_emails({id})
+    | select turnon_emails as success from turnon_emails({id})
     |""".stripMargin)
 
   val turnoffEmails = SQL(
     """
-    | select * from turnoff_emails({id})
+    | select turnoff_emails as success from turnoff_emails({id})
     |""".stripMargin)
 
   val addFakeMoney = SQL(
@@ -89,6 +94,16 @@ object frontend {
     | select * from find_user_by_email_and_password({email}, {password})
     |""".stripMargin)
 
+  val totpLoginStep1 = SQL(
+    """
+    | select totp_login_step1 as totp_hash from totp_login_step1({email}, {password})
+    |""".stripMargin)
+
+  val totpLoginStep2 = SQL(
+    """
+    | select * from totp_login_step2({email}, {totp_hash}, {totp_token})
+    |""".stripMargin)
+
   val findToken = SQL(
     """
     | select * from find_token({token})
@@ -102,16 +117,6 @@ object frontend {
   val deleteExpiredTokens = SQL(
     """
     | select * from delete_expired_tokens()
-    |""".stripMargin)
-
-  val TOTPTokenIsBlacklisted = SQL(
-    """
-    | select * from totp_token_is_blacklisted({token}, {user})
-    |""".stripMargin)
-
-  val blacklistTOTPToken = SQL(
-    """
-    | select * from blacklist_totp_token({token}, {user}, {expiration})
     |""".stripMargin)
 
   val deleteExpiredTOTPBlacklistTokens = SQL(
@@ -241,7 +246,7 @@ object frontend {
 
   val withdrawCrypto = SQL(
     """
-    | select * from withdraw_crypto({uid}, {amount}, {address}, {currency})
+    | select withdraw_crypto as id from withdraw_crypto({uid}, {amount}, {address}, {currency}, {tfa_code})
     |""".stripMargin)
 }
 

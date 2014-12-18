@@ -462,7 +462,7 @@ begin
       a_email,
       a_onMailingList
     ) returning id into new_user_id;;
-  insert into passwords (user_id, password) values (
+  insert into users_passwords (user_id, password) values (
     new_user_id,
     crypt(a_password, gen_salt('bf', 8))
   );;
@@ -519,11 +519,11 @@ begin
   if a_user_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  select p.password != crypt(a_old_password, p.password) into password_mismatch from users u left join passwords p on u.id = p.user_id;;
+  select p.password != crypt(a_old_password, p.password) into password_mismatch from users u left join users_passwords p on u.id = p.user_id;;
   if password_mismatch or password_mismatch is null then
     return false;;
   end if;;
-  insert into passwords (user_id, password) values (a_user_id, crypt(a_new_password, gen_salt('bf', 8)));;
+  insert into users_passwords (user_id, password) values (a_user_id, crypt(a_new_password, gen_salt('bf', 8)));;
   return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -562,22 +562,26 @@ begin
     return false;;
   end if;;
   delete from tokens where email = a_email and is_signup = false;;
-  insert into passwords (user_id, password) select id, crypt(a_new_password, gen_salt('bf', 8)) from users where email = a_email;;
+  insert into users_passwords (user_id, password) select id, crypt(a_new_password, gen_salt('bf', 8)) from users where email = a_email;;
   return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 turnon_tfa (
-  a_id bigint
-) returns void as $$
+  a_id bigint,
+  a_totp int
+) returns boolean as $$
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  update users set tfa_login=true, tfa_withdrawal=true
-  where id=a_id;;
-  return;;
+  if user_totp_check(a_id, a_totp) then
+    update users set tfa_enabled = true where id = a_id;;
+    return true;;
+  else
+    return false;;
+  end if;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -585,31 +589,48 @@ create or replace function
 update_tfa_secret (
   a_id bigint,
   a_secret varchar(256),
-  a_typ varchar(6)
-) returns void as $$
+  a_otps text
+) returns boolean as $$
+declare
+  enabled boolean;;
+  otps_arr int[10];;
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  update users
-  set tfa_secret=a_secret, tfa_type=a_typ, tfa_login=false, tfa_withdrawal=false
-  where id=a_id;;
-  return;;
+
+  select tfa_enabled into enabled from users where id = a_id;;
+  if enabled then
+    return false;;
+  end if;;
+
+  delete from users_backup_otps where user_id = a_id;;
+  -- We assume that we are given 10 otps. Any less is an error, any more are ignored
+  otps_arr = string_to_array(a_otps, ',');;
+  for i in 1..10 loop
+    insert into users_backup_otps(user_id, otp) values (a_id, otps_arr[i]);;
+  end loop;;
+
+  insert into users_tfa_secrets(user_id, tfa_secret) values (a_id, a_secret);;
+  return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 turnoff_tfa (
-  a_id bigint
-) returns void as $$
+  a_id bigint,
+  a_totp int
+) returns boolean as $$
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  update users
-  set tfa_secret=NULL, tfa_login=false, tfa_withdrawal=false, tfa_type=NULL
-  where id=a_id;;
-  return;;
+  if user_totp_check(a_id, a_totp) then
+    update users set tfa_enabled = false where id = a_id;;
+    return true;;
+  else
+    return false;;
+  end if;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -674,6 +695,109 @@ end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
+base32_decode (
+  a_in text
+) returns bytea as $$
+declare
+  byte bigint;;
+  tmp bigint;;
+  result bit varying(200);;
+  out bytea;;
+begin
+  if length(a_in) % 8 != 0 then
+    raise 'Failed to base32 decode a string that is not a multiple of 8 bytes long. The string is % bytes long.', length(a_in);;
+  end if;;
+
+  select B'' into result;;
+  for i in 0..(length(a_in)-1) loop
+    select get_byte(a_in::bytea, i) into byte;;
+    -- handle upper case letters
+    if byte >= 65 and byte <= 90 then
+      select byte - 65 into tmp;;
+    -- handle numbers
+    elsif byte >= 50 and byte <= 55 then
+      select byte - 24 into tmp;;
+    -- handle lowercase letters
+    elsif byte >= 97 and byte <= 122 then
+      select byte - 97 into tmp;;
+    else
+      raise 'Failed to base32 decode due to invalid character %s, code: ', chr(byte), byte;;
+    end if;;
+    select result || tmp::bit(5) into result;;
+  end loop;;
+
+  -- convert the bit string to a bytea 4 bytes at a time
+  select '\x'::bytea into out;;
+  for i in 1..(length(a_in)*5/8) loop
+    select out || substring(int4send(substring(result, ((i-1)*8+1), 8)::int), 4) into out;;
+  end loop;;
+  return out;;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+
+create or replace function
+hotp (
+  a_k bytea,  -- secret key
+  a_c bigint  -- counter
+) returns bigint as $$
+declare
+  hs bytea;;
+  off int;;
+begin
+  select hmac(int8send(a_c), a_k, 'sha1') into hs;;
+  select (get_byte(hs, length(hs)-1) & 'x0f'::bit(8)::int) into off;;
+  return (substring(substring(hs from off+1 for 4)::text, 2)::bit(32)::int & ('x7ffffffff'::bit(32)::int)) % (1000000);;
+end;;
+$$ language plpgsql immutable strict security invoker set search_path = public, pg_temp cost 100;
+
+create or replace function
+user_totp_check (
+  a_uid bigint,
+  a_totp int
+) returns boolean as $$
+declare
+  tc bigint;;
+  totp text;;
+  secret bytea;;
+  totpvalue bigint;;
+  success boolean not null default false;;
+  found_otp boolean;;
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  if totp_token_is_blacklisted(a_uid, a_totp) then
+    return false;;
+  end if;;
+
+  -- We use the same size of windows as Google: 30 seconds
+  select round(extract(epoch from now()) / 30) into tc;;
+  select base32_decode(tfa_secret) into strict secret from users_tfa_secrets where user_id = a_uid order by created desc limit 1;;
+
+  -- We use a (5+5+1) * 30 = 330 seconds = 5:30 minutes window to account for inaccurate clocks
+  for i in (tc-5)..(tc+5) loop
+    if hotp(secret, i) = a_totp then
+        select true into success;;
+    end if;;
+  end loop;;
+
+  if success then
+    insert into totp_tokens_blacklist(user_id, token, expiration) values (a_uid, a_totp, current_timestamp + interval '24 hours');;
+  else
+    -- check the backup otps
+    select (count(*) > 0) into found_otp from users_backup_otps where user_id = a_uid and otp = a_totp;;
+
+    if found_otp then
+      delete from users_backup_otps where user_id = a_uid and otp = a_totp;;
+      success = true;;
+    end if;;
+  end if;;
+  return success;;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
 find_user_by_id (
   a_id bigint,
   out users
@@ -697,21 +821,91 @@ user_exists (
 $$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
+user_has_totp (
+  a_email varchar(256)
+) returns boolean as $$
+  select tfa_enabled from users where lower(email) = lower(a_email);;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
+
+-- null on failure
+create or replace function
+totp_login_step1 (
+  a_email varchar(256),
+  a_password text
+) returns text as $$
+declare
+  u users%rowtype;;
+  sec text;;
+begin
+  select * into u from find_user_by_email_and_password_invoker(a_email, a_password);;
+  if u is null then
+    return null;;
+  end if;;
+
+  select tfa_secret into sec from users_tfa_secrets where user_id = u.id order by created desc limit 1;;
+  return crypt(sec, gen_salt('bf', 8));;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+
+-- null on failure
+create or replace function
+totp_login_step2 (
+  a_email varchar(256),
+  a_secret_hash text,
+  a_tfa_code int
+) returns users as $$
+declare
+  u users%rowtype;;
+  matched boolean;;
+begin
+  select * from users where email = a_email into u;;
+
+  select a_secret_hash = crypt(tfa_secret, a_secret_hash) into matched from users_tfa_secrets where user_id = u.id order by created desc limit 1;;
+  if not matched then
+    raise 'Internal error. Invalid secret hash.';;
+  end if;;
+
+  if user_totp_check(u.id, a_tfa_code) then
+    return u;;
+  else
+    return null;;
+  end if;;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+
+create or replace function
 find_user_by_email_and_password (
   a_email varchar(256),
-  a_password text,
-  out users
+  a_password text
 ) returns setof users as $$
-  with user_row as (
-    select u.*, p.password from users as u
-    inner join passwords as p on p.user_id = u.id
+declare
+  enabled boolean;;
+begin
+  if user_has_totp(a_email) then
+    raise 'Internal error. Cannot find user by email and password if totp is enabled.';;
+  end if;;
+
+  return query select * from find_user_by_email_and_password_invoker(a_email, a_password);;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+
+create or replace function
+find_user_by_email_and_password_invoker (
+  a_email varchar(256),
+  a_password text
+) returns setof users as $$
+declare
+  pass text;;
+begin
+  select p.password into pass from users as u
+    inner join users_passwords as p on p.user_id = u.id
     where lower(u.email) = lower(a_email)
     order by p.created desc
-    limit 1
-  )
-  select id, created, email, on_mailing_list, tfa_withdrawal, tfa_login, tfa_secret, tfa_type, verification, active
-  from user_row where user_row.password = crypt(a_password, user_row.password);;
-$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
+    limit 1;;
+
+  return query select * from users where email = a_email and pass = crypt(a_password, pass);;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 find_token (
@@ -736,32 +930,23 @@ $$ language sql volatile security definer set search_path = public, pg_temp cost
 
 create or replace function
 totp_token_is_blacklisted (
-  a_token varchar(256),
   a_user bigint,
-  out bool
-) returns setof bool as $$
+  a_token bigint
+) returns bool as $$
+declare
+  success boolean;;
 begin
   if a_user = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  return query select true from totp_tokens_blacklist where user_id = a_user and token = a_token and expiration >= current_timestamp;;
-end;;
-$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
-
-create or replace function
-blacklist_totp_token (
-  a_token varchar(256),
-  a_user bigint,
-  a_expiration timestamp
-) returns void as $$
-begin
-  if a_user = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
+  select true into success from totp_tokens_blacklist where user_id = a_user and token = a_token and expiration >= current_timestamp;;
+  if success then
+    return true;;
+  else
+    return false;;
   end if;;
-  insert into totp_tokens_blacklist(user_id, token, expiration) values (a_user, a_token, a_expiration);;
-  return;;
 end;;
-$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 delete_expired_totp_blacklist_tokens (
@@ -1169,25 +1354,35 @@ withdraw_crypto (
   a_amount numeric(23,8),
   a_address varchar(34),
   a_currency varchar(4),
-  out o_id bigint
-) returns setof bigint as $$
+  a_tfa_code int
+) returns bigint as $$
 declare
   w_id withdrawals.id%type;;
+  o_id withdrawals_crypto.id%type;;
+  enabled boolean;;
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
 
+  select tfa_enabled into enabled from users where id = a_uid;;
+
+  if enabled then
+    if user_totp_check(a_uid, a_tfa_code) = false then
+      return -1;;
+    end if;;
+  end if;;
+
   insert into withdrawals (amount, user_id, currency, fee)
-  values (a_amount, a_uid, a_currency, (
-    select withdraw_constant + a_amount * withdraw_linear from dw_fees where currency = a_currency and method = 'blockchain'
-  ))
-  returning withdrawals.id into w_id;;
+    values (a_amount, a_uid, a_currency, (
+      select withdraw_constant + a_amount * withdraw_linear from dw_fees where currency = a_currency and method = 'blockchain'
+    ))
+    returning withdrawals.id into w_id;;
 
   insert into withdrawals_crypto (id, address)
-  values (w_id, a_address) returning withdrawals_crypto.id into o_id;;
+    values (w_id, a_address) returning withdrawals_crypto.id into o_id;;
 
-  return next;;
+  return o_id;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -1215,22 +1410,24 @@ drop function if exists update_user (bigint, varchar(256), bool) cascade;
 drop function if exists user_change_password (bigint, text, text) cascade;
 drop function if exists trusted_action_start (varchar(256)) cascade;
 drop function if exists user_reset_password_complete (varchar(256), varchar(256), text) cascade;
-drop function if exists turnon_tfa (bigint) cascade;
+drop function if exists turnon_tfa (bigint, bigint) cascade;
 drop function if exists update_tfa_secret (bigint, varchar(256), varchar(6)) cascade;
 drop function if exists turnoff_tfa (bigint) cascade;
+drop function if exists user_totp_check (bigint, bigint) cascade;
+drop function if exists hotp (bytea, bigint) cascade;
+drop function if exists base32_decode (text) cascade;
 drop function if exists turnon_emails (bigint) cascade;
 drop function if exists turnoff_emails (bigint) cascade;
 drop function if exists add_fake_money (bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists remove_fake_money (bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists find_user_by_id (bigint) cascade;
-drop function if exists find_user_by_email (varchar(256)) cascade;
+drop function if exists user_exists (bigint) cascade;
+drop function if exists user_has_totp (bigint) cascade;
 drop function if exists find_user_by_email_and_password (varchar(256), text) cascade;
-drop function if exists save_token (varchar(256), varchar(256), bool, timestamp, timestamp) cascade;
 drop function if exists find_token (varchar(256)) cascade;
 drop function if exists delete_token (varchar(256)) cascade;
 drop function if exists delete_expired_tokens () cascade;
-drop function if exists totp_token_is_blacklisted (varchar(256), bigint) cascade;
-drop function if exists blacklist_totp_token (varchar(256), bigint, timestamp) cascade;
+drop function if exists totp_token_is_blacklisted (bigint, bigint) cascade;
 drop function if exists delete_expired_totp_blacklist_tokens () cascade;
 drop function if exists new_log (bigint, text, varchar(256), text, text, int, text) cascade;
 drop function if exists login_log (bigint) cascade;

@@ -7,7 +7,6 @@ package controllers.API
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
-import securesocial.core.Authorization2fa
 import service.TOTPUrl
 import org.postgresql.util.PSQLException
 
@@ -216,8 +215,10 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     //.asInstanceOf[JsObject].+("qr", JsString(QrCodeGen.userTotpQrCode(request.user).getOrElse("")))))
   }
 
-  def turnOffTFA() = SecuredAction(ajaxCall = true, Authorization2fa)(parse.json) { implicit request =>
-    if (globals.userModel.turnOffTFA(request.user.id)) {
+  def turnOffTFA() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    val tfa_code = (request.request.body \ "tfa_code").validate[String].get
+
+    if (globals.userModel.turnOffTFA(request.user.id, tfa_code)) {
       Ok(Json.obj())
     } else {
       BadRequest(Json.obj("message" -> "Failed to turn off two factor auth."))
@@ -244,37 +245,47 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   // Then the user has to verify that they know the secret by providing the code from it
   // and then they can turn on 2fa for login / withdrawal
   def genTOTPSecret() = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    if (!request.user.TFALogin) {
-      val secret = globals.userModel.genTFASecret(request.user.id, "TOTP")
-      Ok(Json.obj("secret" -> secret.toBase32, "otpauth" -> TOTPUrl.totpSecretToUrl(request.user.email, secret)))
+    if (!request.user.TFAEnabled) {
+      val secret = globals.userModel.genTFASecret(request.user.id)
+      if (secret.isEmpty) {
+        BadRequest(Json.obj("message" -> "Two factor authentication is already enabled."))
+      } else {
+        Ok(Json.obj("secret" -> secret.get._1.toBase32, "otps" -> secret.get._2, "otpauth" -> TOTPUrl.totpSecretToUrl(request.user.email, secret.get._1)))
+      }
     } else {
       BadRequest(Json.obj("message" -> "Two factor authentication is already enabled."))
     }
   }
 
-  // This enables 2fa for login AND withdrawal
-  def turnOnTFA() = SecuredAction(ajaxCall = true, Authorization2fa)(parse.json) { implicit request =>
-    if (globals.userModel.turnOnTFA(request.user.id)) {
+  def turnOnTFA() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    val tfa_code = (request.request.body \ "tfa_code").validate[String].get
+    if (globals.userModel.turnOnTFA(request.user.id, tfa_code)) {
       Ok(Json.obj())
     } else {
       BadRequest(Json.obj("message" -> "Failed to turn on two factor auth."))
     }
   }
 
-  def withdraw = SecuredAction(ajaxCall = true, Authorization2fa)(parse.json) { implicit request =>
+  def withdraw = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     val body = request.request.body
     (for (
       currency <- (body \ "currency").validate[String];
       amount <- (body \ "amount").validate[BigDecimal];
       address <- (body \ "address").validate[String]
     ) yield {
+      val tfa_code = (body \ "tfa_code").asOpt[String]
+
       if (CryptoAddress.isValid(address, currency, Play.current.configuration.getBoolean("fakeexchange").get)) {
         try {
-          val res = globals.engineModel.withdraw(request.user.id, currency, amount, address)
+          val res = globals.engineModel.withdraw(request.user.id, currency, amount, address, tfa_code)
           if (res.isDefined) {
-            Ok(Json.obj())
+            if (res.get != -1) {
+              Ok(Json.obj())
+            } else {
+              BadRequest(Json.obj("message" -> "Wrong two factor auth code."))
+            }
           } else {
-            BadRequest(Json.obj("message" -> "Failed to withdraw"))
+            BadRequest(Json.obj("message" -> "Failed to withdraw."))
           }
         } catch {
           case e: PSQLException => {

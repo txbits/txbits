@@ -364,7 +364,7 @@ class WalletSpec extends Specification with Mockito {
       val feePct = 0.01
       globals.engineModel.setFees("LTC", "blockchain", 0, 0, feeAmt, feePct)
 
-      globals.engineModel.withdraw(uid, "LTC", 2, "masdfasdfasdf")
+      globals.engineModel.withdraw(uid, "LTC", 2, "masdfasdfasdf", None)
 
       // assemble a mock rpc to make calls into
       val rpc = mock[JsonRpcHttpClient]
@@ -437,7 +437,7 @@ class WalletSpec extends Specification with Mockito {
       val feePct = 0.01
       globals.engineModel.setFees("LTC", "blockchain", 0, 0, feeAmt, feePct)
 
-      globals.engineModel.withdraw(uid, "LTC", 2, "masdfasdfasdf")
+      globals.engineModel.withdraw(uid, "LTC", 2, "masdfasdfasdf", None)
 
       // assemble a mock rpc to make calls into
       val rpc = mock[JsonRpcHttpClient]

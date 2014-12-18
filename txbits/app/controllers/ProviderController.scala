@@ -47,6 +47,8 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
    */
   val ApplicationContext = "application.context"
 
+  val InvalidCredentials = "securesocial.login.invalidCredentials"
+
   /**
    * Returns the url that the user should be redirected to after login
    *
@@ -83,45 +85,78 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
   }
 
   //TODO: turn into ajax call
-  def tfaPost() = TFAAction { implicit request =>
-    val form = tfaForm.bindFromRequest()(request.request)
+  def tfaPost() = Action { implicit request =>
+    val form = tfaForm.bindFromRequest()(request)
     form.fold(
       errors => {
-        request.user.TFAType match {
-          case Some('TOTP) => badRequestTOTP(errors, request.request)
-          case None => Results.BadRequest("Two factor auth not configured.") //TODO: take the user to an actual error page
-        }
+        Results.BadRequest("Two factor auth not configured.") //TODO: take the user to an actual error page
       },
       tfaToken => {
-        if (request.user.TFALogin) {
-          request.user.TFAType match {
-            case Some('TOTP) => {
-              if (Authorization2fa.verifyTokenForUser(request.user.id, tfaToken, request.user.TFASecret.get)) {
-                val authenticator = SecureSocial.authenticatorFromRequest(request)
-                Authenticator.save(authenticator.get.complete2fa)
-                globals.logModel.logEvent(LogEvent.fromRequest(Some(request.user.id), Some(request.user.email), request.request, LogType.LoginSuccess))
-                Redirect(toUrl(request2session)).withSession(request2session - SecureSocial.OriginalUrlKey)
-              } else {
-                // form error
-                badRequestTOTP(tfaForm, request.request, Some("Invalid token."))
-              }
+        val authenticator = SecureSocial.authenticatorFromRequest(request)
+        if (authenticator.isDefined) {
+          if (globals.userModel.userHasTotp(authenticator.get.email)) {
+            val user = globals.userModel.totpLoginStep2(authenticator.get.email, authenticator.get.totpSecret.get, tfaToken)
+            if (user.isDefined) {
+              Authenticator.save(authenticator.get.complete2fa(user.get.id))
+              globals.logModel.logEvent(LogEvent.fromRequest(Some(user.get.id), Some(user.get.email), request, LogType.LoginSuccess))
+              Redirect(toUrl(request2session)).withSession(request2session - SecureSocial.OriginalUrlKey)
+            } else {
+              // form error
+              badRequestTOTP(tfaForm, request, Some("Invalid token."))
             }
-            case None => Results.BadRequest("You shouldn't be on this page. You don't have two factor auth enabled for login.") //TODO: maybe just redirect to homepage?
-            case _ => Results.BadRequest("Unknown two factor auth type.") //TODO: log this error. We dun goof'd
+          } else {
+            Results.BadRequest("Two factor auth not configured.")
           }
         } else {
-          Results.BadRequest("Two factor auth not configured.")
+          Results.BadRequest("Please log in first.")
         }
       }
     )
   }
 
+  private def badRequest[A](f: Form[(String, String)], request: Request[A], msg: Option[String] = None): Result = {
+    Results.BadRequest(SecureSocialTemplates.getLoginPage(request, f, msg))
+  }
+
+  def completePasswordAuth[A](id: Long, email: String)(implicit request: Request[A]) = {
+    // TODO: move log to db
+    val authenticator = Authenticator.create(Some(id), None, email)
+    Redirect(toUrl(request2session)).withSession(request2session - SecureSocial.OriginalUrlKey).withCookies(authenticator.toCookie)
+  }
+
   def loginPost() = CSRFCheck {
     Action { implicit request =>
       try {
-        Registry.provider.authenticate().fold(result => result, {
-          user => completeAuthentication(user, request2session)
-        })
+        val form = UsernamePasswordProvider.loginForm.bindFromRequest()
+        form.fold(
+          errors => badRequest(errors, request),
+          credentials => {
+            val email = credentials._1.trim
+            var user: Option[SocialUser] = None
+            var totp_hash: Option[String] = None
+            // make a decision
+            if (globals.userModel.userHasTotp(email)) {
+              totp_hash = globals.userModel.totpLoginStep1(email, credentials._2)
+            } else {
+              user = globals.userModel.findUserByEmailAndPassword(email, credentials._2)
+            }
+            if (totp_hash.isDefined) {
+              // TODO: move log to db
+              globals.logModel.logEvent(LogEvent.fromRequest(None, Some(email), request, LogType.LoginPartialSuccess))
+              // create session
+              val authenticator = Authenticator.create(None, totp_hash, email)
+              Redirect(controllers.routes.LoginPage.tfaTOTP()).withSession(request2session).withCookies(authenticator.toCookie)
+            } else if (user.isDefined) {
+              globals.logModel.logEvent(LogEvent.fromRequest(Some(user.get.id), Some(user.get.email), request, LogType.LoginSuccess))
+              // create session
+              completePasswordAuth(user.get.id, email)
+            } else {
+              // TODO: move log to db
+              globals.logModel.logEvent(LogEvent.fromRequest(None, Some(email), request, LogType.LoginFailure))
+              badRequest(UsernamePasswordProvider.loginForm, request, Some(InvalidCredentials))
+            }
+          }
+        )
       } catch {
         case ex: AccessDeniedException => {
           Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("securesocial.login.accessDenied"))
@@ -131,30 +166,6 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
           Logger.error("Unable to log user in. An exception was thrown", other)
           Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("securesocial.login.errorLoggingIn"))
         }
-      }
-    }
-  }
-
-  def completeAuthentication(user: SocialUser, session: Session)(implicit request: RequestHeader): Result = {
-    if (Logger.isDebugEnabled) {
-      Logger.debug("[securesocial] user logged in : [" + user + "]")
-    }
-    Authenticator.create(user) match {
-      case Right(authenticator) => {
-        if (authenticator.needsTFA) {
-          globals.logModel.logEvent(LogEvent.fromRequest(Some(user.id), Some(user.email), request, LogType.LoginPartialSuccess))
-          Redirect(user.TFAType match {
-            case Some('TOTP) => controllers.routes.LoginPage.tfaTOTP()
-          }).withSession(session).withCookies(authenticator.toCookie)
-        } else {
-          globals.logModel.logEvent(LogEvent.fromRequest(Some(user.id), Some(user.email), request, LogType.LoginSuccess))
-          Redirect(toUrl(session)).withSession(session -
-            SecureSocial.OriginalUrlKey).withCookies(authenticator.toCookie)
-        }
-      }
-      case Left(error) => {
-        // improve this
-        throw new RuntimeException("Error creating authenticator")
       }
     }
   }
