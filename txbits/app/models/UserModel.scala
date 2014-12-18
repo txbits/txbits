@@ -354,6 +354,14 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
+  def userPgpByEmail(email: String) = DB.withConnection(db) { implicit c =>
+    frontend.userPgpByEmail.on(
+      'email -> email
+    )().map(row =>
+        row[Option[String]]("pgp")
+      ).head
+  }
+
   private def optStrToInt(optStr: Option[String]) = {
     safeToInt(optStr.getOrElse(""))
   }

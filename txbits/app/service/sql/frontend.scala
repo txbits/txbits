@@ -84,6 +84,11 @@ object frontend {
     | select turnoff_emails as success from turnoff_emails({id})
     |""".stripMargin)
 
+  val userPgpByEmail = SQL(
+    """
+    | select * from user_pgp_by_email({email})
+    |""".stripMargin)
+
   val addFakeMoney = SQL(
     """
     | select * from add_fake_money({uid}, {currency}, {amount})

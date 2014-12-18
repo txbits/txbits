@@ -893,6 +893,14 @@ user_exists (
 $$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
+user_pgp_by_email (
+  a_email varchar(256),
+  out pgp text
+) returns text as $$
+  select pgp from users where lower(email) = lower(a_email);;
+$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
 user_has_totp (
   a_email varchar(256)
 ) returns boolean as $$

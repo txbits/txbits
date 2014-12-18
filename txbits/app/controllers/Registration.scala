@@ -233,7 +233,7 @@ object Registration extends Controller {
               // this should never actually fail because we checked the token already
               txbitsUserService.resetPass(t.email, token, p._1)
               txbitsUserService.deleteToken(token)
-              Mailer.sendPasswordChangedNotice(t.email)
+              Mailer.sendPasswordChangedNotice(t.email, globals.userModel.userPgpByEmail(t.email))
               Success -> Messages(PasswordUpdated)
             }
             case false => {
