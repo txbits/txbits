@@ -165,10 +165,12 @@ securesocial.signup.password2=Password confirmation
 securesocial.signup.createAccount=Create Account
 securesocial.signup.cancel=Cancel
 securesocial.signup.passwordsDoNotMatch=Passwords do not match
+securesocial.signup.pgpKeyInvalid=Failed to parse PGP key
 securesocial.signup.thankYouCheckEmail=Thank you. Please check your email for further instructions
 securesocial.signup.invalidLink=The link you followed is invalid
 securesocial.signup.signUpDone=Thank you for signing up. You can log in now
 securesocial.signup.invalidPassword=Enter at least {0} characters
+securesocial.signup.pgp=PGP key (if you have one)
 
 # Password reset
 securesocial.password.title=Reset Password

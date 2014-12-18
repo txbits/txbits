@@ -16,7 +16,7 @@ object frontend {
 
   val createUserComplete = SQL(
     """
-    | select create_user_complete as id from create_user_complete({email}, {password}, {onMailingList}, {token})
+    | select create_user_complete as id from create_user_complete({email}, {password}, {onMailingList}, {pgp}, {token})
     |""".stripMargin)
 
   val updateUser = SQL(

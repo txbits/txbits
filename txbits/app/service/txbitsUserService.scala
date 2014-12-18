@@ -4,7 +4,7 @@ import java.sql.{ PreparedStatement, Timestamp }
 import securesocial.core._
 import play.api.{ Play, Logger, Application }
 import scala.Some
-import play.libs.Akka
+import play.libs.{ F, Akka }
 import akka.actor.Cancellable
 import org.postgresql.util.PSQLException
 
@@ -20,8 +20,9 @@ object txbitsUserService {
     globals.userModel.userExists(email)
   }
 
-  def create(user: SocialUser, password: String, token: String): SocialUser = {
-    val user_id = globals.userModel.create(user.email, password, user.onMailingList, token)
+  def create(user: SocialUser, password: String, token: String, pgp: String): SocialUser = {
+    val pgp_key = PGP.parsePublicKey(pgp).map(_._2)
+    val user_id = globals.userModel.create(user.email, password, user.onMailingList, pgp_key, token)
 
     user_id match {
       case Some(id) => {

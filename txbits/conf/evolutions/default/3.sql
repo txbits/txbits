@@ -36,8 +36,8 @@ insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn,
 
 insert into users(id, email) values (0, '');
 
-select create_user('me@viktorstanchev.com', 'password', true);
-select create_user('a@a.com', 'qwerty123', false);
+select create_user('me@viktorstanchev.com', 'password', true, null);
+select create_user('a@a.com', 'qwerty123', false, null);
 
 update balances set balance = 1000 where user_id in (select id from users where email in ('me@viktorstanchev.com', 'a@a.com')) and currency in ('USD', 'CAD');
 

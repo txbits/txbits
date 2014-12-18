@@ -13,7 +13,7 @@ import java.sql.Timestamp
 import org.joda.time.DateTime
 import securesocial.core.{ Token, SocialUser }
 import service.sql.frontend
-import service.TOTPSecret
+import service.{ PGP, TOTPSecret }
 import play.api.libs.json.Json
 import java.security.SecureRandom
 
@@ -37,11 +37,12 @@ class UserModel(val db: String = "default") {
   import globals.symbolColumn
   import globals.bigDecimalColumn
 
-  def create(email: String, password: String, onMailingList: Boolean, token: String) = DB.withConnection(db) { implicit c =>
+  def create(email: String, password: String, onMailingList: Boolean, pgp: Option[String], token: String) = DB.withConnection(db) { implicit c =>
     frontend.createUserComplete.on(
       'email -> email,
       'password -> password,
       'onMailingList -> onMailingList,
+      'pgp -> pgp,
       'token -> token
     ).map(row => row[Option[Long]]("id")).list.head
   }

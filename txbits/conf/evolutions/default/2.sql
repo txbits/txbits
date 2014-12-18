@@ -452,15 +452,17 @@ create or replace function
 create_user (
   a_email varchar(256),
   a_password text,
-  a_onMailingList bool
+  a_onMailingList bool,
+  a_pgp text
 ) returns bigint as $$
 declare
   new_user_id bigint;;
 begin
-  insert into users(id, email, on_mailing_list) values (
+  insert into users(id, email, on_mailing_list, pgp) values (
       generate_random_user_id(),
       a_email,
-      a_onMailingList
+      a_onMailingList,
+      a_pgp
     ) returning id into new_user_id;;
   insert into users_passwords (user_id, password) values (
     new_user_id,
@@ -475,6 +477,7 @@ create_user_complete (
   a_email varchar(256),
   a_password text,
   a_onMailingList bool,
+  a_pgp text,
   a_token varchar(256)
 ) returns bigint as $$
 declare
@@ -488,7 +491,7 @@ begin
     return null;;
   end if;;
   delete from tokens where email = a_email and is_signup = true;;
-  return create_user(a_email, a_password, a_onMailingList);;
+  return create_user(a_email, a_password, a_onMailingList, a_pgp);;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 

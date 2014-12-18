@@ -43,6 +43,13 @@
             'class -> "form-control"
         )
 
+        @textarea(
+            signUpForm("pgp"),
+            '_label -> Messages("securesocial.signup.pgp"),
+            '_error -> signUpForm.error("pgp"),
+            'class -> "form-control"
+        )
+
 
         <div class="checkbox">
             <label>

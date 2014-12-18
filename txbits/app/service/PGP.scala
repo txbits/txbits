@@ -18,7 +18,7 @@ import java.security.{ SecureRandom, PublicKey, Security }
 object PGP {
   def simple_encrypt(pubStr: String, message: String) = {
     val pgpkey = parsePublicKey(pubStr)
-    encrypt(pgpkey.get, message)
+    encrypt(pgpkey.get._1, message)
   }
 
   def encrypt(pgpkey: PGPPublicKey, message: String) = {
@@ -37,7 +37,7 @@ object PGP {
     out.toString("UTF-8")
   }
 
-  def parsePublicKey(pubStr: String): Option[PGPPublicKey] = {
+  def parsePublicKey(pubStr: String): Option[(PGPPublicKey, String)] = {
     val pubIn: InputStream = new ByteArrayInputStream(pubStr.getBytes("UTF-8"))
     val pgpPub: PGPPublicKeyRingCollection = new PGPPublicKeyRingCollection(PGPUtil.getDecoderStream(pubIn), new BcKeyFingerprintCalculator)
 
@@ -48,9 +48,15 @@ object PGP {
       val keyIter = keyRing.getPublicKeys
       while (keyIter.hasNext) {
         val key = keyIter.next().asInstanceOf[PGPPublicKey]
+        val out = new ByteArrayOutputStream()
+        val armored = new ArmoredOutputStream(out)
+        key.encode(armored)
+        out.close()
+        armored.close()
+        val keyString = out.toString("UTF-8")
 
         if (key.isEncryptionKey) {
-          return Some(key)
+          return Some(key, keyString)
         }
       }
     }

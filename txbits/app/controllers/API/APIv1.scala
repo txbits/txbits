@@ -270,8 +270,9 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
     val password = (request.request.body \ "password").validate[String].get
     val pgp = (request.request.body \ "pgp").validate[String].get
-    if (PGP.parsePublicKey(pgp).isDefined) {
-      if (globals.userModel.addPGP(request.user.id, password, tfa_code, pgp)) {
+    val parsedKey = PGP.parsePublicKey(pgp)
+    if (parsedKey.isDefined) {
+      if (globals.userModel.addPGP(request.user.id, password, tfa_code, parsedKey.get._2)) {
         Ok(Json.obj())
       } else {
         BadRequest(Json.obj("message" -> "Failed to add pgp key. Check your password and two factor auth code if you use two factor auth."))

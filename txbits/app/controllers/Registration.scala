@@ -32,7 +32,7 @@ import scala.language.reflectiveCalls
 import securesocial.core.Token
 import scala.Some
 import securesocial.core.SocialUser
-import service.txbitsUserService
+import service.{ PGP, txbitsUserService }
 import models.{ LogType, LogEvent }
 import java.security.SecureRandom
 
@@ -43,6 +43,7 @@ import java.security.SecureRandom
 object Registration extends Controller {
 
   val PasswordsDoNotMatch = "securesocial.signup.passwordsDoNotMatch"
+  val PgpKeyInvalid = "securesocial.signup.pgpKeyInvalid"
   val ThankYouCheckEmail = "securesocial.signup.thankYouCheckEmail"
   val InvalidLink = "securesocial.signup.invalidLink"
   val SignUpDone = "securesocial.signup.signUpDone"
@@ -56,6 +57,7 @@ object Registration extends Controller {
   val Email = "email"
   val Success = "success"
   val Error = "error"
+  val Pgp = "pgp"
 
   val RegistrationEnabled = "securesocial.registrationEnabled"
 
@@ -74,7 +76,7 @@ object Registration extends Controller {
     Play.current.configuration.getString(key).getOrElse(default)
   }
 
-  case class RegistrationInfo(mailingList: Boolean, password: String)
+  case class RegistrationInfo(mailingList: Boolean, password: String, pgp: String)
 
   val form = Form[RegistrationInfo](
     mapping(
@@ -83,10 +85,11 @@ object Registration extends Controller {
         tuple(
           Password1 -> nonEmptyText.verifying(PasswordValidator.validator),
           Password2 -> nonEmptyText
-        ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2)
+        ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
+      Pgp -> text.verifying(Messages(PgpKeyInvalid), pgp => pgp == "" || PGP.parsePublicKey(pgp).isDefined)
     ) // binding
-    ((list, password) => RegistrationInfo(list, password._1)) // unbinding
-    (info => Some(info.mailingList, ("", "")))
+    ((list, password, pgp) => RegistrationInfo(list, password._1, pgp)) // unbinding
+    (info => Some(info.mailingList, ("", ""), info.pgp))
   )
 
   val startForm = Form(
@@ -176,7 +179,7 @@ object Registration extends Controller {
               t.email,
               0, //not verified
               info.mailingList
-            ), info.password, token)
+            ), info.password, token, info.pgp)
             txbitsUserService.deleteToken(t.uuid)
             if (UsernamePasswordProvider.sendWelcomeEmail) {
               Mailer.sendWelcomeEmail(user)
