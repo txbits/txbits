@@ -215,19 +215,22 @@ create table deposits (
     user_id bigint not null,
     currency varchar(4) not null,
     fee numeric(23,8) not null check(fee >= 0),
+    unique(amount, id), -- for foreign key constraint on deposits_crypto
     foreign key (currency) references currencies(currency),
     foreign key (user_id) references users(id)
 );
 
 create table deposits_crypto (
     id bigint not null primary key,
+    amount numeric(23,8) not null,
     tx_hash varchar(64) not null,
     address varchar(34) not null,
     confirmed timestamp,
+    unique(address, tx_hash, amount),
+    foreign key (amount, id) references deposits(amount, id),
     foreign key (address) references users_addresses(address),
     foreign key (id) references deposits(id)
 );
-create index deposits_crypto_address_idx on deposits_crypto(address);
 
 create table deposits_other (
     id bigint not null primary key,

@@ -116,8 +116,8 @@ create_deposit (
         )
       ) returning id
   )
-  insert into deposits_crypto (id, tx_hash, address)
-    values ((select id from rows), a_tx_hash, a_address) returning id;;
+  insert into deposits_crypto (id, amount, tx_hash, address)
+    values ((select id from rows), a_amount, a_tx_hash, a_address) returning id;;
 $$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -159,8 +159,8 @@ create_confirmed_deposit (
         )
       ) returning id
   )
-  insert into deposits_crypto (id, tx_hash, address, confirmed)
-    values ((select id from rows), a_tx_hash, a_address, current_timestamp);;
+  insert into deposits_crypto (id, amount, tx_hash, address, confirmed)
+    values ((select id from rows), a_amount, a_tx_hash, a_address, current_timestamp);;
 $$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
