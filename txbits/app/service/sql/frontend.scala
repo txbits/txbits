@@ -16,7 +16,7 @@ object frontend {
 
   val createUserComplete = SQL(
     """
-    | select create_user_complete as id from create_user_complete({email}, {password}, {onMailingList}, {token})
+    | select create_user_complete as id from create_user_complete({email}, {password}, {onMailingList}, {pgp}, {token})
     |""".stripMargin)
 
   val updateUser = SQL(
@@ -32,6 +32,16 @@ object frontend {
   val userHasTotp = SQL(
     """
     | select * from user_has_totp({email});
+    """.stripMargin)
+
+  val userAddPgp = SQL(
+    """
+    | select user_add_pgp as success from user_add_pgp({id}, {password}, {tfa_code}, {pgp});
+    |""".stripMargin)
+
+  val userRemovePgp = SQL(
+    """
+    | select user_remove_pgp as success from user_remove_pgp({id}, {password}, {tfa_code});
     |""".stripMargin)
 
   val userChangePassword = SQL(
@@ -72,6 +82,11 @@ object frontend {
   val turnoffEmails = SQL(
     """
     | select turnoff_emails as success from turnoff_emails({id})
+    |""".stripMargin)
+
+  val userPgpByEmail = SQL(
+    """
+    | select * from user_pgp_by_email({email})
     |""".stripMargin)
 
   val addFakeMoney = SQL(

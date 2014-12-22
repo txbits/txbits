@@ -20,7 +20,11 @@ libraryDependencies ++= Seq(
   "postgresql" % "postgresql" % "9.1-901.jdbc4",
   "com.google" % "bitcoinj" % "0.11",
   "org.apache.commons" % "commons-email" % "1.3.3",
-  "com.github.mumoshu" %% "play2-memcached" % "0.6.0"
+  "com.github.mumoshu" %% "play2-memcached" % "0.6.0",
+  "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
+  "org.bouncycastle" % "bcpg-jdk15on" % "1.51",
+  "org.bouncycastle" % "bcprov-ext-jdk15on" % "1.51",
+  "org.bouncycastle" % "bcmail-jdk15on" % "1.51"
 )
 
 resolvers ++= Seq(

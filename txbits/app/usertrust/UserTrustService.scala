@@ -19,7 +19,7 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
   val DefaultDuration = 60
   val TokenDuration = Play.current.configuration.getInt(TokenDurationKey).getOrElse(DefaultDuration)
 
-  val trustedActionTimer = system.scheduler.schedule(30.seconds, 30.seconds)(processTrustedActionRequests())
+  val trustedActionTimer = system.scheduler.schedule(15.seconds, 15.seconds)(processTrustedActionRequests())
 
   def processTrustedActionRequests() {
     for ((email, is_signup) <- model.getTrustedActionRequests) {
@@ -31,7 +31,7 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
         txbitsUserService.userExists(email) match {
           case true => {
             // user signed up already, send an email offering to login/recover password
-            Mailer.sendAlreadyRegisteredEmail(email)
+            Mailer.sendAlreadyRegisteredEmail(email, globals.userModel.userPgpByEmail(email))
           }
           case false => {
             val token = createToken(email, isSignUp = true)
@@ -39,7 +39,7 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
           }
         }
       } else {
-        Mailer.sendPasswordResetEmail(email, token)
+        Mailer.sendPasswordResetEmail(email, token, globals.userModel.userPgpByEmail(email))
       }
       // remove the token from the queue
       model.trustedActionFinish(email, is_signup)

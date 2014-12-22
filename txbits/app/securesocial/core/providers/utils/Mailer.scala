@@ -27,6 +27,7 @@ import controllers.SecureSocialTemplates
 import org.apache.commons.mail.{ DefaultAuthenticator, SimpleEmail, MultiPartEmail, EmailAttachment }
 import java.io.File
 import javax.mail.internet.InternetAddress
+import service.PGP
 
 /**
  * A helper class to send email notifications
@@ -40,11 +41,10 @@ object Mailer {
   val UnknownEmailNoticeSubject = "mails.unknownEmail.subject"
   val PasswordResetOkSubject = "mails.passwordResetOk.subject"
 
-  def sendAlreadyRegisteredEmail(email: String) {
+  def sendAlreadyRegisteredEmail(email: String, pgp: Option[String]) {
     val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/")
     val txtAndHtml = SecureSocialTemplates.getAlreadyRegisteredEmail(email, url)
-    sendEmail(Messages(AlreadyRegisteredSubject), email, txtAndHtml)
-
+    sendEmail(Messages(AlreadyRegisteredSubject), email, txtAndHtml, pgp)
   }
 
   def sendSignUpEmail(to: String, token: String) {
@@ -55,28 +55,31 @@ object Mailer {
 
   def sendWelcomeEmail(user: SocialUser)(implicit request: RequestHeader) {
     val txtAndHtml = SecureSocialTemplates.getWelcomeEmail(user)
-    sendEmail(Messages(WelcomeEmailSubject), user.email, txtAndHtml)
-
+    sendEmail(Messages(WelcomeEmailSubject), user.email, txtAndHtml, user.pgp)
   }
 
-  def sendPasswordResetEmail(email: String, token: String) {
+  def sendPasswordResetEmail(email: String, token: String, pgp: Option[String]) {
     val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/") + token
     val txtAndHtml = SecureSocialTemplates.getSendPasswordResetEmail(email, url)
-    sendEmail(Messages(PasswordResetSubject), email, txtAndHtml)
+    sendEmail(Messages(PasswordResetSubject), email, txtAndHtml, pgp)
   }
 
-  def sendPasswordChangedNotice(email: String)(implicit request: RequestHeader) {
+  def sendPasswordChangedNotice(email: String, pgp: Option[String])(implicit request: RequestHeader) {
     val txtAndHtml = SecureSocialTemplates.getPasswordChangedNoticeEmail(email)
-    sendEmail(Messages(PasswordResetOkSubject), email, txtAndHtml)
+    sendEmail(Messages(PasswordResetOkSubject), email, txtAndHtml, pgp)
   }
 
-  private def sendEmail(subject: String, recipient: String, body: (Option[Txt], Option[Html])) {
+  private def sendEmail(subject: String, recipient: String, body: (Option[Txt], Option[Html]), pgp: Option[String] = None) {
     import com.typesafe.plugin._
     import scala.concurrent.duration._
     import play.api.libs.concurrent.Execution.Implicits._
 
     if (Logger.isDebugEnabled) {
       Logger.debug("[securesocial] sending email to %s".format(recipient))
+    }
+    val strBody = pgp match {
+      case Some(pgp_key) => PGP.simple_encrypt(pgp_key, body._1.get.toString())
+      case None => body._1.get.toString()
     }
 
     Akka.system.scheduler.scheduleOnce(1.seconds) {
@@ -87,7 +90,7 @@ object Mailer {
       val smtpPassword = Play.current.configuration.getString("smtp.password").get
       val smtpLocalhost = current.configuration.getString("smtp.localhost").get
       val email = new SimpleEmail()
-      email.setMsg(body._1.get.toString())
+      email.setMsg(strBody)
       email.setHostName(smtpLocalhost)
       //TODO: move this somewhere better
       System.setProperty("mail.smtp.localhost", current.configuration.getString("smtp.localhost").get)
@@ -102,7 +105,7 @@ object Mailer {
       try {
         email.send
       } catch {
-        case ex: Throwable => Logger.debug(body._1.getOrElse("").toString); throw ex
+        case ex: Throwable => Logger.debug(strBody); throw ex
       }
     }
   }
@@ -130,6 +133,7 @@ object Mailer {
     }
   }
 
+  // XXX: currently not used
   def sendEmailWithFile(subject: String, recipient: String, body: String, attachment: EmailAttachment) {
     import com.typesafe.plugin._
     import scala.concurrent.duration._

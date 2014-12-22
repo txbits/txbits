@@ -13,7 +13,7 @@ import java.sql.Timestamp
 import org.joda.time.DateTime
 import securesocial.core.{ Token, SocialUser }
 import service.sql.frontend
-import service.TOTPSecret
+import service.{ PGP, TOTPSecret }
 import play.api.libs.json.Json
 import java.security.SecureRandom
 
@@ -37,11 +37,12 @@ class UserModel(val db: String = "default") {
   import globals.symbolColumn
   import globals.bigDecimalColumn
 
-  def create(email: String, password: String, onMailingList: Boolean, token: String) = DB.withConnection(db) { implicit c =>
+  def create(email: String, password: String, onMailingList: Boolean, pgp: Option[String], token: String) = DB.withConnection(db) { implicit c =>
     frontend.createUserComplete.on(
       'email -> email,
       'password -> password,
       'onMailingList -> onMailingList,
+      'pgp -> pgp,
       'token -> token
     ).map(row => row[Option[Long]]("id")).list.head
   }
@@ -99,7 +100,8 @@ class UserModel(val db: String = "default") {
             row[String]("email"),
             row[Int]("verification"),
             row[Boolean]("on_mailing_list"),
-            row[Boolean]("tfa_enabled")
+            row[Boolean]("tfa_enabled"),
+            row[Option[String]]("pgp")
           )
         ).headOption
     }
@@ -133,7 +135,7 @@ class UserModel(val db: String = "default") {
     frontend.totpLoginStep2.on(
       'email -> email,
       'totp_hash -> totpHash,
-      'totp_token -> totpToken.toInt
+      'totp_token -> safeToInt(totpToken)
     )().map(row =>
         if (row[Option[Long]]("id").isEmpty) {
           None
@@ -144,7 +146,8 @@ class UserModel(val db: String = "default") {
               row[Option[String]]("email").get,
               row[Option[Int]]("verification").get,
               row[Option[Boolean]]("on_mailing_list").get,
-              row[Option[Boolean]]("tfa_enabled").get
+              row[Option[Boolean]]("tfa_enabled").get,
+              row[Option[String]]("pgp")
             )
           )
         }
@@ -161,7 +164,8 @@ class UserModel(val db: String = "default") {
           row[String]("email"),
           row[Int]("verification"),
           row[Boolean]("on_mailing_list"),
-          row[Boolean]("tfa_enabled")
+          row[Boolean]("tfa_enabled"),
+          row[Option[String]]("pgp")
         )
       ).headOption
   }
@@ -299,7 +303,28 @@ class UserModel(val db: String = "default") {
   def turnOffTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
     frontend.turnoffTfa.on(
       'id -> uid,
-      'tfa_code -> tfa_code.toInt
+      'tfa_code -> safeToInt(tfa_code)
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
+  }
+
+  def addPGP(uid: Long, password: String, tfa_code: Option[String], pgp: String) = DB.withConnection(db) { implicit c =>
+    frontend.userAddPgp.on(
+      'id -> uid,
+      'password -> password,
+      'tfa_code -> optStrToInt(tfa_code),
+      'pgp -> pgp
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
+  }
+
+  def removePGP(uid: Long, password: String, tfa_code: Option[String]) = DB.withConnection(db) { implicit c =>
+    frontend.userRemovePgp.on(
+      'id -> uid,
+      'password -> password,
+      'tfa_code -> optStrToInt(tfa_code)
     )().map(row =>
         row[Boolean]("success")
       ).head
@@ -308,7 +333,7 @@ class UserModel(val db: String = "default") {
   def turnOnTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
     frontend.turnonTfa.on(
       'id -> uid,
-      'tfa_code -> tfa_code.toInt
+      'tfa_code -> safeToInt(tfa_code)
     )().map(row =>
         row[Boolean]("success")
       ).head
@@ -330,4 +355,23 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
+  def userPgpByEmail(email: String) = DB.withConnection(db) { implicit c =>
+    frontend.userPgpByEmail.on(
+      'email -> email
+    )().map(row =>
+        row[Option[String]]("pgp")
+      ).head
+  }
+
+  private def optStrToInt(optStr: Option[String]) = {
+    safeToInt(optStr.getOrElse(""))
+  }
+
+  private def safeToInt(str: String) = {
+    try {
+      str.toInt
+    } catch {
+      case _: Throwable => 0
+    }
+  }
 }

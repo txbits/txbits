@@ -57,6 +57,8 @@ POST        /api/1/turnon_tfa                          controllers.API.APIv1.tur
 POST        /api/1/turnoff_emails                      controllers.API.APIv1.turnOffEmails
 POST        /api/1/turnon_emails                       controllers.API.APIv1.turnOnEmails
 POST        /api/1/gen_totp_secret                     controllers.API.APIv1.genTOTPSecret
+POST        /api/1/remove_pgp                          controllers.API.APIv1.removePgp
+POST        /api/1/add_pgp                             controllers.API.APIv1.addPgp
 
 # Login page
 GET         /login                                     controllers.LoginPage.login

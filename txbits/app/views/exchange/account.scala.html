@@ -17,11 +17,74 @@
                 <div class="panel-heading">@Messages("exchange.account.info.title")</div>
                 <div class="panel-body">
                     <p id="acct-info"></p>
-                    <p>
-                        <a href="@controllers.routes.PasswordChange.page().absoluteURL(UsernamePasswordProvider.sslEnabled)" class="btn btn-default">
-                            @Messages("securesocial.passwordChange.title")
-                        </a>
-                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="pgp-add-modal" tabindex="-1" role="dialog" aria-labelledby="pgp-add-modal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title">@Messages("pgp.add.title")</h4>
+                </div>
+                <div class="modal-body">
+
+                    <p>@Messages("pgp.purpose")</p>
+
+                    <form role="form">
+                        <div class="from-group">
+                            <label for="password" class="control-label">@Messages("terminology.password")</label>
+                            <input class="form-control password" name="password" type="password"/>
+                        </div>
+                        <div class="from-group code-group">
+                            <label for="code" class="control-label">@Messages("terminology.code")</label>
+                            <input class="form-control code" name="code" type="text"/>
+                        </div>
+                        <div class="from-group">
+                            <label for="pgpkey" class="control-label">@Messages("terminology.pgp_public_key")</label>
+                            <textarea class="form-control pgpkey" name="pgpkey"></textarea>
+                        </div>
+                        <!-- this hack makes sure that the submit event is triggered when you press enter -->
+                        <input type="submit" class="hidden"/>
+                    </form>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
+                    <button type="button" class="btn btn-primary">@Messages("pgp.add.title")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="pgp-remove-modal" tabindex="-1" role="dialog" aria-labelledby="pgp-remove-modal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title">@Messages("pgp.remove.title")</h4>
+                </div>
+                <div class="modal-body">
+
+                    <form role="form">
+                        <div class="from-group">
+                            <label for="password" class="control-label">@Messages("terminology.password")</label>
+                            <input class="form-control password" name="password" type="password"/>
+                        </div>
+                        <div class="from-group code-group">
+                            <label for="code" class="control-label">@Messages("terminology.code")</label>
+                            <input class="form-control code" name="code" type="text"/>
+                        </div>
+                        <!-- this hack makes sure that the submit event is triggered when you press enter -->
+                        <input type="submit" class="hidden"/>
+                    </form>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
+                    <button type="button" class="btn btn-primary">@Messages("pgp.remove.title")</button>
                 </div>
             </div>
         </div>
@@ -66,7 +129,7 @@
                     <div class="pull-left">
                         <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
                     </div>
-                    <li class="next"><a id="tfa-printing-complete" href="#">I have printed (or written down) these codes. <span aria-hidden="true">&rarr;</span></a></li>
+                    <li class="next"><a id="tfa-printing-complete" href="#">@Messages("tfa.codes.next") <span aria-hidden="true">&rarr;</span></a></li>
                 </ul>
             </nav>
         </div>
@@ -91,7 +154,7 @@
         <div class="modal-footer">
             <nav>
                 <ul class="pager">
-                    <li class="previous"><a id="tfa-printing-incomplete" href="#"><span aria-hidden="true">&larr;</span> Wait, I forgot to print the codes!</a></li>
+                    <li class="previous"><a id="tfa-printing-incomplete" href="#"><span aria-hidden="true">&larr;</span> @Messages("tfa.codes.prev")</a></li>
                     <li class="pull-right">
                         <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
                         <button type="button" class="btn btn-primary">@Messages("tfa.on.title")</button>
@@ -114,22 +177,47 @@
     <script id="acct-info-template" type="text/x-handlebars-template">
         <p>@Messages("terminology.email"): {{email}}</p>
         <!--<p>@Messages("terminology.verificationLevel"): {{verification}}</p>-->
-        {{#onMailingList}}
-        <p>@Messages("exchange.account.mailinglist"): on</p>
-        <button type="submit" class="btn btn-default" id="turnoff-emails">@Messages("emails.off.title")</button>
-        {{/onMailingList}}
-        {{^onMailingList}}
-        <p>@Messages("exchange.account.mailinglist"): off</p>
-        <button type="submit" class="btn btn-default" id="turnon-emails">@Messages("emails.on.title")</button>
-        {{/onMailingList}}
-        {{#TFAEnabled}}
-            <p>@Messages("exchange.account.tfa_login"): on</p>
-            <button type="submit" class="btn btn-danger" id="turnoff-tfa">@Messages("tfa.off.title")</button>
-        {{/TFAEnabled}}
-        {{^TFAEnabled}}
-            <p>@Messages("exchange.account.tfa_login"): off</p>
-            <button type="submit" class="btn btn-primary" id="turnon-tfa">@Messages("tfa.on.title")</button>
-        {{/TFAEnabled}}
+
+        <p>
+            {{#onMailingList}}
+            <p>@Messages("exchange.account.mailinglist"): on</p>
+            <button type="submit" class="btn btn-default" id="turnoff-emails">@Messages("emails.off.title")</button>
+            {{/onMailingList}}
+            {{^onMailingList}}
+            <p>@Messages("exchange.account.mailinglist"): off</p>
+            <button type="submit" class="btn btn-default" id="turnon-emails">@Messages("emails.on.title")</button>
+            {{/onMailingList}}
+        </p>
+
+        <p>
+            {{#TFAEnabled}}
+                <p>@Messages("exchange.account.tfa_login"): on</p>
+                <button type="submit" class="btn btn-danger" id="turnoff-tfa">@Messages("tfa.off.title")</button>
+            {{/TFAEnabled}}
+            {{^TFAEnabled}}
+                <p>@Messages("exchange.account.tfa_login"): off</p>
+                <button type="submit" class="btn btn-primary" id="turnon-tfa">@Messages("tfa.on.title")</button>
+            {{/TFAEnabled}}
+        </p>
+
+        <p>
+            <a href="@controllers.routes.PasswordChange.page().absoluteURL(UsernamePasswordProvider.sslEnabled)" class="btn btn-default">
+                @Messages("securesocial.passwordChange.title")
+            </a>
+        </p>
+
+        <p>
+            {{#pgp}}
+            <p>@Messages("terminology.pgp_public_key"):</p>
+            <pre>{{.}}</pre>
+            <button type="submit" class="btn btn-danger" id="turnoff-pgp">@Messages("pgp.remove.title")</button>
+            {{/pgp}}
+            {{^pgp}}
+            <p>@Messages("terminology.pgp_public_key"): None</p>
+            <button type="submit" class="btn btn-primary" id="turnon-pgp">@Messages("pgp.add.title")</button>
+            {{/pgp}}
+        </p>
+
     </script>
 
 }

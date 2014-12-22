@@ -38,6 +38,7 @@ create table users (
     on_mailing_list bool default false,
     tfa_enabled bool default false,
     verification int default 0 not null,
+    pgp text,
     active bool default true not null
 );
 create unique index unique_lower_email on users (lower(email));

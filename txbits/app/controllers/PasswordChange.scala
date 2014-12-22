@@ -84,7 +84,7 @@ object PasswordChange extends Controller with SecureSocial {
           import scala.language.reflectiveCalls
           // This never actually fails because we already checked that the password is valid in the validators
           globals.userModel.userChangePass(request.user.id, info.currentPassword, info.password)
-          Mailer.sendPasswordChangedNotice(request.user.email)(request)
+          Mailer.sendPasswordChangedNotice(request.user.email, globals.userModel.userPgpByEmail(request.user.email))(request)
           Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
         }
       )

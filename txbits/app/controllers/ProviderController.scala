@@ -77,7 +77,7 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
   }
 
   val tfaForm = Form(
-    single("token" -> nonEmptyText)
+    single("token" -> text)
   )
 
   private def badRequestTOTP[A](f: Form[String], request: Request[A], msg: Option[String] = None): Result = {
@@ -89,7 +89,7 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
     val form = tfaForm.bindFromRequest()(request)
     form.fold(
       errors => {
-        Results.BadRequest("Two factor auth not configured.") //TODO: take the user to an actual error page
+        Results.BadRequest("Unknown form error.") //TODO: take the user to an actual error page
       },
       tfaToken => {
         val authenticator = SecureSocial.authenticatorFromRequest(request)

@@ -7,7 +7,7 @@ package controllers.API
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
-import service.TOTPUrl
+import service.{ PGP, TOTPUrl }
 import org.postgresql.util.PSQLException
 
 object APIv1 extends Controller with securesocial.core.SecureSocial {
@@ -263,6 +263,32 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
       Ok(Json.obj())
     } else {
       BadRequest(Json.obj("message" -> "Failed to turn on two factor auth."))
+    }
+  }
+
+  def addPgp() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
+    val password = (request.request.body \ "password").validate[String].get
+    val pgp = (request.request.body \ "pgp").validate[String].get
+    val parsedKey = PGP.parsePublicKey(pgp)
+    if (parsedKey.isDefined) {
+      if (globals.userModel.addPGP(request.user.id, password, tfa_code, parsedKey.get._2)) {
+        Ok(Json.obj())
+      } else {
+        BadRequest(Json.obj("message" -> "Failed to add pgp key. Check your password and two factor auth code if you use two factor auth."))
+      }
+    } else {
+      BadRequest(Json.obj("message" -> "Failed to add pgp key. No valid key was found in the given input."))
+    }
+  }
+
+  def removePgp() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
+    val password = (request.request.body \ "password").validate[String].get
+    if (globals.userModel.removePGP(request.user.id, password, tfa_code)) {
+      Ok(Json.obj())
+    } else {
+      BadRequest(Json.obj("message" -> "Failed to remove pgp key. Check your password and two factor auth code if you use two factor auth."))
     }
   }
 
