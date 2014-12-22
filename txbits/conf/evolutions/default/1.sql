@@ -222,7 +222,7 @@ create table deposits (
 
 create table deposits_crypto (
     id bigint not null primary key,
-    amount numeric(23,8) not null,
+    amount numeric(23,8) not null, -- already in deposits but needed here for a unique constraint
     tx_hash varchar(64) not null,
     address varchar(34) not null,
     confirmed timestamp,
