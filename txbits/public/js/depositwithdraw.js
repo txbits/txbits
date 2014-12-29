@@ -152,7 +152,7 @@ $(function(){
                                                         //TODO: translate!
                                                         $.pnotify({
                                                             title: 'Withdrawal requested.',
-                                                            text: "Withdrawal queued. Wait a few minutes.",
+                                                            text: "Please check your email to confirm this withdrawal.",
                                                             styling: 'bootstrap',
                                                             type: 'success',
                                                             text_escape: true

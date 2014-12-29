@@ -247,9 +247,14 @@ create table withdrawals (
     user_id bigint not null,
     currency varchar(4) not null,
     fee numeric(23,8) not null check(fee >= 0),
+    confirmation_token varchar(256) default null,
+    token_expiration timestamp,
+    user_confirmed boolean not null default false check(not (user_confirmed and user_rejected)),
+    user_rejected boolean not null default false check(not (user_confirmed and user_rejected)),
     foreign key (currency) references currencies(currency),
     foreign key (user_id) references users(id)
 );
+create index withdrawals_confirmation_token_idx on withdrawals(confirmation_token);
 create index withdrawals_limit_idx on withdrawals(user_id, currency, created desc);
 
 create sequence withdrawals_crypto_tx_id_seq;

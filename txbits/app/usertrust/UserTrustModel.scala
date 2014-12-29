@@ -4,12 +4,38 @@ import play.api.db.DB
 import securesocial.core.Token
 import java.sql.Timestamp
 import play.api.Play.current
+import models.Withdrawal
+import org.joda.time.DateTime
 
 class UserTrustModel(val db: String = "default") {
+  import globals.timestampColumn
+
   def getTrustedActionRequests = DB.withConnection(db) { implicit c =>
     SQLText.getTrustedActionRequests().map(row =>
       (row[String]("email"), row[Boolean]("is_signup"))
     ).toList
+  }
+
+  def getPendingWithdrawalRequests = DB.withConnection(db) { implicit c =>
+    SQLText.getPendindWithdrawalRequests().map(row =>
+      (
+        Withdrawal(
+          row[Long]("id"),
+          row[BigDecimal]("amount").bigDecimal.toPlainString,
+          row[BigDecimal]("fee").bigDecimal.toPlainString,
+          row[DateTime]("created"),
+          "",
+          row[String]("currency")
+        ),
+          row[String]("email"),
+          row[Option[String]]("pgp"),
+          row[Option[String]]("destination")
+      )
+    ).toList
+  }
+
+  def saveWithdrawalToken(id: Long, token: String, expiration: DateTime) = DB.withConnection(db) { implicit c =>
+    SQLText.saveWithdrawalToken.on('id -> id, 'token -> token, 'expiration -> new Timestamp(expiration.getMillis)).execute
   }
 
   def trustedActionFinish(email: String, is_signup: Boolean) = DB.withConnection(db) { implicit c =>

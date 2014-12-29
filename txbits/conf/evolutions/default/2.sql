@@ -709,6 +709,88 @@ end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
+confirm_withdrawal (
+  a_id bigint,
+  a_token text
+) returns boolean as $$
+declare
+  success boolean default false;;
+begin
+  select token_expiration is not null into success from withdrawals where id = a_id;;
+
+  if not success then
+    update withdrawals set token_expiration = false where id = a_id;;
+    return false;;
+  end if;;
+
+  select user_confirmed into success from withdrawals where id = a_id;;
+
+  if success then
+    return true;;
+  end if;;
+
+  select not user_rejected into success from withdrawals where id = a_id;;
+
+  if not success then
+    return false;;
+  end if;;
+
+  select confirmation_token = a_token into success from withdrawals where id = a_id;;
+
+  if success then
+    update withdrawals set user_confirmed = true where id = a_id;;
+  end if;;
+
+  if success then
+    return true;;
+  else
+    return false;;
+  end if;;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
+reject_withdrawal (
+  a_id bigint,
+  a_token text
+) returns boolean as $$
+declare
+  success boolean default false;;
+begin
+  select token_expiration is not null into success from withdrawals where id = a_id;;
+
+  if not success then
+    update withdrawals set token_expiration = false where id = a_id;;
+    return false;;
+  end if;;
+
+  select user_rejected into success from withdrawals where id = a_id;;
+
+  if success then
+    return true;;
+  end if;;
+
+  select not user_confirmed into success from withdrawals where id = a_id;;
+
+  if not success then
+    return false;;
+  end if;;
+
+  select confirmation_token = a_token into success from withdrawals where id = a_id;;
+
+  if success then
+    update withdrawals set user_rejected = true where id = a_id;;
+  end if;;
+
+  if success then
+    return true;;
+  else
+    return false;;
+  end if;;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
 turnon_emails (
   a_id bigint
 ) returns void as $$
@@ -1008,8 +1090,11 @@ $$ language sql volatile security definer set search_path = public, pg_temp cost
 create or replace function
 delete_expired_tokens (
 ) returns void as $$
+begin
+  delete from withdrawals where token_expiration < current_timestamp;;
   delete from tokens where expiration < current_timestamp;;
-$$ language sql volatile security definer set search_path = public, pg_temp cost 100;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 totp_token_is_blacklisted (
@@ -1175,6 +1260,7 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 get_all_withdrawals (
   a_uid bigint,
+  out id bigint,
   out currency varchar(4),
   out amount numeric(23,8),
   out fee numeric(23,8),
@@ -1185,7 +1271,7 @@ begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  return query select w.currency, w.amount, w.fee, w.created, wc.address as info
+  return query select w.id, w.currency, w.amount, w.fee, w.created, wc.address as info
   from withdrawals_crypto wc
   inner join withdrawals w on w.id = wc.id
   where w.user_id = a_uid and withdrawals_crypto_tx_id is null
@@ -1298,7 +1384,7 @@ begin
     (
       select w.amount, w.created, w.currency, w.fee, 'w' as type, wc.address
       from withdrawals w left join withdrawals_crypto wc on w.id = wc.id
-      where user_id = a_id
+      where user_id = a_id and wc.withdrawals_crypto_tx_id is not null
     )
     union
     (

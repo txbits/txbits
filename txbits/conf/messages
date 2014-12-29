@@ -55,6 +55,10 @@ emails.on.title=Subscribe to mailing list
 pgp.remove.title=Remove PGP key
 pgp.add.title=Add PGP key
 pgp.purpose=We will use this key to encrypt all email sent to you.
+withdrawal.confirm.success=Withdrawal confirmed.
+withdrawal.confirm.fail=Failed to confirm withdrawal. Double check the link you clicked on.
+withdrawal.reject.success=Withdrawal rejected.
+withdrawal.reject.fail=Failed to reject withdrawal. Double check the link you clicked on.
 
 text.password.advice=Tip: Use a randomly generated password and save it in a password manager or write it down.
 
@@ -198,6 +202,7 @@ securesocial.loginRequired=You need to log in to access that page.
 
 # Mails
 #
+mails.sendWithdrawalConfirmEmail.subject=Confirm withdrawal
 mails.sendAlreadyRegisteredEmail.subject=Sign up instructions
 mails.sendSignUpEmail.subject=Sign up instructions
 mails.welcomeEmail.subject=Welcome

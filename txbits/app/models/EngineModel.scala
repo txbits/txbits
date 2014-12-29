@@ -106,6 +106,20 @@ class EngineModel(val db: String = "default") {
     ).map(row => row[Long]("id")).list.headOption
   }
 
+  def confirmWithdrawal(id: Long, token: String) = DB.withConnection(db) { implicit c =>
+    frontend.confirmWithdrawal.on(
+      'id -> id,
+      'token -> token
+    )().map(row => row[Boolean]("success")).head
+  }
+
+  def rejectWithdrawal(id: Long, token: String) = DB.withConnection(db) { implicit c =>
+    frontend.rejectWithdrawal.on(
+      'id -> id,
+      'token -> token
+    )().map(row => row[Boolean]("success")).head
+  }
+
   def addresses(uid: Long, currency: String) = DB.withConnection(db) { implicit c =>
     frontend.getAddresses.on('uid -> uid, 'currency -> currency)().map(row => row[String]("o_address")).toList
   }
@@ -127,7 +141,16 @@ class EngineModel(val db: String = "default") {
   def pendingWithdrawals(uid: Long) = DB.withConnection(db) { implicit c =>
     tuplesToGroupedMap(
       frontend.getAllWithdrawals.on('uid -> uid)().map(row =>
-        (row[String]("currency"), Withdrawal(row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("fee").bigDecimal.toPlainString, row[DateTime]("created"), row[String]("info")))
+        (
+          row[String]("currency"),
+          Withdrawal(
+            row[Long]("id"),
+            row[BigDecimal]("amount").bigDecimal.toPlainString,
+            row[BigDecimal]("fee").bigDecimal.toPlainString,
+            row[DateTime]("created"), row[String]("info"),
+            row[String]("currency")
+          )
+        )
       ).toList
     )
   }
@@ -135,7 +158,17 @@ class EngineModel(val db: String = "default") {
   def pendingDeposits(uid: Long) = DB.withConnection(db) { implicit c =>
     tuplesToGroupedMap(
       frontend.getAllDeposits.on('uid -> uid)().map(row =>
-        (row[String]("currency"), Withdrawal(row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("fee").bigDecimal.toPlainString, row[DateTime]("created"), row[String]("info")))
+        (
+          row[String]("currency"),
+          Withdrawal(
+            row[Long]("id"),
+            row[BigDecimal]("amount").bigDecimal.toPlainString,
+            row[BigDecimal]("fee").bigDecimal.toPlainString,
+            row[DateTime]("created"),
+            row[String]("info"),
+            row[String]("currency")
+          )
+        )
       ).toList
     )
   }
@@ -156,7 +189,7 @@ class EngineModel(val db: String = "default") {
   }
 
 }
-case class Withdrawal(amount: String, fee: String, created: DateTime, info: String)
+case class Withdrawal(id: Long, amount: String, fee: String, created: DateTime, info: String, currency: String)
 
 object Withdrawal {
   implicit val writes = Json.writes[Withdrawal]
