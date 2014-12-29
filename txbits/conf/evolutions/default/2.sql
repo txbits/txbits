@@ -1196,6 +1196,7 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 get_all_deposits (
   a_uid bigint,
+  out id bigint,
   out currency varchar(4),
   out amount numeric(23,8),
   out fee numeric(23,8),
@@ -1206,7 +1207,7 @@ begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  return query select d.currency, d.amount, d.fee, d.created, dc.address as info
+  return query select d.id, d.currency, d.amount, d.fee, d.created, dc.address as info
   from deposits_crypto dc
   inner join deposits d on d.id = dc.id
   where d.user_id = a_uid and dc.confirmed is null

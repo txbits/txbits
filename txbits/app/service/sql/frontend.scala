@@ -11,7 +11,7 @@ object frontend {
   // This function requires superuser database permissions
   val createUserInsecure = SQL(
     """
-    | select create_user as id from create_user({email}, {password}, {onMailingList})
+    | select create_user as id from create_user({email}, {password}, {onMailingList}, null)
     |""".stripMargin)
 
   val createUserComplete = SQL(
