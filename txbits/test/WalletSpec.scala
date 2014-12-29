@@ -31,6 +31,8 @@ import org.mockito.Matchers._
 import wallet.Wallet.{ WalletParams, CryptoCurrency }
 import wallet.Wallet.CryptoCurrency.CryptoCurrency
 import helpers._
+import usertrust.UserTrustService
+import org.joda.time.DateTime
 
 @RunWith(classOf[JUnitRunner])
 class WalletSpec extends Specification with Mockito {
@@ -393,6 +395,16 @@ class WalletSpec extends Specification with Mockito {
 
       wallet.update()
 
+      // pretend like the user confirmed all withdrawals requested
+      val reqs = globals.userTrustModel.getPendingWithdrawalRequests
+      reqs.length shouldEqual 1
+      for (req <- reqs) {
+        globals.userTrustModel.saveWithdrawalToken(req._1.id, "token", DateTime.now.plusMinutes(9001))
+        globals.engineModel.confirmWithdrawal(req._1.id, "token") shouldEqual true
+      }
+
+      wallet.update()
+
       val (resultId, resultHash) = globals.walletModel.getUnconfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
       resultHash shouldEqual "sha256txhash"
 
@@ -463,6 +475,16 @@ class WalletSpec extends Specification with Mockito {
       // this is our system under test with mocked out engine and rpc parameters
       val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel))
       val wallet = walletActor.underlyingActor
+
+      wallet.update()
+
+      // pretend like the user confirmed all withdrawals requested
+      val reqs = globals.userTrustModel.getPendingWithdrawalRequests
+      reqs.length shouldEqual 1
+      for (req <- reqs) {
+        globals.userTrustModel.saveWithdrawalToken(req._1.id, "token", DateTime.now.plusMinutes(9001))
+        globals.engineModel.confirmWithdrawal(req._1.id, "token") shouldEqual true
+      }
 
       wallet.update()
 
