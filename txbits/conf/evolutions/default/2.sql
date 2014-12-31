@@ -330,6 +330,36 @@ create trigger withdrawal_insert
     execute procedure withdrawal_insert();
 
 
+-- when a withdrawal is expired, return the money!
+create or replace function withdrawal_delete() returns trigger as $$
+declare
+  underflow boolean;;
+  overflow boolean;;
+begin
+  perform 1 from balances where user_id = old.user_id and currency = old.currency for update;;
+
+  perform transfer_funds(
+      null,
+      old.user_id,
+      old.currency,
+      old.amount - old.fee
+    );;
+
+  perform transfer_funds(
+      0,
+      old.user_id,
+      old.currency,
+      old.fee
+    );;
+  return null;;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+
+create trigger withdrawal_delete
+    after delete on withdrawals
+    for each row
+    execute procedure withdrawal_delete();
+
 -- to transfer funds, update the balances
 create or replace function
     transfer_funds(
@@ -716,36 +746,36 @@ confirm_withdrawal (
 declare
   success boolean default false;;
 begin
-  select token_expiration is not null into success from withdrawals where id = a_id;;
+  -- check if the token is not issued yet (null) or is expired
+  select token_expiration is not null and token_expiration > current_timestamp into success from withdrawals where id = a_id;;
 
   if not success then
-    update withdrawals set token_expiration = false where id = a_id;;
     return false;;
   end if;;
 
-  select user_confirmed into success from withdrawals where id = a_id;;
+  -- check if a decision is already made
+  select user_confirmed or user_rejected into success from withdrawals where id = a_id;;
 
   if success then
-    return true;;
-  end if;;
-
-  select not user_rejected into success from withdrawals where id = a_id;;
-
-  if not success then
     return false;;
   end if;;
 
+  -- check if the token is correct
   select confirmation_token = a_token into success from withdrawals where id = a_id;;
 
   if success then
     update withdrawals set user_confirmed = true where id = a_id;;
+    return true;;
   end if;;
 
-  if success then
-    return true;;
-  else
+  return false;;
+
+-- make sure the id matches exactly one row
+exception
+  when NO_DATA_FOUND then
     return false;;
-  end if;;
+  when TOO_MANY_ROWS then
+    return false;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -757,36 +787,35 @@ reject_withdrawal (
 declare
   success boolean default false;;
 begin
-  select token_expiration is not null into success from withdrawals where id = a_id;;
+  -- check if the token is not issued yet (null) or is expired
+  select token_expiration is not null and token_expiration > current_timestamp into success from withdrawals where id = a_id;;
 
   if not success then
-    update withdrawals set token_expiration = false where id = a_id;;
     return false;;
   end if;;
 
-  select user_rejected into success from withdrawals where id = a_id;;
+  -- check if a decision is already made
+  select user_confirmed or user_rejected into success from withdrawals where id = a_id;;
 
   if success then
-    return true;;
-  end if;;
-
-  select not user_confirmed into success from withdrawals where id = a_id;;
-
-  if not success then
     return false;;
   end if;;
 
+  -- check if the token is correct
   select confirmation_token = a_token into success from withdrawals where id = a_id;;
 
   if success then
     update withdrawals set user_rejected = true where id = a_id;;
+    return true;;
   end if;;
 
-  if success then
-    return true;;
-  else
+  return false;;
+-- make sure the id matches exactly one row
+exception
+  when NO_DATA_FOUND then
     return false;;
-  end if;;
+  when TOO_MANY_ROWS then
+    return false;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -1091,7 +1120,8 @@ create or replace function
 delete_expired_tokens (
 ) returns void as $$
 begin
-  delete from withdrawals where token_expiration < current_timestamp;;
+  -- TODO: return the money to the account
+  delete from withdrawals where token_expiration < current_timestamp and user_confirmed = false and user_rejected = false;;
   delete from tokens where expiration < current_timestamp;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -1565,6 +1595,7 @@ drop function if exists user_insert() cascade;
 drop function if exists wallets_crypto_retire() cascade;
 drop function if exists currency_insert() cascade;
 drop function if exists withdrawal_insert() cascade;
+drop function if exists withdrawal_delete() cascade;
 drop function if exists deposit_complete() cascade;
 drop function if exists first_agg() cascade;
 drop function if exists last_agg() cascade;

@@ -247,10 +247,11 @@ create table withdrawals (
     user_id bigint not null,
     currency varchar(4) not null,
     fee numeric(23,8) not null check(fee >= 0),
-    confirmation_token varchar(256) default null,
-    token_expiration timestamp,
-    user_confirmed boolean not null default false check(not (user_confirmed and user_rejected)),
-    user_rejected boolean not null default false check(not (user_confirmed and user_rejected)),
+    confirmation_token varchar(256) default null, -- this is  set to non-null when the user trust service sends out the token
+    token_expiration timestamp, -- this is set to non-null when the user trust service sends out the token
+    user_confirmed boolean not null default false,
+    user_rejected boolean not null default false,
+    check(not (user_confirmed and user_rejected)),
     foreign key (currency) references currencies(currency),
     foreign key (user_id) references users(id)
 );
@@ -288,7 +289,7 @@ create table withdrawals_crypto (
     id bigint not null primary key,
     withdrawals_crypto_tx_id bigint,
     address varchar(34) not null,
-    foreign key (id) references withdrawals(id),
+    foreign key (id) references withdrawals(id) on delete cascade,
     foreign key (withdrawals_crypto_tx_id) references withdrawals_crypto_tx(id)
 );
 create index withdrawals_crypto_tx_idx on withdrawals_crypto(withdrawals_crypto_tx_id, address);
@@ -296,7 +297,7 @@ create index withdrawals_crypto_tx_idx on withdrawals_crypto(withdrawals_crypto_
 create table withdrawals_other (
     id bigint not null primary key,
     reason text not null,
-    foreign key (id) references withdrawals(id)
+    foreign key (id) references withdrawals(id) on delete cascade
 );
 
 create table tokens (
