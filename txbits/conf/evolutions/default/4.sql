@@ -222,20 +222,22 @@ create_withdrawal_tx (
   a_node_id integer
 ) returns bigint as $$
   with rows as (
-  insert into withdrawals_crypto_tx (currency, node_id)
-  select a_currency, a_node_id where exists (select w.id
-  from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
-  where currency = a_currency and withdrawals_crypto_tx_id
-  is NULL) returning id
+    insert into withdrawals_crypto_tx (currency, node_id)
+    select a_currency, a_node_id where exists (
+        select w.id
+        from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
+        where currency = a_currency and w.user_confirmed = true and withdrawals_crypto_tx_id is NULL
+    ) returning id
   )
   update withdrawals_crypto
-  set withdrawals_crypto_tx_id = (select id from rows)
-  where exists (select id from rows) and
-  withdrawals_crypto_tx_id is NULL and
-  id = any (select w.id
-  from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
-  where currency = a_currency and
-  withdrawals_crypto_tx_id is NULL)
+    set withdrawals_crypto_tx_id = (select id from rows)
+    where
+      exists (select id from rows) and
+      withdrawals_crypto_tx_id is NULL and
+      id = any (select w.id
+                from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
+                where currency = a_currency and w.user_confirmed = true and withdrawals_crypto_tx_id is NULL
+               )
   returning withdrawals_crypto_tx_id;;
 $$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
 

@@ -1,0 +1,12 @@
+@(email: String, amount: String, currency: String, destination: String, id: Long, token: String, url_confirm: String, url_reject: String)
+Hi,
+
+Please confirm that you have requested a withdrawal for @amount @currency to @destination by clicking on the link below:
+
+@url_confirm
+
+If you have not requested this withdrawal, please click on the link below to cancel it:
+
+@url_reject
+
+@_footer()

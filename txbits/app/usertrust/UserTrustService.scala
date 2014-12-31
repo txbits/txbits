@@ -21,6 +21,7 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
 
   val trustedActionTimer = system.scheduler.schedule(15.seconds, 15.seconds)(processTrustedActionRequests())
 
+  // Warning: It is not safe to have two user trust services running at the same time
   def processTrustedActionRequests() {
     for ((email, is_signup) <- model.getTrustedActionRequests) {
       // create and save token
@@ -44,6 +45,12 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
       // remove the token from the queue
       model.trustedActionFinish(email, is_signup)
     }
+    for ((withdrawal, email, pgp, destination) <- model.getPendingWithdrawalRequests) {
+      // create and save token
+      val token = createWithdrawalToken(withdrawal.id)
+      // send withdrawal confirmation email
+      Mailer.sendWithdrawalConfirmEmail(email, withdrawal.amount, withdrawal.currency, destination.getOrElse("unknown"), withdrawal.id, token, pgp)
+    }
   }
 
   private def createToken(email: String, isSignUp: Boolean) = {
@@ -60,6 +67,14 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
     model.saveToken(token)
 
     tokenId
+  }
+
+  private def createWithdrawalToken(id: Long) = {
+    val token = use[IdGenerator].generate
+    val expiration = DateTime.now.plusMinutes(TokenDuration)
+    model.saveWithdrawalToken(id, token, expiration)
+
+    token
   }
 
   def receive = {

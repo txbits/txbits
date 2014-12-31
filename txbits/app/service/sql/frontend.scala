@@ -59,6 +59,16 @@ object frontend {
     | select trusted_action_start as success from trusted_action_start({email}, {is_signup})
     |""".stripMargin)
 
+  val confirmWithdrawal = SQL(
+    """
+    | select confirm_withdrawal as success from confirm_withdrawal({id}, {token})
+    |""".stripMargin)
+
+  val rejectWithdrawal = SQL(
+    """
+    | select reject_withdrawal as success from reject_withdrawal({id}, {token})
+    |""".stripMargin)
+
   val turnonTfa = SQL(
     """
     | select turnon_tfa as success from turnon_tfa({id}, {tfa_code})

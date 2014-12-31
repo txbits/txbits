@@ -15,6 +15,8 @@ GET         /exchange                                  controllers.Application.e
 GET         /depositwithdraw                           controllers.Application.depositwithdraw
 GET         /history                                   controllers.Application.history
 GET         /account                                   controllers.Application.account
+GET         /withdrawal_confirm/:id/:token             controllers.WithdrawalConfirmation.confirm(id, token)
+GET         /withdrawal_reject/:id/:token              controllers.WithdrawalConfirmation.reject(id, token)
 
 # This is our ticker API which should be completely separable from our main one
 # This api uses no authentication

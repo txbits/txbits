@@ -1,5 +1,4 @@
 @(token: String, url: String)
-@import securesocial.core.UsernamePasswordProvider
 Hello,
 
 Please follow this link to complete your registration.

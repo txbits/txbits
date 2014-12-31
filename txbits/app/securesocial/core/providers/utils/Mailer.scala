@@ -34,12 +34,20 @@ import service.PGP
  */
 object Mailer {
   val fromAddress = current.configuration.getString("smtp.from").get
+  val WithdrawalConfirmSubject = "mails.sendWithdrawalConfirmEmail.subject"
   val AlreadyRegisteredSubject = "mails.sendAlreadyRegisteredEmail.subject"
   val SignUpEmailSubject = "mails.sendSignUpEmail.subject"
   val WelcomeEmailSubject = "mails.welcomeEmail.subject"
   val PasswordResetSubject = "mails.passwordResetEmail.subject"
   val UnknownEmailNoticeSubject = "mails.unknownEmail.subject"
   val PasswordResetOkSubject = "mails.passwordResetOk.subject"
+
+  def sendWithdrawalConfirmEmail(email: String, amount: String, currency: String, destination: String, id: Long, token: String, pgp: Option[String]) {
+    val url_confirm = "%s%s/%s".format(current.configuration.getString("url.withdrawal_confirm").getOrElse("http://localhost:9000/withdrawal_confirm/"), id, token)
+    val url_reject = "%s%s/%s".format(current.configuration.getString("url.withdrawal_reject").getOrElse("http://localhost:9000/withdrawal_reject/"), id, token)
+    val txtAndHtml = (Some(views.txt.auth.mails.withdrawalConfirmEmail(email, amount, currency, destination, id, token, url_confirm, url_reject)), None)
+    sendEmail(Messages(WithdrawalConfirmSubject), email, txtAndHtml, pgp)
+  }
 
   def sendAlreadyRegisteredEmail(email: String, pgp: Option[String]) {
     val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/")

@@ -52,6 +52,22 @@
                 </div>
             </div>
 
+
+            <div class="container">
+                <div class="row">
+                    @request.flash.get("success").map { msg =>
+                        <div class="alert alert-info">
+                            @msg
+                        </div>
+                    }
+                    @request.flash.get("error").map { msg =>
+                        <div class="alert alert-danger">
+                            @Messages(msg)
+                        </div>
+                    }
+                </div>
+            </div>
+
         @if(!loggedIn){
             <div id="login-wrap">
                 <div class="text-center">

@@ -7,7 +7,7 @@ if [ ! -e litecoin ]; then
   git clone https://github.com/litecoin-project/litecoin.git
 fi
 pushd litecoin
-git checkout v0.8.6.1
+git checkout v0.8.7.4
 pushd src
 make -f makefile.unix
 popd
