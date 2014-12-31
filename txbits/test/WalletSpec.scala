@@ -394,6 +394,7 @@ class WalletSpec extends Specification with Mockito {
       val wallet = walletActor.underlyingActor
 
       wallet.update()
+      blockCount += 100
 
       // pretend like the user confirmed all withdrawals requested
       val reqs = globals.userTrustModel.getPendingWithdrawalRequests
@@ -477,6 +478,7 @@ class WalletSpec extends Specification with Mockito {
       val wallet = walletActor.underlyingActor
 
       wallet.update()
+      blockCount += 100
 
       // pretend like the user confirmed all withdrawals requested
       val reqs = globals.userTrustModel.getPendingWithdrawalRequests
