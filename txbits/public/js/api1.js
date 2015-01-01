@@ -193,6 +193,37 @@ var API;
             });
         }),
 
+        add_api_key: APIWrap(function() {
+            return $.ajax('/api/1/add_api_key', {
+                type: 'POST',
+                data: "{}",
+                dataType: 'json',
+                contentType: 'application/json'
+            });
+        }),
+
+        update_api_key: APIWrap(function(code, api_key, trading, trade_history, list_balance) {
+            return $.ajax('/api/1/update_api_key', {
+                type: 'POST',
+                data: JSON.stringify({tfa_code: code, api_key: api_key, trading: trading, trade_history: trade_history, list_balance: list_balance}),
+                dataType: 'json',
+                contentType: 'application/json'
+            });
+        }),
+
+        disable_api_key: APIWrap(function(code, api_key) {
+            return $.ajax('/api/1/disable_api_key', {
+                type: 'POST',
+                data: JSON.stringify({tfa_code: code, api_key: api_key}),
+                dataType: 'json',
+                contentType: 'application/json'
+            });
+        }),
+
+        get_api_keys: APIWrap(function() {
+            return $.get('/api/1/get_api_keys', 'json');
+        }),
+
         chart: APIWrap(function(base, counter) {
             return $.get('/api/1/chart/'+base+'/'+counter, 'json');
         })

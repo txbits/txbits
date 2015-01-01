@@ -44,6 +44,26 @@ object frontend {
     | select user_remove_pgp as success from user_remove_pgp({id}, {password}, {tfa_code});
     |""".stripMargin)
 
+  val userAddApiKey = SQL(
+    """
+    | select add_api_key({uid})
+    """.stripMargin)
+
+  val userUpdateApiKey = SQL(
+    """
+    | select update_api_key as success from update_api_key({uid}, {tfa_code}, {api_key}, {trading}, {trade_history}, {list_balance})
+    """.stripMargin)
+
+  val userDisableApiKey = SQL(
+    """
+    | select disable_api_key as success from disable_api_key({uid}, {tfa_code}, {api_key})
+    """.stripMargin)
+
+  val userGetApiKeys = SQL(
+    """
+    | select * from get_api_keys({uid})
+    """.stripMargin)
+
   val userChangePassword = SQL(
     """
     | select user_change_password({user_id}, {old_password}, {new_password})
@@ -160,9 +180,14 @@ object frontend {
     | select * from login_log({user_id})
     |""".stripMargin)
 
+  val apiBalance = SQL(
+    """
+    | select * from balance(null, {api_key})
+    |""".stripMargin)
+
   val balance = SQL(
     """
-    | select * from balance({uid})
+    | select * from balance({uid}, null)
     |""".stripMargin)
 
   val getRequiredConfirmations = SQL(
@@ -190,19 +215,34 @@ object frontend {
     | select * from get_all_deposits({uid})
     |""".stripMargin)
 
+  val apiOrderNew = SQL(
+    """
+    | select order_new(null, {api_key}, {base}, {counter}, {amount}, {price}, {is_bid})
+    |""".stripMargin)
+
   val orderNew = SQL(
     """
-    | select order_new({uid}, {base}, {counter}, {amount}, {price}, {is_bid})
+    | select order_new({uid}, null, {base}, {counter}, {amount}, {price}, {is_bid})
+    |""".stripMargin)
+
+  val apiOrderCancel = SQL(
+    """
+    | select * from order_cancel(null, {api_key}, {id})
     |""".stripMargin)
 
   val orderCancel = SQL(
     """
-    | select * from order_cancel({id}, {uid})
+    | select * from order_cancel({uid}, null, {id})
+    |""".stripMargin)
+
+  val apiUserPendingTrades = SQL(
+    """
+    | select * from user_pending_trades(null, {api_key})
     |""".stripMargin)
 
   val userPendingTrades = SQL(
     """
-    | select * from user_pending_trades({uid})
+    | select * from user_pending_trades({uid}, null)
     |""".stripMargin)
 
   val recentTrades = SQL(
@@ -210,9 +250,14 @@ object frontend {
     | select * from recent_trades({base}, {counter})
     |""".stripMargin)
 
+  val apiTradeHistory = SQL(
+    """
+    | select * from trade_history(null, {api_key})
+    |""".stripMargin)
+
   val tradeHistory = SQL(
     """
-    | select * from trade_history({id})
+    | select * from trade_history({id}, null)
     |""".stripMargin)
 
   val depositWithdrawHistory = SQL(

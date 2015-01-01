@@ -8,7 +8,7 @@ object SQLText {
     | select email, is_signup from trusted_action_requests
     |""".stripMargin)
 
-  val getPendindWithdrawalRequests = SQL(
+  val getPendingWithdrawalRequests = SQL(
     """
       | select w.*, u.email, u.pgp, wc.address as destination from withdrawals w
       | left join users u on w.user_id = u.id

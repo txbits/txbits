@@ -30,6 +30,14 @@ GET         /chlang/:lang                              controllers.Application.c
 # Map static resources from the /public folder to the /assets URL path
 GET         /assets/*file                              controllers.Assets.at(path="/public", file)
 
+# API key actions
+POST        /api/1/api_bid                             controllers.API.APIv1.apiBid
+POST        /api/1/api_ask                             controllers.API.APIv1.apiAsk
+POST        /api/1/api_cancel                          controllers.API.APIv1.apiCancel
+POST        /api/1/api_pending_trades                  controllers.API.APIv1.apiPendingTrades
+POST        /api/1/api_trade_history                   controllers.API.APIv1.apiTradeHistory
+POST        /api/1/api_balance                         controllers.API.APIv1.apiBalance
+
 # APIv1
 GET         /api/1                                     controllers.API.APIv1.index
 GET         /api/1/trade_fees                          controllers.API.APIv1.tradeFees
@@ -61,6 +69,10 @@ POST        /api/1/turnon_emails                       controllers.API.APIv1.tur
 POST        /api/1/gen_totp_secret                     controllers.API.APIv1.genTOTPSecret
 POST        /api/1/remove_pgp                          controllers.API.APIv1.removePgp
 POST        /api/1/add_pgp                             controllers.API.APIv1.addPgp
+GET         /api/1/get_api_keys                        controllers.API.APIv1.getApiKeys
+POST        /api/1/add_api_key                         controllers.API.APIv1.addApiKey
+POST        /api/1/update_api_key                      controllers.API.APIv1.updateApiKey
+POST        /api/1/disable_api_key                     controllers.API.APIv1.disableApiKey
 
 # Login page
 GET         /login                                     controllers.LoginPage.login

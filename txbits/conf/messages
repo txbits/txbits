@@ -77,6 +77,16 @@ exchange.account.tfa_type=Two-Factor Authentication Type
 exchange.account.mailinglist=Receive updates about new features and changes to TxBits
 securesocial.signup.mailinglist=Receive updates about new features and changes to TxBits
 
+exchange.account.api_keys.title=API Keys
+exchange.account.api_keys.api_key=API Key
+exchange.account.api_keys.trading=Trading
+exchange.account.api_keys.trade_history=Trade History
+exchange.account.api_keys.list_balance=List Balance
+exchange.account.api_keys.permissions=Permissions
+exchange.account.api_keys.disable=Disable
+exchange.account.api_keys.save=Save
+exchange.account.api_keys.delete=Delete
+
 tfa.on.title=Enable 2FA
 tfa.off.title=Disable 2FA
 tfa.submit.title=Submit

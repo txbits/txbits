@@ -46,6 +46,25 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     Ok(Json.toJson(globals.metaModel.getRequiredConfirmations))
   }
 
+  def apiBalance = Action(parse.json) { implicit request =>
+    val body = request.body
+    (for (
+      apiKey <- (body \ "api_key").validate[String]
+    ) yield {
+      val balances = globals.engineModel.apiBalance(apiKey)
+      Ok(Json.toJson(balances.map({ c =>
+        Json.obj(
+          "currency" -> c._1,
+          "amount" -> c._2._1.bigDecimal.toPlainString,
+          "hold" -> c._2._2.bigDecimal.toPlainString
+        )
+      })
+      ))
+    }).getOrElse(
+      BadRequest(Json.obj("message" -> "Failed to parse input."))
+    )
+  }
+
   def balance = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     val balances = globals.engineModel.balance(request.user.id)
     Ok(Json.toJson(balances.map({ c =>
@@ -56,6 +75,82 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
       )
     })
     ))
+  }
+
+  def apiAsk = Action(parse.json) { implicit request =>
+    try {
+      val body = request.body
+      (for (
+        apiKey <- (body \ "api_key").validate[String];
+        base <- (body \ "base").validate[String];
+        counter <- (body \ "counter").validate[String];
+        amount <- (body \ "amount").validate[BigDecimal];
+        price <- (body \ "price").validate[BigDecimal]
+      ) yield {
+        if (price > 0 && amount > 0) {
+          globals.metaModel.activeMarkets.get(base, counter) match {
+            case Some((active, minAmount)) if active && amount >= minAmount =>
+              val res = globals.engineModel.apiAskBid(apiKey, base, counter, amount, price, isBid = false)
+              if (res) {
+                Ok(Json.obj())
+              } else {
+                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
+              }
+            case Some((active, minAmount)) if active =>
+              BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))
+            case Some((active, minAmount)) =>
+              BadRequest(Json.obj("message" -> "Trading suspended on %s/%s.".format(base, counter)))
+            case _ =>
+              BadRequest(Json.obj("message" -> "Invalid pair."))
+          }
+        } else {
+          BadRequest(Json.obj("message" -> "The price and amount must be positive."))
+        }
+      }).getOrElse(
+        BadRequest(Json.obj("message" -> "Failed to parse input."))
+      )
+    } catch {
+      case _: Throwable =>
+        BadRequest(Json.obj("message" -> "Failed to place ask."))
+    }
+  }
+
+  def apiBid = Action(parse.json) { implicit request =>
+    try {
+      val body = request.body
+      (for (
+        apiKey <- (body \ "api_key").validate[String];
+        base <- (body \ "base").validate[String];
+        counter <- (body \ "counter").validate[String];
+        amount <- (body \ "amount").validate[BigDecimal];
+        price <- (body \ "price").validate[BigDecimal]
+      ) yield {
+        if (price > 0 && amount > 0) {
+          globals.metaModel.activeMarkets.get(base, counter) match {
+            case Some((active, minAmount)) if active && amount >= minAmount =>
+              val res = globals.engineModel.apiAskBid(apiKey, base, counter, amount, price, isBid = true)
+              if (res) {
+                Ok(Json.obj())
+              } else {
+                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
+              }
+            case Some((active, minAmount)) if active =>
+              BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))
+            case Some((active, minAmount)) =>
+              BadRequest(Json.obj("message" -> "Trading suspended on %s/%s.".format(base, counter)))
+            case _ =>
+              BadRequest(Json.obj("message" -> "Invalid pair."))
+          }
+        } else {
+          BadRequest(Json.obj("message" -> "The price and amount must be positive."))
+        }
+      }).getOrElse(
+        BadRequest(Json.obj("message" -> "Failed to parse input."))
+      )
+    } catch {
+      case _: Throwable =>
+        BadRequest(Json.obj("message" -> "Failed to place bid."))
+    }
   }
 
   def ask = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
@@ -132,6 +227,23 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     }
   }
 
+  def apiCancel = Action(parse.json) { implicit request =>
+    val body = request.body
+    (for (
+      apiKey <- (body \ "api_key").validate[String];
+      order <- (body \ "order").validate[Long]
+    ) yield {
+      val res = globals.engineModel.apiCancel(apiKey, order)
+      if (res) {
+        Ok(Json.obj())
+      } else {
+        BadRequest(Json.obj("message" -> "Failed to cancel order."))
+      }
+    }).getOrElse(
+      BadRequest(Json.obj("message" -> "Failed to parse input."))
+    )
+  }
+
   def cancel = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     request.request.body.validate(rds_cancel).map {
       case (order) =>
@@ -146,7 +258,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     )
   }
 
-  def openTrades(base: String, counter: String) = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
+  def openTrades(base: String, counter: String) = Action { implicit request =>
     val PriceIndex = 0
     val AmountIndex = 1
     // a specific pair will be given as an argument
@@ -178,12 +290,35 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     Ok(Json.toJson(userModel.depositWithdrawHistory(request.user.id)))
   }
 
+  def apiTradeHistory = Action(parse.json) { implicit request =>
+    val body = request.body
+    (for (
+      apiKey <- (body \ "api_key").validate[String]
+    ) yield {
+      Ok(Json.toJson(userModel.apiTradeHistory(apiKey)))
+    }).getOrElse(
+      BadRequest(Json.obj("message" -> "Failed to parse input."))
+    )
+  }
+
   def tradeHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     Ok(Json.toJson(userModel.tradeHistory(request.user.id)))
   }
 
   def loginHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     Ok(Json.toJson(globals.logModel.getLoginEvents(request.user.id)))
+  }
+
+  def apiPendingTrades = Action(parse.json) { implicit request =>
+    val body = request.body
+    (for (
+      apiKey <- (body \ "api_key").validate[String]
+    ) yield {
+      val orders = globals.engineModel.apiUserPendingTrades(apiKey)
+      Ok(Json.toJson(orders))
+    }).getOrElse(
+      BadRequest(Json.obj("message" -> "Failed to parse input."))
+    )
   }
 
   def pendingTrades = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
@@ -295,7 +430,39 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     }
   }
 
-  def withdraw = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+  def addApiKey() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    globals.userModel.addApiKey(request.user.id)
+    Ok(Json.obj())
+  }
+
+  def updateApiKey() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
+    val apiKey = (request.request.body \ "api_key").validate[String].get
+    val trading = (request.request.body \ "trading").validate[Boolean].get
+    val tradeHistory = (request.request.body \ "trade_history").validate[Boolean].get
+    val listBalance = (request.request.body \ "list_balance").validate[Boolean].get
+    if (globals.userModel.updateApiKey(request.user.id, tfa_code, apiKey, trading, tradeHistory, listBalance)) {
+      Ok(Json.obj())
+    } else {
+      BadRequest(Json.obj("message" -> "Failed to update API key."))
+    }
+  }
+
+  def disableApiKey() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
+    val apiKey = (request.request.body \ "api_key").validate[String].get
+    if (globals.userModel.disableApiKey(request.user.id, tfa_code, apiKey)) {
+      Ok(Json.obj())
+    } else {
+      BadRequest(Json.obj("message" -> "Failed to disable API key."))
+    }
+  }
+
+  def getApiKeys = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
+    Ok(Json.toJson(userModel.getApiKeys(request.user.id)))
+  }
+
+  def withdraw() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     val body = request.request.body
     (for (
       currency <- (body \ "currency").validate[String];

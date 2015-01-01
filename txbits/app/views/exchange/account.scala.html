@@ -22,6 +22,18 @@
         </div>
     </div>
 
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">@Messages("exchange.account.api_keys.title")</div>
+                <div class="panel-body">
+                    <button type="submit" class="btn btn-default" id="add-api-key">Add API Key</button>
+                    <div id="api-keys"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="pgp-add-modal" tabindex="-1" role="dialog" aria-labelledby="pgp-add-modal" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -234,6 +246,37 @@
             {{/pgp}}
         </p>
 
+    </script>
+
+    <script id="api-keys-template" type="text/x-handlebars-template">
+        <div class="tablescroller">
+            <table class="table table-condensed responsive tablescroller-head">
+                <thead>
+                    <tr>
+                        <th>@Messages("terminology.time")</th>
+                        <th>@Messages("exchange.account.api_keys.api_key")</th>
+                        <th>@Messages("exchange.account.api_keys.trading")</th>
+                        <th>@Messages("exchange.account.api_keys.trade_history")</th>
+                        <th>@Messages("exchange.account.api_keys.list_balance")</th>
+                        <th class="money-heading">@Messages("exchange.account.api_keys.permissions")</th>
+                        <th class="money-heading">@Messages("exchange.account.api_keys.disable")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each .}}
+                    <tr>
+                        <td>{{created}}</td>
+                        <td>{{api_key}}</td>
+                        <td><input type="checkbox" id="api-key-trading" {{trading}}></td>
+                        <td><input type="checkbox" id="api-key-trade-history" {{trade_history}}></td>
+                        <td><input type="checkbox" id="api-key-list-balance" {{list_balance}}></td>
+                        <td><a class="btn btn-success btn-xs pull-right" id="api-key-update" api-key-id="{{api_key_id}}">@Messages("exchange.account.api_keys.save")</a></td>
+                        <td><a class="btn btn-danger btn-xs pull-right" id="api-key-disable" api-key-id="{{api_key_id}}">@Messages("exchange.account.api_keys.delete")</a></td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
     </script>
 
 }

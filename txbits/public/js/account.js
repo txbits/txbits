@@ -151,6 +151,49 @@ $(function(){
                 $("#tfa-disable-modal").modal().find('.btn-primary').off("click").click(disable);
                 e.preventDefault();
             });
+
+            $('#add-api-key').click(function(e){
+                API.add_api_key().success(function(){
+                    $.pnotify({
+                        title: 'API key added',
+                        text: 'API key added successfully.',
+                        styling: 'bootstrap',
+                        type: 'success',
+                        text_escape: true
+                    });
+                    reload();
+                });
+            });
+
+            var api_keys_template = Handlebars.compile($("#api-keys-template").html());
+            API.get_api_keys().success(function(api_keys){
+                var i;
+                for (i = 0; i < api_keys.length; i++){
+                    api_keys[i].api_key_id = i;
+                    api_keys[i].created = moment(Number(api_keys[i].created)).format("YYYY-MM-DD HH:mm:ss");
+                    api_keys[i].trading = api_keys[i].trading == "true" ? "checked" : "";
+                    api_keys[i].trade_history = api_keys[i].trade_history == "true" ? "checked" : "";
+                    api_keys[i].list_balance = api_keys[i].list_balance == "true" ? "checked" : "";
+                }
+
+                $('#api-keys').html(api_keys_template(api_keys)).find('.btn-danger').click(function(){
+                    var $this = $(this);
+                    var id = $this.attr('api-key-id');
+                    var key = api_keys[id].api_key;
+                    var tfa_code = "";
+                    API.disable_api_key(tfa_code, key).success(function(){
+                        $.pnotify({
+                            title: 'API key disabled.',
+                            text: 'API key disabled successfully.',
+                            styling: 'bootstrap',
+                            type: 'success',
+                            text_escape: true
+                        });
+                        reload();
+                    });
+                });
+
+            });
         });
     }
     reload();

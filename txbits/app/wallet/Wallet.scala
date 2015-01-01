@@ -16,7 +16,7 @@ import wallet.WalletModel._
 import wallet.Wallet._
 import wallet.Wallet.CryptoCurrency.CryptoCurrency
 
-class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, params: WalletParams, walletModel: WalletModel) extends Actor {
+class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, params: WalletParams, walletModel: WalletModel, test: Boolean = false) extends Actor {
   import context.system
   implicit val ec: ExecutionContext = system.dispatcher
 
@@ -43,7 +43,9 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
 
   // Check for new deposits every average block time
   // Check available addresses every 2 hours
-  val (blockTimer, addressTimer) = if (active && !retired && walletModel.obtainSessionLock(currency, nodeId)) {
+  val (blockTimer, addressTimer) = if (test) {
+    (null, null)
+  } else if (active && !retired && walletModel.obtainSessionLock(currency, nodeId)) {
     (
       system.scheduler.schedule(params.checkDelay, params.checkInterval)(update()),
       system.scheduler.schedule(params.addressDelay, params.addressInterval)(generateAddresses())
