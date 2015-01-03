@@ -7,16 +7,6 @@
 # --- !Ups
 
 create or replace function
-add_new_address (
-  a_address varchar(34),
-  a_currency varchar(4),
-  a_node_id integer
-) returns void as $$
-  insert into users_addresses (address, currency, node_id)
-  values (a_address, a_currency, a_node_id);;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
-
-create or replace function
 free_address_count (
   a_currency varchar(4),
   a_node_id integer
@@ -292,7 +282,6 @@ $$ language sql volatile strict security definer set search_path = public, pg_te
 
 # --- !Downs
 
-drop function if exists add_new_address (varchar(34), varchar(4), integer) cascade;
 drop function if exists free_address_count (varchar(4), integer) cascade;
 drop function if exists get_min_confirmations (varchar(4)) cascade;
 drop function if exists get_node_info (varchar(4), integer) cascade;

@@ -15,8 +15,9 @@ object SQLText {
 
   val addNewAddress = SQL(
     """
-      |select add_new_address({address}, {currency}, {node_id})
-    """.stripMargin)
+    |insert into users_addresses (address, currency, node_id)
+    |values({address}, {currency}, {node_id})
+  """.stripMargin)
 
   val getFreeAddressCount = SQL(
     """
