@@ -822,28 +822,28 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 turnon_emails (
   a_id bigint
-) returns void as $$
+) returns boolean as $$
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
   update users set on_mailing_list=true
   where id=a_id;;
-  return;;
+  return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 turnoff_emails (
   a_id bigint
-) returns void as $$
+) returns boolean as $$
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
   update users set on_mailing_list=false
   where id=a_id;;
-  return;;
+  return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
