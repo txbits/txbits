@@ -135,10 +135,10 @@ var API;
             return $.get('/api/1/user', 'json');
         }),
 
-        turnoff_tfa: APIWrap(function(code) {
+        turnoff_tfa: APIWrap(function(code, password) {
             return $.ajax('/api/1/turnoff_tfa', {
                 type: 'POST',
-                data: JSON.stringify({tfa_code: code}),
+                data: JSON.stringify({tfa_code: code, password: password}),
                 dataType: 'json',
                 contentType: 'application/json'
             });
@@ -166,10 +166,10 @@ var API;
             return $.post('/api/1/gen_totp_secret', 'json');
         }),
 
-        turnon_tfa: APIWrap(function(code) {
+        turnon_tfa: APIWrap(function(code, password) {
             return $.ajax('/api/1/turnon_tfa', {
                 type: 'POST',
-                data: JSON.stringify({tfa_code: code}),
+                data: JSON.stringify({tfa_code: code, password: password}),
                 dataType: 'json',
                 contentType: 'application/json'
             });

@@ -71,7 +71,7 @@ object frontend {
 
   val turnonTfa = SQL(
     """
-    | select turnon_tfa as success from turnon_tfa({id}, {tfa_code})
+    | select turnon_tfa as success from turnon_tfa({id}, {tfa_code}, {password})
     |""".stripMargin)
 
   val updateTfaSecret = SQL(
@@ -81,7 +81,7 @@ object frontend {
 
   val turnoffTfa = SQL(
     """
-    | select turnoff_tfa as success from turnoff_tfa({id}, {tfa_code})
+    | select turnoff_tfa as success from turnoff_tfa({id}, {tfa_code}, {password})
     |""".stripMargin)
 
   val turnonEmails = SQL(

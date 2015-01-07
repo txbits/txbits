@@ -104,8 +104,9 @@ $(function(){
                     function show_totp() {
                         function enable(e) {
                             var code = $("#tfa-enable-modal").find('.code').val();
+                            var password = $("#tfa-enable-modal").find('.password').val();
                             //TODO: internationalize javascript messages
-                            API.turnon_tfa(code).success(function(){
+                            API.turnon_tfa(code, password).success(function(){
                                 $.pnotify({
                                     title: 'Two factor authentication',
                                     text: 'Two factor authentication turned on.',
@@ -132,7 +133,8 @@ $(function(){
             $('#turnoff-tfa').click(function(e) {
                 function disable(e) {
                     var code = $("#tfa-disable-modal").find('.code').val();
-                    API.turnoff_tfa(code).success(function(){
+                    var password = $("#tfa-disable-modal").find('.password').val();
+                    API.turnoff_tfa(code, password).success(function(){
                         $.pnotify({
                             title: 'Two factor authentication',
                             text: 'Two factor authentication turned off.',
