@@ -7,7 +7,7 @@ import anorm._
 import anorm.MetaDataItem
 import anorm.TypeDoesNotMatch
 import com.googlecode.jsonrpc4j.JsonRpcHttpClient
-import controllers.API.CryptoAddress
+import controllers.IAPI.CryptoAddress
 import java.net.{ PasswordAuthentication, Authenticator, URL }
 import play.api.mvc.Result
 import play.api.Play.current

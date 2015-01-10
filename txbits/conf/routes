@@ -20,9 +20,9 @@ GET         /withdrawal_reject/:id/:token              controllers.WithdrawalCon
 
 # This is our ticker API which should be completely separable from our main one
 # This api uses no authentication
-GET         /api/1/ws/ticker                           controllers.StatsAPI.APIv1.websocketTicker
-GET         /api/1/ticker                              controllers.StatsAPI.APIv1.ticker
-GET         /api/1/chart/:base/:counter                controllers.StatsAPI.APIv1.chart(base, counter)
+GET         /iapi/1/ws/ticker                           controllers.StatsAPI.APIv1.websocketTicker
+GET         /iapi/1/ticker                              controllers.StatsAPI.APIv1.ticker
+GET         /iapi/1/chart/:base/:counter                controllers.StatsAPI.APIv1.chart(base, counter)
 
 # Route for changing the language cookie
 GET         /chlang/:lang                              controllers.Application.chlang(lang)
@@ -39,40 +39,40 @@ POST        /api/1/api_trade_history                   controllers.API.APIv1.api
 POST        /api/1/api_balance                         controllers.API.APIv1.apiBalance
 
 # APIv1
-GET         /api/1                                     controllers.API.APIv1.index
-GET         /api/1/trade_fees                          controllers.API.APIv1.tradeFees
-GET         /api/1/balance                             controllers.API.APIv1.balance
-GET         /api/1/dw_fees                             controllers.API.APIv1.dwFees
-GET         /api/1/dw_limits                           controllers.API.APIv1.dwLimits
-GET         /api/1/required_confirms                   controllers.API.APIv1.requiredConfirms
-POST        /api/1/bid                                 controllers.API.APIv1.bid
-POST        /api/1/ask                                 controllers.API.APIv1.ask
-POST        /api/1/cancel                              controllers.API.APIv1.cancel
-POST        /api/1/withdraw                            controllers.API.APIv1.withdraw
-GET         /api/1/pending_withdrawals_all             controllers.API.APIv1.pendingWithdrawalsAll
-GET         /api/1/pending_deposits_all                controllers.API.APIv1.pendingDepositsAll
-GET         /api/1/deposit_crypto_all                  controllers.API.APIv1.depositCryptoAll
-GET         /api/1/deposit_crypto/:currency            controllers.API.APIv1.depositCrypto(currency)
-GET         /api/1/pairs                               controllers.API.APIv1.pairs
-GET         /api/1/currencies                          controllers.API.APIv1.currencies
-GET         /api/1/open_trades/:first/:second          controllers.API.APIv1.openTrades(first, second)
-GET         /api/1/recent_trades/:first/:second        controllers.API.APIv1.recentTrades(first, second)
-GET         /api/1/deposit_withdraw_history            controllers.API.APIv1.depositWithdrawHistory
-GET         /api/1/trade_history                       controllers.API.APIv1.tradeHistory
-GET         /api/1/pending_trades                      controllers.API.APIv1.pendingTrades
-GET         /api/1/login_history                       controllers.API.APIv1.loginHistory
-GET         /api/1/user                                controllers.API.APIv1.user
-POST        /api/1/turnoff_tfa                         controllers.API.APIv1.turnOffTFA
-POST        /api/1/turnon_tfa                          controllers.API.APIv1.turnOnTFA
-POST        /api/1/turnoff_emails                      controllers.API.APIv1.turnOffEmails
-POST        /api/1/turnon_emails                       controllers.API.APIv1.turnOnEmails
-POST        /api/1/gen_totp_secret                     controllers.API.APIv1.genTOTPSecret
-POST        /api/1/remove_pgp                          controllers.API.APIv1.removePgp
-POST        /api/1/add_pgp                             controllers.API.APIv1.addPgp
-GET         /api/1/get_api_keys                        controllers.API.APIv1.getApiKeys
-POST        /api/1/add_api_key                         controllers.API.APIv1.addApiKey
-POST        /api/1/update_api_key                      controllers.API.APIv1.updateApiKey
-POST        /api/1/disable_api_key                     controllers.API.APIv1.disableApiKey
+GET         /iapi/1                                     controllers.IAPI.APIv1.index
+GET         /iapi/1/trade_fees                          controllers.IAPI.APIv1.tradeFees
+GET         /iapi/1/balance                             controllers.IAPI.APIv1.balance
+GET         /iapi/1/dw_fees                             controllers.IAPI.APIv1.dwFees
+GET         /iapi/1/dw_limits                           controllers.IAPI.APIv1.dwLimits
+GET         /iapi/1/required_confirms                   controllers.IAPI.APIv1.requiredConfirms
+POST        /iapi/1/bid                                 controllers.IAPI.APIv1.bid
+POST        /iapi/1/ask                                 controllers.IAPI.APIv1.ask
+POST        /iapi/1/cancel                              controllers.IAPI.APIv1.cancel
+POST        /iapi/1/withdraw                            controllers.IAPI.APIv1.withdraw
+GET         /iapi/1/pending_withdrawals_all             controllers.IAPI.APIv1.pendingWithdrawalsAll
+GET         /iapi/1/pending_deposits_all                controllers.IAPI.APIv1.pendingDepositsAll
+GET         /iapi/1/deposit_crypto_all                  controllers.IAPI.APIv1.depositCryptoAll
+GET         /iapi/1/deposit_crypto/:currency            controllers.IAPI.APIv1.depositCrypto(currency)
+GET         /iapi/1/pairs                               controllers.IAPI.APIv1.pairs
+GET         /iapi/1/currencies                          controllers.IAPI.APIv1.currencies
+GET         /iapi/1/open_trades/:first/:second          controllers.IAPI.APIv1.openTrades(first, second)
+GET         /iapi/1/recent_trades/:first/:second        controllers.IAPI.APIv1.recentTrades(first, second)
+GET         /iapi/1/deposit_withdraw_history            controllers.IAPI.APIv1.depositWithdrawHistory
+GET         /iapi/1/trade_history                       controllers.IAPI.APIv1.tradeHistory
+GET         /iapi/1/pending_trades                      controllers.IAPI.APIv1.pendingTrades
+GET         /iapi/1/login_history                       controllers.IAPI.APIv1.loginHistory
+GET         /iapi/1/user                                controllers.IAPI.APIv1.user
+POST        /iapi/1/turnoff_tfa                         controllers.IAPI.APIv1.turnOffTFA
+POST        /iapi/1/turnon_tfa                          controllers.IAPI.APIv1.turnOnTFA
+POST        /iapi/1/turnoff_emails                      controllers.IAPI.APIv1.turnOffEmails
+POST        /iapi/1/turnon_emails                       controllers.IAPI.APIv1.turnOnEmails
+POST        /iapi/1/gen_totp_secret                     controllers.IAPI.APIv1.genTOTPSecret
+POST        /iapi/1/remove_pgp                          controllers.IAPI.APIv1.removePgp
+POST        /iapi/1/add_pgp                             controllers.IAPI.APIv1.addPgp
+GET         /iapi/1/get_api_keys                        controllers.IAPI.APIv1.getApiKeys
+POST        /iapi/1/add_api_key                         controllers.IAPI.APIv1.addApiKey
+POST        /iapi/1/update_api_key                      controllers.IAPI.APIv1.updateApiKey
+POST        /iapi/1/disable_api_key                     controllers.IAPI.APIv1.disableApiKey
 
 # Login page
 GET         /login                                     controllers.LoginPage.login
