@@ -300,10 +300,11 @@ class UserModel(val db: String = "default") {
     }
   }
 
-  def turnOffTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
+  def turnOffTFA(uid: Long, tfa_code: String, password: String) = DB.withConnection(db) { implicit c =>
     frontend.turnoffTfa.on(
       'id -> uid,
-      'tfa_code -> safeToInt(tfa_code)
+      'tfa_code -> safeToInt(tfa_code),
+      'password -> password
     )().map(row =>
         row[Boolean]("success")
       ).head
@@ -330,10 +331,11 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
-  def turnOnTFA(uid: Long, tfa_code: String) = DB.withConnection(db) { implicit c =>
+  def turnOnTFA(uid: Long, tfa_code: String, password: String) = DB.withConnection(db) { implicit c =>
     frontend.turnonTfa.on(
       'id -> uid,
-      'tfa_code -> safeToInt(tfa_code)
+      'tfa_code -> safeToInt(tfa_code),
+      'password -> password
     )().map(row =>
         row[Boolean]("success")
       ).head

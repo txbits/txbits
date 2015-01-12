@@ -541,6 +541,26 @@ end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
+check_password(
+  a_uid bigint,
+  a_password text
+) returns boolean as $$
+declare
+  password_tmp text;;
+begin
+  if a_uid = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
+  if password_tmp is not null and password_tmp != crypt(a_password, password_tmp) then
+    return false;;
+  end if;;
+  return true;;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+
+create or replace function
 user_change_password (
   a_uid bigint,
   a_old_password text,
@@ -552,9 +572,8 @@ begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
 
-  if password_tmp != crypt(a_old_password, password_tmp) then
+  if not check_password(a_uid, a_old_password) then
     return false;;
   end if;;
   insert into users_passwords (user_id, password) values (a_uid, crypt(a_new_password, gen_salt('bf', 8)));;
@@ -674,12 +693,18 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 turnon_tfa (
   a_id bigint,
-  a_totp int
+  a_totp int,
+  a_password text
 ) returns boolean as $$
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
+
+  if not check_password(a_id, a_password) then
+    return false;;
+  end if;;
+
   if user_totp_check(a_id, a_totp) then
     update users set tfa_enabled = true where id = a_id;;
     return true;;
@@ -723,12 +748,18 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 turnoff_tfa (
   a_id bigint,
-  a_totp int
+  a_totp int,
+  a_password text
 ) returns boolean as $$
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
+
+  if not check_password(a_id, a_password) then
+    return false;;
+  end if;;
+
   if user_totp_check(a_id, a_totp) then
     update users set tfa_enabled = false where id = a_id;;
     return true;;
@@ -1611,9 +1642,9 @@ drop function if exists update_user (bigint, varchar(256), bool) cascade;
 drop function if exists user_change_password (bigint, text, text) cascade;
 drop function if exists trusted_action_start (varchar(256)) cascade;
 drop function if exists user_reset_password_complete (varchar(256), varchar(256), text) cascade;
-drop function if exists turnon_tfa (bigint, bigint) cascade;
+drop function if exists turnon_tfa (bigint, bigint, text) cascade;
 drop function if exists update_tfa_secret (bigint, varchar(256), varchar(6)) cascade;
-drop function if exists turnoff_tfa (bigint) cascade;
+drop function if exists turnoff_tfa (bigint, text) cascade;
 drop function if exists user_totp_check (bigint, bigint) cascade;
 drop function if exists hotp (bytea, bigint) cascade;
 drop function if exists base32_decode (text) cascade;

@@ -146,8 +146,16 @@
             <div class="center-block qr-code" id="tfa-enable-qr"></div>
             <div class="small text-center">{{secret}}</div>
             <form role="form">
-                <label for="code" class="control-label">@Messages("terminology.code")</label>
-                <input class="form-control code" name="code" type="text"/>
+                <div class="from-group">
+                    <label for="code" class="control-label">@Messages("terminology.code")</label>
+                    <input class="form-control code" name="code" type="text"/>
+                </div>
+                <div class="from-group">
+                    <label for="password" class="control-label">@Messages("terminology.password")</label>
+                    <input class="form-control password" name="password" type="password"/>
+                </div>
+                <!-- this hack makes sure that the submit event is triggered when you press enter -->
+                <input type="submit" class="hidden"/>
             </form>
             </div>
 
@@ -168,8 +176,16 @@
     <script id="turn-off-tfa-template" type="text/x-handlebars-template">
         <p class="text-justify">@Messages("tfa.off.explanation")</p>
         <form role="form">
-            <label for="code" class="control-label">@Messages("terminology.code")</label>
-            <input class="form-control code" name="code" type="text"/>
+            <div class="from-group">
+                <label for="code" class="control-label">@Messages("terminology.code")</label>
+                <input class="form-control code" name="code" type="text"/>
+            </div>
+            <div class="from-group">
+                <label for="password" class="control-label">@Messages("terminology.password")</label>
+                <input class="form-control password" name="password" type="password"/>
+            </div>
+            <!-- this hack makes sure that the submit event is triggered when you press enter -->
+            <input type="submit" class="hidden"/>
         </form>
     </script>
 

@@ -217,8 +217,9 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
 
   def turnOffTFA() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     val tfa_code = (request.request.body \ "tfa_code").validate[String].get
+    val password = (request.request.body \ "password").validate[String].get
 
-    if (globals.userModel.turnOffTFA(request.user.id, tfa_code)) {
+    if (globals.userModel.turnOffTFA(request.user.id, tfa_code, password)) {
       Ok(Json.obj())
     } else {
       BadRequest(Json.obj("message" -> "Failed to turn off two factor auth."))
@@ -259,7 +260,9 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
 
   def turnOnTFA() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     val tfa_code = (request.request.body \ "tfa_code").validate[String].get
-    if (globals.userModel.turnOnTFA(request.user.id, tfa_code)) {
+    val password = (request.request.body \ "password").validate[String].get
+
+    if (globals.userModel.turnOnTFA(request.user.id, tfa_code, password)) {
       Ok(Json.obj())
     } else {
       BadRequest(Json.obj("message" -> "Failed to turn on two factor auth."))
