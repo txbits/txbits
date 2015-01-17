@@ -52,10 +52,10 @@ object misc {
   val setupForTest = SQL(
     """
       |
-      |insert into currencies(currency, position) values('BTC',10);
-      |insert into currencies(currency, position) values('LTC',20);
-      |insert into currencies(currency, position) values('USD',30);
-      |insert into currencies(currency, position) values('CAD',40);
+      |select currency_insert('BTC',10);
+      |select currency_insert('LTC',20);
+      |select currency_insert('USD',30);
+      |select currency_insert('CAD',40);
       |
       |insert into markets(base,counter,limit_min,position) values('BTC','USD',0.01,10);
       |insert into markets(base,counter,limit_min,position) values('LTC','USD',0.1,20);
@@ -81,6 +81,7 @@ object misc {
       |insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max) values('BTC', 42, 0, 0, 100, 1000);
       |
       |insert into users(id, email) values (0, '');
+      |insert into balances (user_id, currency) select 0, currency from currencies;
     """.stripMargin
   )
 

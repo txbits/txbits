@@ -353,60 +353,36 @@ begin
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
--- create balances associated with users
-create or replace function user_insert() returns trigger as $$
-declare
-  ucount int;;
-begin
-  insert into balances (user_id, currency) select new.id, currency from currencies;;
-  return null;;
-end;;
-$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
-
-create trigger user_insert
-  after insert on users
-  for each row
-  execute procedure user_insert();
-
-create or replace function wallets_crypto_retire() returns trigger as $$
+create or replace function
+wallets_crypto_retire (
+  a_currency varchar(4),
+  a_node_id integer
+) returns void as $$
 declare
 begin
-  update users_addresses set assigned = current_timestamp
-  where user_id = 0 and assigned is null and currency = new.currency and node_id = new.node_id;;
+  update wallets_crypto set retired = true
+  where currency = a_currency and node_id = a_node_id and retired = false;;
 
-  return null;;
+  if found then
+    update users_addresses set assigned = current_timestamp
+    where user_id = 0 and assigned is null and currency = a_currency and node_id = a_node_id;;
+  end if;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
-
-create trigger wallets_crypto_retire
-  after update on wallets_crypto
-  for each row
-  when (old.retired = false and new.retired = true)
-  execute procedure wallets_crypto_retire();
 
 -- create balances associated with currencies
-create or replace function currency_insert() returns trigger as $$
+create or replace function
+currency_insert (
+  a_currency varchar(4),
+  a_position integer
+) returns void as $$
 declare
-  ucount int;;
 begin
-  insert into balances (user_id, currency) select id, new.currency from users;;
-  return null;;
+  insert into currencies (currency, position) values (a_currency, a_position);;
+  insert into balances (user_id, currency) select id, a_currency from users;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
-create trigger currency_insert
-  after insert on currencies
-  for each row
-  execute procedure currency_insert();
-
--- don't give access to any of the triggers
-
-revoke execute on function match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) from public;
-revoke execute on function user_insert() from public;
-revoke execute on function wallets_crypto_retire() from public;
-revoke execute on function currency_insert() from public;
-revoke execute on function withdrawal_insert(numeric(23,8), bigint, varchar(4), numeric(23,8)) from public;
-revoke execute on function withdrawal_delete(numeric(23,8), bigint, varchar(4), numeric(23,8)) from public;
 
 -- https://wiki.postgresql.org/wiki/First/last_%28aggregate%29
 
@@ -459,6 +435,8 @@ begin
       a_onMailingList,
       a_pgp
     ) returning id into new_user_id;;
+  -- create balances associated with users  
+  insert into balances (user_id, currency) select new_user_id, currency from currencies;;
   insert into users_passwords (user_id, password) values (
     new_user_id,
     crypt(a_password, gen_salt('bf', 8))
@@ -1596,9 +1574,8 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 drop function if exists create_user (varchar(256), text, bool) cascade;
 drop function if exists match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) cascade;
 drop function if exists transfer_funds(bigint, bigint, varchar(4), numeric(23,8)) cascade;
-drop function if exists user_insert() cascade;
-drop function if exists wallets_crypto_retire() cascade;
-drop function if exists currency_insert() cascade;
+drop function if exists wallets_crypto_retire(varchar(4), integer) cascade;
+drop function if exists currency_insert(varchar(4), integer) cascade;
 drop function if exists withdrawal_insert(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists withdrawal_delete(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists first_agg() cascade;
