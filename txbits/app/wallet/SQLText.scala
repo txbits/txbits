@@ -47,12 +47,12 @@ object SQLText {
 
   val createDeposit = SQL(
     """
-      |select create_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash}, {fee})
+      |select create_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash})
     """.stripMargin)
 
   val createConfirmedDeposit = SQL(
     """
-      |select create_confirmed_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash}, {fee})
+      |select create_confirmed_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash})
     """.stripMargin)
 
   val isConfirmedDeposit = SQL(

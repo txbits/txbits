@@ -73,42 +73,35 @@ create_deposit (
   a_node_id integer,
   a_address varchar(34),
   a_amount numeric(23,8),
-  a_tx_hash varchar(64),
-  a_fee numeric(23,8)
+  a_tx_hash varchar(64)
 ) returns bigint as $$
-  with null_rows as (
-    update users_addresses set assigned = current_timestamp
-    where assigned is NULL and user_id = 0 and currency = a_currency and node_id = a_node_id and address = a_address
-    returning user_id
-  ), zero_rows as (
+declare
+  deposit_uid bigint;;
+  deposit_id bigint;;
+begin
+  select user_id into deposit_uid from users_addresses
+    where currency = a_currency and node_id = a_node_id and address = a_address;;
+  
+  if deposit_uid is null then
     insert into users_addresses (currency, node_id, address, assigned)
-    select a_currency, a_node_id, a_address, current_timestamp where not exists
-      (select 1 from null_rows
-        union
-       select 1 from users_addresses
-        where assigned is not NULL and currency = a_currency and node_id = a_node_id and address = a_address
-      ) returning user_id
-  ), rows as (
-    insert into deposits (amount, user_id, currency, fee)
-      values (
-        a_amount,
-        (
-          select user_id from null_rows
-           union
-          select user_id from zero_rows
-           union
-          select user_id from users_addresses
-           where assigned is not NULL and currency = a_currency and node_id = a_node_id and address = a_address
-        ),
-        a_currency,
-        (
-          select deposit_constant + a_amount * deposit_linear from dw_fees where currency = a_currency and method = 'blockchain'
-        )
-      ) returning id
-  )
+      values (a_currency, a_node_id, a_address, current_timestamp);;
+    deposit_uid := 0;;
+  elsif deposit_uid = 0 then
+    update users_addresses set assigned = current_timestamp
+      where assigned is NULL and user_id = 0 and currency = a_currency and node_id = a_node_id and address = a_address;;
+  end if;;
+
+  insert into deposits (amount, user_id, currency, fee)
+    values (a_amount, deposit_uid, a_currency,
+      (select deposit_constant + a_amount * deposit_linear from dw_fees where currency = a_currency and method = 'blockchain')
+    ) returning id into strict deposit_id;;
+
   insert into deposits_crypto (id, amount, tx_hash, address)
-    values ((select id from rows), a_amount, a_tx_hash, a_address) returning id;;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
+    values (deposit_id, a_amount, a_tx_hash, a_address);;
+
+  return deposit_id;;
+end;;
+$$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 create_confirmed_deposit (
@@ -116,42 +109,16 @@ create_confirmed_deposit (
   a_node_id integer,
   a_address varchar(34),
   a_amount numeric(23,8),
-  a_tx_hash varchar(64),
-  a_fee numeric(23,8)
+  a_tx_hash varchar(64)
 ) returns void as $$
-  with null_rows as (
-    update users_addresses set assigned = current_timestamp
-    where assigned is NULL and user_id = 0 and currency = a_currency and node_id = a_node_id and address = a_address
-    returning user_id
-  ), zero_rows as (
-    insert into users_addresses (currency, node_id, address, assigned)
-    select a_currency, a_node_id, a_address, current_timestamp where not exists
-      (select 1 from null_rows
-        union
-       select 1 from users_addresses
-        where assigned is not NULL and currency = a_currency and node_id = a_node_id and address = a_address
-      ) returning user_id
-  ), rows as (
-    insert into deposits (amount, user_id, currency, fee)
-      values (
-        a_amount,
-        (
-          select user_id from null_rows
-           union
-          select user_id from zero_rows
-           union
-          select user_id from users_addresses
-           where assigned is not NULL and currency = a_currency and node_id = a_node_id and address = a_address
-        ),
-        a_currency,
-        (
-          select deposit_constant + a_amount * deposit_linear from dw_fees where currency = a_currency and method = 'blockchain'
-        )
-      ) returning id
-  )
-  insert into deposits_crypto (id, amount, tx_hash, address, confirmed)
-    values ((select id from rows), a_amount, a_tx_hash, a_address, current_timestamp);;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
+declare
+  deposit_id bigint;;
+begin
+  select create_deposit(a_currency, a_node_id, a_address, a_amount, a_tx_hash) into strict deposit_id;;
+
+  perform confirmed_deposit(deposit_id, a_address, a_tx_hash);;
+end;;
+$$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 is_confirmed_deposit (
@@ -188,10 +155,33 @@ confirmed_deposit (
   a_address varchar(34),
   a_tx_hash varchar(64)
 ) returns void as $$
+declare
+  d deposits%rowtype;;
+begin
+  select * into strict d from deposits where id = a_id;;
+
   update deposits_crypto set confirmed = current_timestamp
   where id = a_id and address = a_address and
   tx_hash = a_tx_hash and confirmed is NULL;;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
+
+  -- user 0 deposits refill hot wallets
+  if found and d.user_id <> 0 then
+    -- when a deposit is confirmed, we add money to the account
+    perform transfer_funds(
+        null,
+        d.user_id,
+        d.currency,
+        d.amount
+      );;
+    perform transfer_funds(
+        d.user_id,
+        0,
+        d.currency,
+        d.fee
+      );;
+  end if;;
+end;;
+$$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_unconfirmed_withdrawal_tx (
@@ -287,8 +277,8 @@ drop function if exists get_min_confirmations (varchar(4)) cascade;
 drop function if exists get_node_info (varchar(4), integer) cascade;
 drop function if exists get_last_block_read (varchar(4), integer) cascade;
 drop function if exists set_last_block_read (varchar(4), integer, integer, integer, numeric(23,8)) cascade;
-drop function if exists create_deposit (varchar(4), integer, varchar(34), numeric(23,8), varchar(64), numeric(23,8)) cascade;
-drop function if exists create_confirmed_deposit (varchar(4), integer, varchar(34), numeric(23,8), varchar(64), numeric(23,8)) cascade;
+drop function if exists create_deposit (varchar(4), integer, varchar(34), numeric(23,8), varchar(64)) cascade;
+drop function if exists create_confirmed_deposit (varchar(4), integer, varchar(34), numeric(23,8), varchar(64)) cascade;
 drop function if exists is_confirmed_deposit (varchar(34), varchar(64)) cascade;
 drop function if exists get_pending_deposits (varchar(4), integer) cascade;
 drop function if exists confirmed_deposit (bigint, varchar(34), varchar(64)) cascade;

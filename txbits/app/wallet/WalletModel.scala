@@ -73,8 +73,7 @@ class WalletModel(val db: String = "default") {
       'node_id -> nodeId,
       'address -> deposit.address,
       'amount -> deposit.amount.bigDecimal,
-      'tx_hash -> deposit.txHash,
-      'fee -> new java.math.BigDecimal(0)
+      'tx_hash -> deposit.txHash
     )().map(row => row[Long]("create_deposit")).head
   }
 
@@ -84,8 +83,7 @@ class WalletModel(val db: String = "default") {
       'node_id -> nodeId,
       'address -> deposit.address,
       'amount -> deposit.amount.bigDecimal,
-      'tx_hash -> deposit.txHash,
-      'fee -> new java.math.BigDecimal(0)
+      'tx_hash -> deposit.txHash
     ).execute()
   }
 

@@ -242,46 +242,6 @@ begin
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
--- when a deposit is confirmed, we add money to the account
-create or replace function deposit_complete() returns trigger as $$
-declare
-  d deposits%rowtype;;
-begin
-    select * into d from deposits where id = new.id;;
-
-    -- user 0 deposits refill hot wallets
-    if d.user_id = 0 then
-      return null;;
-    end if;;
-
-    perform transfer_funds(
-        null,
-        d.user_id,
-        d.currency,
-        d.amount
-      );;
-    perform transfer_funds(
-        d.user_id,
-        0,
-        d.currency,
-        d.fee
-      );;
-    return null;;
-end;;
-$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
-
-create trigger deposit_complete_crypto
-    after update on deposits_crypto
-    for each row
-    when (old.confirmed is null and new.confirmed is not null)
-    execute procedure deposit_complete();
-
-create trigger deposit_completed_crypto
-    after insert on deposits_crypto
-    for each row
-    when (new.confirmed is not null)
-    execute procedure deposit_complete();
-
 
 -- when a withdrawal is requested, remove the money!
 create or replace function withdrawal_insert() returns trigger as $$
@@ -441,7 +401,6 @@ revoke execute on function user_insert() from public;
 revoke execute on function wallets_crypto_retire() from public;
 revoke execute on function currency_insert() from public;
 revoke execute on function withdrawal_insert() from public;
-revoke execute on function deposit_complete() from public;
 
 -- https://wiki.postgresql.org/wiki/First/last_%28aggregate%29
 
@@ -778,21 +737,21 @@ declare
   success boolean default false;;
 begin
   -- check if the token is not issued yet (null) or is expired
-  select token_expiration is not null and token_expiration > current_timestamp into success from withdrawals where id = a_id;;
+  select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;;
 
   if not success then
     return false;;
   end if;;
 
   -- check if a decision is already made
-  select user_confirmed or user_rejected into success from withdrawals where id = a_id;;
+  select user_confirmed or user_rejected into strict success from withdrawals where id = a_id;;
 
   if success then
     return false;;
   end if;;
 
   -- check if the token is correct
-  select confirmation_token = a_token into success from withdrawals where id = a_id;;
+  select confirmation_token = a_token into strict success from withdrawals where id = a_id;;
 
   if success then
     update withdrawals set user_confirmed = true where id = a_id;;
@@ -800,13 +759,6 @@ begin
   end if;;
 
   return false;;
-
--- make sure the id matches exactly one row
-exception
-  when NO_DATA_FOUND then
-    return false;;
-  when TOO_MANY_ROWS then
-    return false;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -819,21 +771,21 @@ declare
   success boolean default false;;
 begin
   -- check if the token is not issued yet (null) or is expired
-  select token_expiration is not null and token_expiration > current_timestamp into success from withdrawals where id = a_id;;
+  select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;;
 
   if not success then
     return false;;
   end if;;
 
   -- check if a decision is already made
-  select user_confirmed or user_rejected into success from withdrawals where id = a_id;;
+  select user_confirmed or user_rejected into strict success from withdrawals where id = a_id;;
 
   if success then
     return false;;
   end if;;
 
   -- check if the token is correct
-  select confirmation_token = a_token into success from withdrawals where id = a_id;;
+  select confirmation_token = a_token into strict success from withdrawals where id = a_id;;
 
   if success then
     update withdrawals set user_rejected = true where id = a_id;;
@@ -841,12 +793,6 @@ begin
   end if;;
 
   return false;;
--- make sure the id matches exactly one row
-exception
-  when NO_DATA_FOUND then
-    return false;;
-  when TOO_MANY_ROWS then
-    return false;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -1252,9 +1198,17 @@ get_addresses (
   out o_address varchar(34),
   out o_assigned timestamp
 ) returns setof record as $$
+declare
+  enabled boolean;;
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  select active into strict enabled from currencies_crypto where currency = a_currency;;
+
+  if enabled = false then
+    return;;
   end if;;
 
   update users_addresses set user_id = a_uid, assigned = current_timestamp
@@ -1272,7 +1226,11 @@ begin
       );;
 
   return query select address, assigned from users_addresses
-    where user_id = a_uid and currency = a_currency
+    where user_id = a_uid and currency = a_currency and node_id = any
+                                (
+                                  select node_id from wallets_crypto
+                                  where currency = a_currency and retired = false
+                                )
     order by assigned desc;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -1309,10 +1267,12 @@ begin
 
   return query
     select currency, address, assigned from users_addresses
-    where user_id = a_uid and currency = any
+    where user_id = a_uid and (currency, node_id) = any
                                 (
-                                  select currency
-                                  from currencies_crypto where active = true
+                                  select currency, node_id
+                                  from currencies_crypto inner join wallets_crypto
+                                  on currencies_crypto.currency = wallets_crypto.currency
+                                  where active = true and retired = false
                                 )
     order by assigned desc;;
 end;;
@@ -1627,7 +1587,6 @@ drop function if exists wallets_crypto_retire() cascade;
 drop function if exists currency_insert() cascade;
 drop function if exists withdrawal_insert() cascade;
 drop function if exists withdrawal_delete() cascade;
-drop function if exists deposit_complete() cascade;
 drop function if exists first_agg() cascade;
 drop function if exists last_agg() cascade;
 drop aggregate if exists first(anyelement);
