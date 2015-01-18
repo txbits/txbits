@@ -77,8 +77,8 @@ object misc {
       |insert into currencies_crypto(currency) values('BTC');
       |insert into currencies_crypto(currency) values('LTC');
       |
-      |insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max) values('LTC', 42, 0, 0, 1000, 10000);
-      |insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max) values('BTC', 42, 0, 0, 100, 1000);
+      |insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max, balance) values('LTC', 42, 0, 0, 1000, 10000, 9999);
+      |insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max, balance) values('BTC', 42, 0, 0, 100, 1000, 9999);
       |
       |insert into users(id, email) values (0, '');
       |insert into balances (user_id, currency) select 0, currency from currencies;

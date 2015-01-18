@@ -50,6 +50,10 @@ class WalletModel(val db: String = "default") {
     )).head
   }
 
+  def getBalance(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
+    SQLText.getBalance.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[BigDecimal]("get_balance")).head
+  }
+
   def getLastBlockRead(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
     SQLText.getLastBlockRead.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => (
       row[Option[Int]]("last_block_read").getOrElse(0),
@@ -57,13 +61,12 @@ class WalletModel(val db: String = "default") {
     )).head
   }
 
-  def setLastBlockRead(currency: CryptoCurrency, nodeId: Int, blockCount: Int, lastWithdrawalTimeReceived: Int, balance: BigDecimal) = DB.withConnection(db) { implicit c =>
+  def setLastBlockRead(currency: CryptoCurrency, nodeId: Int, blockCount: Int, lastWithdrawalTimeReceived: Int) = DB.withConnection(db) { implicit c =>
     SQLText.setLastBlockRead.on(
       'currency -> currency.toString,
       'node_id -> nodeId,
       'block_count -> blockCount,
-      'last_withdrawal_time_received -> lastWithdrawalTimeReceived,
-      'balance -> balance.bigDecimal
+      'last_withdrawal_time_received -> lastWithdrawalTimeReceived
     ).execute()
   }
 
@@ -101,8 +104,8 @@ class WalletModel(val db: String = "default") {
     ).toList
   }
 
-  def confirmedDeposit(deposit: Deposit, id: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.confirmedDeposit.on('id -> id, 'address -> deposit.address, 'tx_hash -> deposit.txHash).execute()
+  def confirmedDeposit(deposit: Deposit, id: Long, nodeId: Int) = DB.withConnection(db) { implicit c =>
+    SQLText.confirmedDeposit.on('id -> id, 'address -> deposit.address, 'tx_hash -> deposit.txHash, 'node_id -> nodeId).execute()
   }
 
   def getUnconfirmedWithdrawalTx(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
@@ -120,8 +123,8 @@ class WalletModel(val db: String = "default") {
     SQLText.getWithdrawalTx.on('tx_id -> txId)().map(row => row[String]("address") -> row[BigDecimal]("value")).toMap
   }
 
-  def sentWithdrawalTx(txId: Long, txHash: String) = DB.withConnection(db) { implicit c =>
-    SQLText.sentWithdrawalTx.on('tx_id -> txId, 'tx_hash -> txHash).execute()
+  def sentWithdrawalTx(txId: Long, txHash: String, txAmount: BigDecimal) = DB.withConnection(db) { implicit c =>
+    SQLText.sentWithdrawalTx.on('tx_id -> txId, 'tx_hash -> txHash, 'tx_amount -> txAmount).execute()
   }
 
   def confirmedWithdrawalTx(txId: Long, txFee: BigDecimal) = DB.withConnection(db) { implicit c =>

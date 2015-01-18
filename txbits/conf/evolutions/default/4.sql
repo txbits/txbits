@@ -14,7 +14,7 @@ free_address_count (
   select count(*) from users_addresses
   where assigned is null and user_id = 0 and
   currency = a_currency and node_id = a_node_id;;
-$$ language sql stable security definer set search_path = public, pg_temp cost 100;
+$$ language sql stable security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_min_confirmations (
@@ -25,7 +25,7 @@ get_min_confirmations (
 ) returns record as $$
   select active, min_deposit_confirmations, min_withdrawal_confirmations
   from currencies_crypto where currency = a_currency;;
-$$ language sql stable security definer set search_path = public, pg_temp cost 100;
+$$ language sql stable security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_node_info (
@@ -40,7 +40,16 @@ get_node_info (
   select retired, balance_min, balance_warn, balance_target, balance_max
   from wallets_crypto where currency = a_currency and
   node_id = a_node_id;;
-$$ language sql stable security definer set search_path = public, pg_temp cost 100;
+$$ language sql stable security invoker set search_path = public, pg_temp cost 100;
+
+create or replace function
+get_balance (
+  a_currency varchar(4),
+  a_node_id integer
+) returns numeric(23,8) as $$
+  select balance from wallets_crypto
+  where currency = a_currency and node_id = a_node_id;;
+$$ language sql stable security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_last_block_read (
@@ -51,21 +60,20 @@ get_last_block_read (
 ) returns record as $$
   select last_block_read, last_withdrawal_time_received from wallets_crypto
   where currency = a_currency and node_id = a_node_id;;
-$$ language sql stable security definer set search_path = public, pg_temp cost 100;
+$$ language sql stable security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 set_last_block_read (
   a_currency varchar(4),
   a_node_id integer,
   a_block_count integer,
-  a_last_withdrawal_time_received integer,
-  a_balance numeric(23,8)
+  a_last_withdrawal_time_received integer
 ) returns void as $$
   update wallets_crypto set last_block_read = a_block_count,
-  last_withdrawal_time_received = a_last_withdrawal_time_received,
-  balance = a_balance where currency = a_currency and
+  last_withdrawal_time_received = a_last_withdrawal_time_received
+  where currency = a_currency and
   node_id = a_node_id;;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
+$$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 create_deposit (
@@ -101,7 +109,7 @@ begin
 
   return deposit_id;;
 end;;
-$$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 create_confirmed_deposit (
@@ -116,9 +124,9 @@ declare
 begin
   select create_deposit(a_currency, a_node_id, a_address, a_amount, a_tx_hash) into strict deposit_id;;
 
-  perform confirmed_deposit(deposit_id, a_address, a_tx_hash);;
+  perform confirmed_deposit(deposit_id, a_address, a_tx_hash, a_node_id);;
 end;;
-$$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 is_confirmed_deposit (
@@ -130,7 +138,7 @@ is_confirmed_deposit (
   from deposits d inner join deposits_crypto dc on d.id = dc.id
   where dc.address = a_address and dc.tx_hash = a_tx_hash and
   d.amount = a_amount and confirmed is not NULL);;
-$$ language sql stable security definer set search_path = public, pg_temp cost 100;
+$$ language sql stable security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_pending_deposits (
@@ -147,13 +155,14 @@ get_pending_deposits (
   a.user_id = d.user_id and a.currency = d.currency
   where d.currency = a_currency and
   node_id = a_node_id and confirmed is NULL;;
-$$ language sql stable security definer set search_path = public, pg_temp cost 100;
+$$ language sql stable security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 confirmed_deposit (
   a_id bigint,
   a_address varchar(34),
-  a_tx_hash varchar(64)
+  a_tx_hash varchar(64),
+  a_node_id integer
 ) returns void as $$
 declare
   d deposits%rowtype;;
@@ -164,24 +173,29 @@ begin
   where id = a_id and address = a_address and
   tx_hash = a_tx_hash and confirmed is NULL;;
 
-  -- user 0 deposits refill hot wallets
   if found and d.user_id <> 0 then
-    -- when a deposit is confirmed, we add money to the account
-    perform transfer_funds(
+    update wallets_crypto set balance = balance + d.amount
+    where currency = d.currency and node_id = a_node_id;;
+
+    -- user 0 deposits refill hot wallets
+    if d.user_id <> 0 then
+      -- when a deposit is confirmed, we add money to the account
+      perform transfer_funds(
         null,
         d.user_id,
         d.currency,
         d.amount
       );;
-    perform transfer_funds(
+      perform transfer_funds(
         d.user_id,
         0,
         d.currency,
         d.fee
       );;
+    end if;;
   end if;;
 end;;
-$$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_unconfirmed_withdrawal_tx (
@@ -201,25 +215,27 @@ create_withdrawal_tx (
   a_currency varchar(4),
   a_node_id integer
 ) returns bigint as $$
-  with rows as (
-    insert into withdrawals_crypto_tx (currency, node_id)
-    select a_currency, a_node_id where exists (
-        select w.id
-        from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
-        where currency = a_currency and w.user_confirmed = true and withdrawals_crypto_tx_id is NULL
-    ) returning id
-  )
-  update withdrawals_crypto
-    set withdrawals_crypto_tx_id = (select id from rows)
-    where
-      exists (select id from rows) and
-      withdrawals_crypto_tx_id is NULL and
+declare
+  w_id bigint;;
+begin
+  insert into withdrawals_crypto_tx (currency, node_id)
+    values (a_currency, a_node_id) returning id into strict w_id;;
+
+  update withdrawals_crypto set withdrawals_crypto_tx_id = w_id
+    where withdrawals_crypto_tx_id is NULL and
       id = any (select w.id
                 from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
                 where currency = a_currency and w.user_confirmed = true and withdrawals_crypto_tx_id is NULL
-               )
-  returning withdrawals_crypto_tx_id;;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
+               );;
+
+  if not found then
+    delete from withdrawals_crypto_tx where id = w_id;;
+    return null;;
+  else
+    return w_id;;
+  end if;;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_withdrawal_tx (
@@ -230,25 +246,43 @@ get_withdrawal_tx (
   select address, sum(amount - fee) as value
   from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
   where withdrawals_crypto_tx_id = a_tx_id group by address;;
-$$ language sql stable security definer set search_path = public, pg_temp cost 100;
+$$ language sql stable security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 sent_withdrawal_tx (
   a_tx_id bigint,
-  a_tx_hash varchar(64)
+  a_tx_hash varchar(64),
+  a_tx_amount numeric(23,8)
 ) returns void as $$
+declare
+  wct withdrawals_crypto_tx%rowtype;;
+begin
   update withdrawals_crypto_tx set sent = current_timestamp,
-  tx_hash = a_tx_hash where id = a_tx_id and sent is NULL;;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
+    tx_hash = a_tx_hash, tx_amount = a_tx_amount
+    where id = a_tx_id and sent is NULL
+    returning * into strict wct;;
+
+  update wallets_crypto set balance = balance - wct.tx_amount
+    where currency = wct.currency and node_id = wct.node_id;;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 confirmed_withdrawal_tx (
   a_tx_id bigint,
   a_tx_fee numeric(23,8)
 ) returns void as $$
+declare
+  wct withdrawals_crypto_tx%rowtype;;
+begin
   update withdrawals_crypto_tx set confirmed = current_timestamp,
-  tx_fee = a_tx_fee where id = a_tx_id and confirmed is NULL;;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
+    tx_fee = a_tx_fee where id = a_tx_id and confirmed is NULL
+    returning * into strict wct;;
+
+  update wallets_crypto set balance = balance - wct.tx_fee
+    where currency = wct.currency and node_id = wct.node_id;;
+end;;
+$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 create_cold_storage_transfer (
@@ -258,7 +292,7 @@ create_cold_storage_transfer (
 ) returns void as $$
   insert into withdrawals_crypto_tx_cold_storage (id, address, value)
   values (a_tx_id, a_address, a_value);;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
+$$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 set_withdrawal_tx_hash_mutated (
@@ -267,7 +301,7 @@ set_withdrawal_tx_hash_mutated (
 ) returns void as $$
   insert into withdrawals_crypto_tx_mutated (id, tx_hash_mutated)
   values (a_tx_id, a_tx_hash);;
-$$ language sql volatile strict security definer set search_path = public, pg_temp cost 100;
+$$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
 
 
 # --- !Downs
@@ -275,17 +309,18 @@ $$ language sql volatile strict security definer set search_path = public, pg_te
 drop function if exists free_address_count (varchar(4), integer) cascade;
 drop function if exists get_min_confirmations (varchar(4)) cascade;
 drop function if exists get_node_info (varchar(4), integer) cascade;
+drop function if exists get_balance (varchar(4), integer) cascade;
 drop function if exists get_last_block_read (varchar(4), integer) cascade;
-drop function if exists set_last_block_read (varchar(4), integer, integer, integer, numeric(23,8)) cascade;
+drop function if exists set_last_block_read (varchar(4), integer, integer, integer) cascade;
 drop function if exists create_deposit (varchar(4), integer, varchar(34), numeric(23,8), varchar(64)) cascade;
 drop function if exists create_confirmed_deposit (varchar(4), integer, varchar(34), numeric(23,8), varchar(64)) cascade;
 drop function if exists is_confirmed_deposit (varchar(34), varchar(64)) cascade;
 drop function if exists get_pending_deposits (varchar(4), integer) cascade;
-drop function if exists confirmed_deposit (bigint, varchar(34), varchar(64)) cascade;
+drop function if exists confirmed_deposit (bigint, varchar(34), varchar(64), integer) cascade;
 drop function if exists get_unconfirmed_withdrawal_tx (varchar(4), integer) cascade;
 drop function if exists create_withdrawal_tx (varchar(4), integer) cascade;
 drop function if exists get_withdrawal_tx (bigint) cascade;
-drop function if exists sent_withdrawal_tx (bigint, varchar(64)) cascade;
+drop function if exists sent_withdrawal_tx (bigint, varchar(64), numeric(23,8)) cascade;
 drop function if exists confirmed_withdrawal_tx (bigint, numeric(23,8)) cascade;
 drop function if exists create_cold_storage_transfer (bigint, varchar(34), numeric(23,8)) cascade;
 drop function if exists set_withdrawal_tx_hash_mutated (bigint, varchar(64)) cascade;
