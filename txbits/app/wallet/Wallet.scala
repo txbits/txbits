@@ -29,7 +29,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
   }
   private var firstUpdate = true
   private var changeAddressCount = 0
-  private var balance = getBalance
+  private var balance = walletModel.getBalance(currency, nodeId)
 
   // Cache of pending deposits, initialized from DB
   private val pendingDeposits: mutable.Map[Deposit, Long] = mutable.Map(walletModel.getPendingDeposits(currency, nodeId): _*)
@@ -106,7 +106,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
           if (confirmedDeposits.add(deposit)) {
             pendingDeposits.remove(deposit) match {
               case Some(id) =>
-                walletModel.confirmedDeposit(deposit, id)
+                walletModel.confirmedDeposit(deposit, id, nodeId)
               case _ =>
                 // If confirmed deposits cache has not been initialized, check if the deposit is in the DB
                 if (!firstUpdate || (firstUpdate && !walletModel.isConfirmedDeposit(deposit))) {
@@ -131,11 +131,12 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
           lastWithdrawalTimeReceived = withdrawalTimeReceived
         case _ =>
       }
+      balance = walletModel.getBalance(currency, nodeId)
       sentWithdrawalTx = if (balance > balanceMin) {
         stalledWithdrawalTx match {
           case Some((withdrawalId, withdrawalsTotal, withdrawals)) if balance >= withdrawalsTotal =>
             val withdrawalTxHash = sendMany(withdrawals.asJava)
-            walletModel.sentWithdrawalTx(withdrawalId, withdrawalTxHash)
+            walletModel.sentWithdrawalTx(withdrawalId, withdrawalTxHash, withdrawalsTotal)
             changeAddressCount += 1
             stalledWithdrawalTx = None
             Some(withdrawalId -> withdrawalTxHash)
@@ -161,7 +162,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
                       withdrawals
                     }).asJava
                   val withdrawalTxHash = sendMany(withdrawalsJava)
-                  walletModel.sentWithdrawalTx(withdrawalId, withdrawalTxHash)
+                  walletModel.sentWithdrawalTx(withdrawalId, withdrawalTxHash, withdrawalsTotal)
                   changeAddressCount += 1
                   Some(withdrawalId -> withdrawalTxHash)
                 }
@@ -174,13 +175,14 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       }
     }
 
+    balance = walletModel.getBalance(currency, nodeId)
+
     if (balance <= balanceWarn) {
       //TODO: Notify that the wallet needs refilling
     }
 
-    balance = getBalance
     // Subtract minDepositConfirmations as it could be decreased when actor is restarted
-    walletModel.setLastBlockRead(currency, nodeId, blockHeight - minDepositConfirmations, lastWithdrawalTimeReceived, balance)
+    walletModel.setLastBlockRead(currency, nodeId, blockHeight - minDepositConfirmations, lastWithdrawalTimeReceived)
     lastBlockRead = blockHeight
     firstUpdate = false
   }

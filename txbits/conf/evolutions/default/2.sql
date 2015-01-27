@@ -242,123 +242,88 @@ begin
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
--- when a deposit is confirmed, we add money to the account
-create or replace function deposit_complete() returns trigger as $$
-declare
-  d deposits%rowtype;;
-begin
-    select * into d from deposits where id = new.id;;
-
-    -- user 0 deposits refill hot wallets
-    if d.user_id = 0 then
-      return null;;
-    end if;;
-
-    perform transfer_funds(
-        null,
-        d.user_id,
-        d.currency,
-        d.amount
-      );;
-    perform transfer_funds(
-        d.user_id,
-        0,
-        d.currency,
-        d.fee
-      );;
-    return null;;
-end;;
-$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
-
-create trigger deposit_complete_crypto
-    after update on deposits_crypto
-    for each row
-    when (old.confirmed is null and new.confirmed is not null)
-    execute procedure deposit_complete();
-
-create trigger deposit_completed_crypto
-    after insert on deposits_crypto
-    for each row
-    when (new.confirmed is not null)
-    execute procedure deposit_complete();
-
 
 -- when a withdrawal is requested, remove the money!
-create or replace function withdrawal_insert() returns trigger as $$
+create or replace function
+withdrawal_insert (
+  a_amount numeric(23,8),
+  a_uid bigint,
+  a_currency varchar(4),
+  a_fee numeric(23,8)
+) returns bigint as $$
 declare
   underflow boolean;;
   overflow boolean;;
+  withdrawal_id bigint;;
 begin
-  perform 1 from balances where user_id = new.user_id and currency = new.currency for update;;
+  perform 1 from balances where user_id = a_uid and currency = a_currency for update;;
 
-  select limit_min > new.amount into underflow from withdrawal_limits where currency = new.currency;;
+  insert into withdrawals(amount, user_id, currency, fee)
+    values (a_amount, a_uid, a_currency, a_fee)
+    returning id into strict withdrawal_id;;
+
+  select limit_min > a_amount into underflow from withdrawal_limits where currency = a_currency;;
 
   if underflow then
-    raise 'Below lower limit for withdrawal. Tried to withdraw %.', new.amount;;
+    raise 'Below lower limit for withdrawal. Tried to withdraw %.', a_amount;;
   end if;;
 
-  select ((limit_max < new.amount + (
+  select ((limit_max < a_amount + (
     select coalesce(sum(amount), 0)
     from withdrawals
-    where currency = new.currency and user_id = new.user_id and created >= (current_timestamp - interval '24 hours' )
-  )) and limit_max != -1) into overflow from withdrawal_limits where currency = new.currency;;
+    where currency = a_currency and user_id = a_uid and created >= (current_timestamp - interval '24 hours' )
+  )) and limit_max != -1) into overflow from withdrawal_limits where currency = a_currency;;
 
   if overflow then
-    raise 'Over upper limit for withdrawal. Tried to withdraw %.', new.amount;;
+    raise 'Over upper limit for withdrawal. Tried to withdraw %.', a_amount;;
   end if;;
 
     perform transfer_funds(
-        new.user_id,
+        a_uid,
         null,
-        new.currency,
-        new.amount - new.fee
+        a_currency,
+        a_amount - a_fee
       );;
 
     perform transfer_funds(
-        new.user_id,
+        a_uid,
         0,
-        new.currency,
-        new.fee
+        a_currency,
+        a_fee
       );;
-    return null;;
+
+  return withdrawal_id;;
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
-
-create trigger withdrawal_insert
-    after insert on withdrawals
-    for each row
-    execute procedure withdrawal_insert();
 
 
 -- when a withdrawal is expired, return the money!
-create or replace function withdrawal_delete() returns trigger as $$
+create or replace function
+withdrawal_delete (
+  a_amount numeric(23,8),
+  a_uid bigint,
+  a_currency varchar(4),
+  a_fee numeric(23,8)
+) returns void as $$
 declare
   underflow boolean;;
   overflow boolean;;
 begin
-  perform 1 from balances where user_id = old.user_id and currency = old.currency for update;;
-
   perform transfer_funds(
       null,
-      old.user_id,
-      old.currency,
-      old.amount - old.fee
+      a_uid,
+      a_currency,
+      a_amount - a_fee
     );;
 
   perform transfer_funds(
       0,
-      old.user_id,
-      old.currency,
-      old.fee
+      a_uid,
+      a_currency,
+      a_fee
     );;
-  return null;;
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
-
-create trigger withdrawal_delete
-    after delete on withdrawals
-    for each row
-    execute procedure withdrawal_delete();
 
 -- to transfer funds, update the balances
 create or replace function
@@ -388,60 +353,36 @@ begin
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
--- create balances associated with users
-create or replace function user_insert() returns trigger as $$
-declare
-  ucount int;;
-begin
-  insert into balances (user_id, currency) select new.id, currency from currencies;;
-  return null;;
-end;;
-$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
-
-create trigger user_insert
-  after insert on users
-  for each row
-  execute procedure user_insert();
-
-create or replace function wallets_crypto_retire() returns trigger as $$
+create or replace function
+wallets_crypto_retire (
+  a_currency varchar(4),
+  a_node_id integer
+) returns void as $$
 declare
 begin
-  update users_addresses set assigned = current_timestamp
-  where user_id = 0 and assigned is null and currency = new.currency and node_id = new.node_id;;
+  update wallets_crypto set retired = true
+  where currency = a_currency and node_id = a_node_id and retired = false;;
 
-  return null;;
+  if found then
+    update users_addresses set assigned = current_timestamp
+    where user_id = 0 and assigned is null and currency = a_currency and node_id = a_node_id;;
+  end if;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
-
-create trigger wallets_crypto_retire
-  after update on wallets_crypto
-  for each row
-  when (old.retired = false and new.retired = true)
-  execute procedure wallets_crypto_retire();
 
 -- create balances associated with currencies
-create or replace function currency_insert() returns trigger as $$
+create or replace function
+currency_insert (
+  a_currency varchar(4),
+  a_position integer
+) returns void as $$
 declare
-  ucount int;;
 begin
-  insert into balances (user_id, currency) select id, new.currency from users;;
-  return null;;
+  insert into currencies (currency, position) values (a_currency, a_position);;
+  insert into balances (user_id, currency) select id, a_currency from users;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
-create trigger currency_insert
-  after insert on currencies
-  for each row
-  execute procedure currency_insert();
-
--- don't give access to any of the triggers
-
-revoke execute on function match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) from public;
-revoke execute on function user_insert() from public;
-revoke execute on function wallets_crypto_retire() from public;
-revoke execute on function currency_insert() from public;
-revoke execute on function withdrawal_insert() from public;
-revoke execute on function deposit_complete() from public;
 
 -- https://wiki.postgresql.org/wiki/First/last_%28aggregate%29
 
@@ -494,6 +435,8 @@ begin
       a_onMailingList,
       a_pgp
     ) returning id into new_user_id;;
+  -- create balances associated with users  
+  insert into balances (user_id, currency) select new_user_id, currency from currencies;;
   insert into users_passwords (user_id, password) values (
     new_user_id,
     crypt(a_password, gen_salt('bf', 8))
@@ -778,21 +721,21 @@ declare
   success boolean default false;;
 begin
   -- check if the token is not issued yet (null) or is expired
-  select token_expiration is not null and token_expiration > current_timestamp into success from withdrawals where id = a_id;;
+  select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;;
 
   if not success then
     return false;;
   end if;;
 
   -- check if a decision is already made
-  select user_confirmed or user_rejected into success from withdrawals where id = a_id;;
+  select user_confirmed or user_rejected into strict success from withdrawals where id = a_id;;
 
   if success then
     return false;;
   end if;;
 
   -- check if the token is correct
-  select confirmation_token = a_token into success from withdrawals where id = a_id;;
+  select confirmation_token = a_token into strict success from withdrawals where id = a_id;;
 
   if success then
     update withdrawals set user_confirmed = true where id = a_id;;
@@ -800,13 +743,6 @@ begin
   end if;;
 
   return false;;
-
--- make sure the id matches exactly one row
-exception
-  when NO_DATA_FOUND then
-    return false;;
-  when TOO_MANY_ROWS then
-    return false;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -819,21 +755,21 @@ declare
   success boolean default false;;
 begin
   -- check if the token is not issued yet (null) or is expired
-  select token_expiration is not null and token_expiration > current_timestamp into success from withdrawals where id = a_id;;
+  select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;;
 
   if not success then
     return false;;
   end if;;
 
   -- check if a decision is already made
-  select user_confirmed or user_rejected into success from withdrawals where id = a_id;;
+  select user_confirmed or user_rejected into strict success from withdrawals where id = a_id;;
 
   if success then
     return false;;
   end if;;
 
   -- check if the token is correct
-  select confirmation_token = a_token into success from withdrawals where id = a_id;;
+  select confirmation_token = a_token into strict success from withdrawals where id = a_id;;
 
   if success then
     update withdrawals set user_rejected = true where id = a_id;;
@@ -841,12 +777,6 @@ begin
   end if;;
 
   return false;;
--- make sure the id matches exactly one row
-exception
-  when NO_DATA_FOUND then
-    return false;;
-  when TOO_MANY_ROWS then
-    return false;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -1150,9 +1080,18 @@ $$ language sql volatile security definer set search_path = public, pg_temp cost
 create or replace function
 delete_expired_tokens (
 ) returns void as $$
+declare
+  w withdrawals%rowtype;;
 begin
-  -- TODO: return the money to the account
-  delete from withdrawals where token_expiration < current_timestamp and user_confirmed = false and user_rejected = false;;
+  for w in select * from withdrawals ww
+    where
+      ww.token_expiration < current_timestamp and
+      ww.user_confirmed = false and
+      ww.user_rejected = false
+  loop
+    perform withdrawal_delete(w.amount, w.user_id, w.currency, w.fee);;
+    delete from withdrawals where id = w.id;;
+  end loop;;
   delete from tokens where expiration < current_timestamp;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -1252,9 +1191,17 @@ get_addresses (
   out o_address varchar(34),
   out o_assigned timestamp
 ) returns setof record as $$
+declare
+  enabled boolean;;
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  select active into strict enabled from currencies_crypto where currency = a_currency;;
+
+  if enabled = false then
+    return;;
   end if;;
 
   update users_addresses set user_id = a_uid, assigned = current_timestamp
@@ -1272,7 +1219,11 @@ begin
       );;
 
   return query select address, assigned from users_addresses
-    where user_id = a_uid and currency = a_currency
+    where user_id = a_uid and currency = a_currency and node_id = any
+                                (
+                                  select node_id from wallets_crypto
+                                  where currency = a_currency and retired = false
+                                )
     order by assigned desc;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -1309,10 +1260,12 @@ begin
 
   return query
     select currency, address, assigned from users_addresses
-    where user_id = a_uid and currency = any
+    where user_id = a_uid and (currency, node_id) = any
                                 (
-                                  select currency
-                                  from currencies_crypto where active = true
+                                  select currency, node_id
+                                  from currencies_crypto inner join wallets_crypto
+                                  on currencies_crypto.currency = wallets_crypto.currency
+                                  where active = true and retired = false
                                 )
     order by assigned desc;;
 end;;
@@ -1604,11 +1557,10 @@ begin
     end if;;
   end if;;
 
-  insert into withdrawals (amount, user_id, currency, fee)
-    values (a_amount, a_uid, a_currency, (
+  select withdrawal_insert(a_amount, a_uid, a_currency, (
       select withdraw_constant + a_amount * withdraw_linear from dw_fees where currency = a_currency and method = 'blockchain'
     ))
-    returning withdrawals.id into w_id;;
+    into strict w_id;;
 
   insert into withdrawals_crypto (id, address)
     values (w_id, a_address) returning withdrawals_crypto.id into o_id;;
@@ -1622,12 +1574,10 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 drop function if exists create_user (varchar(256), text, bool) cascade;
 drop function if exists match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) cascade;
 drop function if exists transfer_funds(bigint, bigint, varchar(4), numeric(23,8)) cascade;
-drop function if exists user_insert() cascade;
-drop function if exists wallets_crypto_retire() cascade;
-drop function if exists currency_insert() cascade;
-drop function if exists withdrawal_insert() cascade;
-drop function if exists withdrawal_delete() cascade;
-drop function if exists deposit_complete() cascade;
+drop function if exists wallets_crypto_retire(varchar(4), integer) cascade;
+drop function if exists currency_insert(varchar(4), integer) cascade;
+drop function if exists withdrawal_insert(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
+drop function if exists withdrawal_delete(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists first_agg() cascade;
 drop function if exists last_agg() cascade;
 drop aggregate if exists first(anyelement);

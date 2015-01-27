@@ -34,6 +34,11 @@ object SQLText {
       |select * from get_node_info({currency}, {node_id})
     """.stripMargin)
 
+  val getBalance = SQL(
+    """
+      |select get_balance({currency}, {node_id})
+    """.stripMargin)
+
   val getLastBlockRead = SQL(
     """
       |select * from get_last_block_read({currency}, {node_id})
@@ -42,17 +47,17 @@ object SQLText {
   val setLastBlockRead = SQL(
     """
       |select set_last_block_read({currency}, {node_id},
-      |{block_count}, {last_withdrawal_time_received}, {balance})
+      |{block_count}, {last_withdrawal_time_received})
     """.stripMargin)
 
   val createDeposit = SQL(
     """
-      |select create_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash}, {fee})
+      |select create_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash})
     """.stripMargin)
 
   val createConfirmedDeposit = SQL(
     """
-      |select create_confirmed_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash}, {fee})
+      |select create_confirmed_deposit({currency}, {node_id}, {address}, {amount}, {tx_hash})
     """.stripMargin)
 
   val isConfirmedDeposit = SQL(
@@ -67,7 +72,7 @@ object SQLText {
 
   val confirmedDeposit = SQL(
     """
-      |select confirmed_deposit({id}, {address}, {tx_hash})
+      |select confirmed_deposit({id}, {address}, {tx_hash}, {node_id})
     """.stripMargin)
 
   val getUnconfirmedWithdrawalTx = SQL(
@@ -87,7 +92,7 @@ object SQLText {
 
   val sentWithdrawalTx = SQL(
     """
-      |select sent_withdrawal_tx({tx_id}, {tx_hash})
+      |select sent_withdrawal_tx({tx_id}, {tx_hash}, {tx_amount})
     """.stripMargin)
 
   val confirmedWithdrawalTx = SQL(

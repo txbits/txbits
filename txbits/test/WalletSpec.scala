@@ -90,6 +90,7 @@ class WalletSpec extends Specification with Mockito {
       walletModel.obtainSessionLock(any[CryptoCurrency], any[Int]) returns true
       walletModel.getMinConfirmations(any[CryptoCurrency]) returns ((true, 3, 3))
       walletModel.getNodeInfo(any[CryptoCurrency], any[Int]) returns ((false, BigDecimal(0), BigDecimal(0), BigDecimal(10000), BigDecimal(84000000)))
+      walletModel.getBalance(any[CryptoCurrency], any[Int]) returns BigDecimal(9999)
 
       // and we mock the deposit into the database
       walletModel.createConfirmedDeposit(any[CryptoCurrency], any[Int], any[Deposit]) answers { _ => true }
