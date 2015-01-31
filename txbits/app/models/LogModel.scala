@@ -39,21 +39,18 @@ object LogType extends Enumeration {
   }*/
 }
 
-case class LogEvent(uid: Option[Long], email: Option[String], ipv4: Option[Int], ipv6: Option[BigDecimal], browser_headers: Option[String], browser_id: Option[String], ssl_info: Option[String], created: Option[DateTime], typ: LogType)
-
-case class LoginEvent(uid: Option[Long], email: Option[String], ip: Option[String], created: Option[DateTime], typ: LogType)
-
-object LoginEvent {
-  implicit val writes = Json.writes[LoginEvent]
-}
+case class LogEvent(uid: Option[Long], email: Option[String], ip: Option[String], browser_headers: Option[String], browser_id: Option[String], ssl_info: Option[String], created: Option[DateTime], typ: LogType)
 
 object LogEvent {
   implicit val logEventWrites = Json.writes[LogEvent]
   def fromRequest(uid: Option[Long], email: Option[String], request: RequestHeader, typ: LogType) = {
-    val ipv4 = if (LogModel.isIpv4(request.remoteAddress)) Some(LogModel.ip4StrToInt(request.remoteAddress)) else None
-    val ipv6 = if (!LogModel.isIpv4(request.remoteAddress)) Some(LogModel.ip6StrToBigDecimal(request.remoteAddress)) else None
-    new LogEvent(uid, email, ipv4, ipv6, Some(Json.toJson(request.headers.toMap).toString()), None, None, None, typ)
+    LogEvent(uid, email, Some(LogModel.ipFromRequest(request)), Some(LogModel.headersFromRequest(request)), None, None, None, typ)
   }
+}
+case class LoginEvent(email: Option[String], ip: Option[String], created: Option[DateTime], typ: LogType)
+
+object LoginEvent {
+  implicit val writes = Json.writes[LoginEvent]
 }
 
 class LogModel(val db: String = "default") {
@@ -66,8 +63,7 @@ class LogModel(val db: String = "default") {
     frontend.newLog.on(
       'user_id -> logEvent.uid,
       'email -> logEvent.email,
-      'ipv4 -> logEvent.ipv4,
-      'ipv6 -> logEvent.ipv6,
+      'ip -> logEvent.ip,
       'browser_headers -> logEvent.browser_headers,
       'browser_id -> logEvent.browser_id,
       'ssl_info -> logEvent.ssl_info,
@@ -75,31 +71,28 @@ class LogModel(val db: String = "default") {
     ).execute()
   }
 
-  // Warning: make sure that we are not leaking information about other addresses if the user
-  // changes their email temporarily to make this query
   def getLoginEvents(uid: Long) = DB.withConnection(db) { implicit c =>
     frontend.loginLog.on(
       'user_id -> uid
-    )().map(row => {
-        val ip = if (row[Option[Int]]("ipv4").isDefined) {
-          Some(LogModel.ip4IntToStr(row[Option[Int]]("ipv4").get))
-        } else {
-          row[Option[BigDecimal]]("ipv6").map(ipv6 => LogModel.ip6BigDecimalToStr(ipv6))
-        }
-        val parsed = Json.parse(row[Option[String]]("browser_headers").getOrElse("{}"))
-        val proxies = parsed.\\("X-Forwarded-For")
-        new LoginEvent(row[Option[Long]]("user_id"),
-          row[Option[String]]("email"),
-          proxies.lastOption.fold(ip) { ip => ip.as[Seq[String]].headOption },
-          Some(row[DateTime]("created")),
-          LogType.withName(row[Option[String]]("type").getOrElse("other")))
-      }
+    )().map(row => LoginEvent(
+        row[Option[String]]("email"),
+        row[Option[String]]("ip"),
+        Some(row[DateTime]("created")),
+        LogType.withName(row[Option[String]]("type").getOrElse("other")))
       ).toList
   }
 
 }
 
 object LogModel {
+
+  def ipFromRequest(request: RequestHeader) = {
+    request.remoteAddress.takeWhile(c => c != '%')
+  }
+
+  def headersFromRequest(request: RequestHeader) = {
+    Json.toJson(request.headers.toMap).toString()
+  }
 
   def isIpv4(s: String) = {
     s.contains('.')

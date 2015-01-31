@@ -116,17 +116,18 @@ object frontend {
 
   val findUserByEmailAndPassword = SQL(
     """
-    | select * from find_user_by_email_and_password({email}, {password})
+    | select id, email, verification, on_mailing_list, tfa_enabled, pgp, active
+    | from find_user_by_email_and_password({email}, {password}, {browser_headers}, inet({ip}))
     |""".stripMargin)
 
   val totpLoginStep1 = SQL(
     """
-    | select totp_login_step1 as totp_hash from totp_login_step1({email}, {password})
+    | select totp_login_step1({email}, {password}, {browser_headers}, inet({ip}))
     |""".stripMargin)
 
   val totpLoginStep2 = SQL(
     """
-    | select * from totp_login_step2({email}, {totp_hash}, {totp_token})
+    | select * from totp_login_step2({email}, {totp_hash}, {totp_token}, {browser_headers}, inet({ip}))
     |""".stripMargin)
 
   val findToken = SQL(
@@ -151,7 +152,7 @@ object frontend {
 
   val newLog = SQL(
     """
-    | select * from new_log({user_id}, {browser_headers}, {email}, {ssl_info}, {browser_id}, {ipv4}, {type})
+    | select * from new_log({user_id}, {browser_headers}, {email}, {ssl_info}, {browser_id}, inet({ip}), {type})
     |""".stripMargin)
 
   val loginLog = SQL(

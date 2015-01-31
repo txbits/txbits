@@ -21,11 +21,12 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
   implicit val ec: ExecutionContext = system.dispatcher
 
   final val (active, minDepositConfirmations, minWithdrawalConfirmations) = walletModel.getMinConfirmations(currency)
+  final val minConfirmations = math.max(minDepositConfirmations, minWithdrawalConfirmations)
   final val (retired, balanceMin, balanceWarn, balanceTarget, balanceMax) = walletModel.getNodeInfo(currency, nodeId)
 
   private var (lastBlockRead, lastWithdrawalTimeReceived) = walletModel.getLastBlockRead(currency, nodeId) match {
-    case (lastBlock, withdrawalTimeReceived) if lastBlock > minDepositConfirmations => (lastBlock, withdrawalTimeReceived)
-    case (lastBlock, withdrawalTimeReceived) => (minDepositConfirmations, withdrawalTimeReceived)
+    case (lastBlock, withdrawalTimeReceived) if lastBlock > minConfirmations => (lastBlock, withdrawalTimeReceived)
+    case (lastBlock, withdrawalTimeReceived) => (minConfirmations, withdrawalTimeReceived)
   }
   private var firstUpdate = true
   private var changeAddressCount = 0
@@ -61,7 +62,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
     }
 
     // Retrieve transactions up to the minimum number of confirmations required
-    val lastBlockHash = getBlockHash(lastBlockRead - minDepositConfirmations)
+    val lastBlockHash = getBlockHash(lastBlockRead - minConfirmations)
     val list = listSinceBlock(lastBlockHash)
     val transactions = list.get("transactions")
     val transactionIterator = transactions.elements()
@@ -181,8 +182,8 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       //TODO: Notify that the wallet needs refilling
     }
 
-    // Subtract minDepositConfirmations as it could be decreased when actor is restarted
-    walletModel.setLastBlockRead(currency, nodeId, blockHeight - minDepositConfirmations, lastWithdrawalTimeReceived)
+    // Subtract minConfirmations as it could be decreased when actor is restarted
+    walletModel.setLastBlockRead(currency, nodeId, blockHeight - minConfirmations, lastWithdrawalTimeReceived)
     lastBlockRead = blockHeight
     firstUpdate = false
   }

@@ -95,10 +95,9 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
         val authenticator = SecureSocial.authenticatorFromRequest(request)
         if (authenticator.isDefined) {
           if (globals.userModel.userHasTotp(authenticator.get.email)) {
-            val user = globals.userModel.totpLoginStep2(authenticator.get.email, authenticator.get.totpSecret.get, tfaToken)
+            val user = globals.userModel.totpLoginStep2(authenticator.get.email, authenticator.get.totpSecret.get, tfaToken, models.LogModel.headersFromRequest(request), models.LogModel.ipFromRequest(request))
             if (user.isDefined) {
               Authenticator.save(authenticator.get.complete2fa(user.get.id))
-              globals.logModel.logEvent(LogEvent.fromRequest(Some(user.get.id), Some(user.get.email), request, LogType.LoginSuccess))
               Redirect(toUrl(request2session)).withSession(request2session - SecureSocial.OriginalUrlKey)
             } else {
               // form error
@@ -134,25 +133,20 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
             val email = credentials._1.trim
             var user: Option[SocialUser] = None
             var totp_hash: Option[String] = None
-            // make a decision
+            // check for 2FA
             if (globals.userModel.userHasTotp(email)) {
-              totp_hash = globals.userModel.totpLoginStep1(email, credentials._2)
+              totp_hash = globals.userModel.totpLoginStep1(email, credentials._2, models.LogModel.headersFromRequest(request), models.LogModel.ipFromRequest(request))
             } else {
-              user = globals.userModel.findUserByEmailAndPassword(email, credentials._2)
+              user = globals.userModel.findUserByEmailAndPassword(email, credentials._2, models.LogModel.headersFromRequest(request), models.LogModel.ipFromRequest(request))
             }
             if (totp_hash.isDefined) {
-              // TODO: move log to db
-              globals.logModel.logEvent(LogEvent.fromRequest(None, Some(email), request, LogType.LoginPartialSuccess))
               // create session
               val authenticator = Authenticator.create(None, totp_hash, email)
               Redirect(controllers.routes.LoginPage.tfaTOTP()).withSession(request2session).withCookies(authenticator.toCookie)
             } else if (user.isDefined) {
-              globals.logModel.logEvent(LogEvent.fromRequest(Some(user.get.id), Some(user.get.email), request, LogType.LoginSuccess))
               // create session
               completePasswordAuth(user.get.id, email)
             } else {
-              // TODO: move log to db
-              globals.logModel.logEvent(LogEvent.fromRequest(None, Some(email), request, LogType.LoginFailure))
               badRequest(UsernamePasswordProvider.loginForm, request, Some(InvalidCredentials))
             }
           }

@@ -118,56 +118,76 @@ class UserModel(val db: String = "default") {
     frontend.userHasTotp.on(
       'email -> email
     )().map(row =>
-        row[Boolean]("user_has_totp")
+        row[Option[Boolean]]("user_has_totp").getOrElse(false)
       ).head
   }
 
-  def totpLoginStep1(email: String, password: String): Option[String] = DB.withConnection(db) { implicit c =>
+  def totpLoginStep1(email: String, password: String, browserHeaders: String, ip: String): Option[String] = DB.withConnection(db) { implicit c =>
     frontend.totpLoginStep1.on(
       'email -> email,
-      'password -> password
+      'password -> password,
+      'browser_headers -> browserHeaders,
+      'ip -> ip
     )().map(row =>
-        row[String]("totp_hash")
-      ).headOption
+        row[Option[String]]("totp_login_step1")
+      ).head
   }
 
-  def totpLoginStep2(email: String, totpHash: String, totpToken: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
+  def totpLoginStep2(email: String, totpHash: String, totpToken: String, browserHeaders: String, ip: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
     frontend.totpLoginStep2.on(
       'email -> email,
       'totp_hash -> totpHash,
-      'totp_token -> safeToInt(totpToken)
-    )().map(row =>
-        if (row[Option[Long]]("id").isEmpty) {
-          None
-        } else {
-          Some(
-            new SocialUser(
-              row[Option[Long]]("id").get,
-              row[Option[String]]("email").get,
-              row[Option[Int]]("verification").get,
-              row[Option[Boolean]]("on_mailing_list").get,
-              row[Option[Boolean]]("tfa_enabled").get,
-              row[Option[String]]("pgp")
-            )
-          )
+      'totp_token -> safeToInt(totpToken),
+      'browser_headers -> browserHeaders,
+      'ip -> ip
+    )().map(row => (row[Option[Long]]("id"),
+        row[Option[String]]("email"),
+        row[Option[Int]]("verification"),
+        row[Option[Boolean]]("on_mailing_list"),
+        row[Option[Boolean]]("tfa_enabled"),
+        row[Option[String]]("pgp"),
+        row[Option[Boolean]]("active")) match {
+          case (Some(id: Long),
+            Some(email: String),
+            Some(verification: Int),
+            Some(on_mailing_list: Boolean),
+            Some(tfa_enabled: Boolean),
+            pgp: Option[String],
+            Some(active: Boolean)) =>
+            //TODO: Deny login to accounts with active set to false
+            Some(SocialUser(id, email, verification, on_mailing_list, tfa_enabled, pgp))
+          case _ =>
+            None
         }
       ).head
   }
 
-  def findUserByEmailAndPassword(email: String, password: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
+  def findUserByEmailAndPassword(email: String, password: String, browserHeaders: String, ip: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
     frontend.findUserByEmailAndPassword.on(
       'email -> email,
-      'password -> password
-    )().map(row =>
-        new SocialUser(
-          row[Long]("id"),
-          row[String]("email"),
-          row[Int]("verification"),
-          row[Boolean]("on_mailing_list"),
-          row[Boolean]("tfa_enabled"),
-          row[Option[String]]("pgp")
-        )
-      ).headOption
+      'password -> password,
+      'browser_headers -> browserHeaders,
+      'ip -> ip
+    )().map(row => (row[Option[Long]]("id"),
+        row[Option[String]]("email"),
+        row[Option[Int]]("verification"),
+        row[Option[Boolean]]("on_mailing_list"),
+        row[Option[Boolean]]("tfa_enabled"),
+        row[Option[String]]("pgp"),
+        row[Option[Boolean]]("active")) match {
+          case (Some(id: Long),
+            Some(email: String),
+            Some(verification: Int),
+            Some(on_mailing_list: Boolean),
+            Some(tfa_enabled: Boolean),
+            pgp: Option[String],
+            Some(active: Boolean)) =>
+            //TODO: Deny login to accounts with active set to false
+            Some(SocialUser(id, email, verification, on_mailing_list, tfa_enabled, pgp))
+          case _ =>
+            None
+        }
+      ).head
   }
 
   def tradeHistory(uid: Long) = DB.withConnection(db) { implicit c =>

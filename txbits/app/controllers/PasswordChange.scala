@@ -50,7 +50,7 @@ object PasswordChange extends Controller with SecureSocial {
   case class ChangeInfo(currentPassword: String, password: String)
 
   def checkCurrentPassword[A](currentPassword: String)(implicit request: SecuredRequest[A]): Boolean = {
-    globals.userModel.findUserByEmailAndPassword(request.user.email, currentPassword).isDefined
+    globals.userModel.findUserByEmailAndPassword(request.user.email, currentPassword, models.LogModel.headersFromRequest(request), models.LogModel.ipFromRequest(request)).isDefined
   }
 
   private def execute[A](f: (SecuredRequest[A], Form[ChangeInfo]) => Result)(implicit request: SecuredRequest[A]): Result = {
