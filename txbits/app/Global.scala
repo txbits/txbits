@@ -95,6 +95,12 @@ package object globals {
     case false => None
   }
 
+  // IPs are read from X-Forwarded-For when using a reverse proxy
+  val reverseProxy = Play.current.configuration.getBoolean("reverseproxy").get
+
+  // testnet
+  val fakeExchange = Play.current.configuration.getBoolean("fakeexchange").get
+
   // set up rpc authenticator for wallets
   val rpcAuth = DefaultAuthenticator.getInstance()
 
@@ -130,7 +136,7 @@ package object globals {
         case None => None
       }
       val coldAddress = Play.current.configuration.getString("wallet.%s.node.%s.coldAddress".format(currencyName, nodeId)) match {
-        case Some(address) if CryptoAddress.isValid(address, currency.toString, Play.current.configuration.getBoolean("fakeexchange").get) => Some(address)
+        case Some(address) if CryptoAddress.isValid(address, currency.toString, globals.fakeExchange) => Some(address)
         case Some(_) =>
           Logger.warn("Invalid cold storage address for %s wallet. Cold storage disabled.".format(currency)); None
         case None => None

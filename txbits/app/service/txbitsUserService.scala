@@ -26,7 +26,7 @@ object txbitsUserService {
 
     user_id match {
       case Some(id) => {
-        if (Play.current.configuration.getBoolean("fakeexchange").get) {
+        if (globals.fakeExchange) {
           //TODO: give fake money of every currency
           val freeMoney = 100
           globals.userModel.addFakeMoney(id, "USD", freeMoney)

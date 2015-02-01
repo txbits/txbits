@@ -57,7 +57,7 @@ class UserModel(val db: String = "default") {
   }
 
   def addFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
-    if (Play.current.configuration.getBoolean("fakeexchange").get) {
+    if (globals.fakeExchange) {
       try {
         frontend.addFakeMoney.on(
           'uid -> uid,
@@ -74,7 +74,7 @@ class UserModel(val db: String = "default") {
   }
 
   def subtractFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
-    if (Play.current.configuration.getBoolean("fakeexchange").get) {
+    if (globals.fakeExchange) {
       try {
         frontend.removeFakeMoney.on(
           'uid -> uid,
@@ -145,16 +145,13 @@ class UserModel(val db: String = "default") {
         row[Option[Int]]("verification"),
         row[Option[Boolean]]("on_mailing_list"),
         row[Option[Boolean]]("tfa_enabled"),
-        row[Option[String]]("pgp"),
-        row[Option[Boolean]]("active")) match {
+        row[Option[String]]("pgp")) match {
           case (Some(id: Long),
             Some(email: String),
             Some(verification: Int),
             Some(on_mailing_list: Boolean),
             Some(tfa_enabled: Boolean),
-            pgp: Option[String],
-            Some(active: Boolean)) =>
-            //TODO: Deny login to accounts with active set to false
+            pgp: Option[String]) =>
             Some(SocialUser(id, email, verification, on_mailing_list, tfa_enabled, pgp))
           case _ =>
             None
@@ -173,16 +170,13 @@ class UserModel(val db: String = "default") {
         row[Option[Int]]("verification"),
         row[Option[Boolean]]("on_mailing_list"),
         row[Option[Boolean]]("tfa_enabled"),
-        row[Option[String]]("pgp"),
-        row[Option[Boolean]]("active")) match {
+        row[Option[String]]("pgp")) match {
           case (Some(id: Long),
             Some(email: String),
             Some(verification: Int),
             Some(on_mailing_list: Boolean),
             Some(tfa_enabled: Boolean),
-            pgp: Option[String],
-            Some(active: Boolean)) =>
-            //TODO: Deny login to accounts with active set to false
+            pgp: Option[String]) =>
             Some(SocialUser(id, email, verification, on_mailing_list, tfa_enabled, pgp))
           case _ =>
             None
@@ -277,7 +271,9 @@ class UserModel(val db: String = "default") {
       'user_id -> id,
       'old_password -> oldPassword,
       'new_password -> newPassword
-    ).execute()
+    )().map(row =>
+        row[Boolean]("user_change_password")
+      ).head
   }
 
   def userResetPass(email: String, token: String, password: String) = DB.withConnection(db) { implicit c =>

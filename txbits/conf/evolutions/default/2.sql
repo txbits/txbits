@@ -496,7 +496,7 @@ begin
   end if;;
 
   select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
-  if password_tmp is not null and password_tmp != crypt(a_password, password_tmp) then
+  if not found or password_tmp != crypt(a_password, password_tmp) then
     return false;;
   end if;;
   return true;;
@@ -1062,9 +1062,10 @@ find_user_by_email_and_password_invoker (
 declare
   u_pass text;;
   u_id bigint;;
+  u_active boolean;;
   u_record users%rowtype;;
 begin
-  select u.id, p.password into u_id, u_pass from users u
+  select u.id, u.active, p.password into u_id, u_active, u_pass from users u
     inner join users_passwords p on p.user_id = u.id
     where lower(u.email) = lower(a_email)
     order by p.created desc
@@ -1075,7 +1076,7 @@ begin
     return null;;
   end if;;
 
-  if u_pass = crypt(a_password, u_pass) then
+  if u_active and u_pass = crypt(a_password, u_pass) then
     if a_totp_step1 then
       perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_partial_success');;
     else

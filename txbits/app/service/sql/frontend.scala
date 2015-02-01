@@ -46,7 +46,7 @@ object frontend {
 
   val userChangePassword = SQL(
     """
-    | select * from user_change_password({user_id}, {old_password}, {new_password})
+    | select user_change_password({user_id}, {old_password}, {new_password})
     |""".stripMargin)
 
   val userResetPasswordComplete = SQL(
