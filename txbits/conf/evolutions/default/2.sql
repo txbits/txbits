@@ -496,7 +496,7 @@ begin
   end if;;
 
   select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
-  if not found or password_tmp != crypt(a_password, password_tmp) then
+  if not found or a_password is null or password_tmp != crypt(a_password, password_tmp) then
     return false;;
   end if;;
   return true;;

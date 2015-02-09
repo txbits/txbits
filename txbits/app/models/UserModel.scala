@@ -57,7 +57,7 @@ class UserModel(val db: String = "default") {
   }
 
   def addFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
-    if (globals.fakeExchange) {
+    if (Play.current.configuration.getBoolean("fakeexchange").get) {
       try {
         frontend.addFakeMoney.on(
           'uid -> uid,
@@ -74,7 +74,7 @@ class UserModel(val db: String = "default") {
   }
 
   def subtractFakeMoney(uid: Long, currency: String, amount: BigDecimal) = DB.withConnection(db) { implicit c =>
-    if (globals.fakeExchange) {
+    if (Play.current.configuration.getBoolean("fakeexchange").get) {
       try {
         frontend.removeFakeMoney.on(
           'uid -> uid,

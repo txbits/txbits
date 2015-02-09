@@ -87,7 +87,7 @@ class LogModel(val db: String = "default") {
 object LogModel {
 
   def ipFromRequest(request: RequestHeader) = {
-    if (globals.reverseProxy) {
+    if (Play.current.configuration.getBoolean("reverseproxy").get) {
       // remoteAddress will always be 127.0.0.1 when running behind a reverse proxy
       // Must read the user's IP address from the X-Forwarded-For header
       Json.toJson(request.headers.toMap).\\("X-Forwarded-For").lastOption.toString

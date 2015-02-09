@@ -304,7 +304,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     ) yield {
       val tfa_code = (body \ "tfa_code").asOpt[String]
 
-      if (CryptoAddress.isValid(address, currency, globals.fakeExchange)) {
+      if (CryptoAddress.isValid(address, currency, Play.current.configuration.getBoolean("fakeexchange").get)) {
         try {
           val res = globals.engineModel.withdraw(request.user.id, currency, amount, address, tfa_code)
           if (res.isDefined) {
