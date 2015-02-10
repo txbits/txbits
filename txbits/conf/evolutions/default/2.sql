@@ -496,7 +496,7 @@ begin
   end if;;
 
   select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
-  if password_tmp is not null and password_tmp != crypt(a_password, password_tmp) then
+  if not found or a_password is null or password_tmp != crypt(a_password, password_tmp) then
     return false;;
   end if;;
   return true;;
@@ -986,79 +986,109 @@ $$ language sql volatile security definer set search_path = public, pg_temp cost
 create or replace function
 totp_login_step1 (
   a_email varchar(256),
-  a_password text
+  a_password text,
+  a_browser_headers text,
+  a_ip inet
 ) returns text as $$
 declare
   u users%rowtype;;
   sec text;;
 begin
-  select * into u from find_user_by_email_and_password_invoker(a_email, a_password);;
+  select * into u from find_user_by_email_and_password_invoker(a_email, a_password, a_browser_headers, a_ip, true);;
   if u is null then
     return null;;
   end if;;
 
-  select tfa_secret into sec from users_tfa_secrets where user_id = u.id order by created desc limit 1;;
+  select tfa_secret into strict sec from users_tfa_secrets where user_id = u.id order by created desc limit 1;;
   return crypt(sec, gen_salt('bf', 8));;
 end;;
-$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
 
 -- null on failure
 create or replace function
 totp_login_step2 (
   a_email varchar(256),
   a_secret_hash text,
-  a_tfa_code int
+  a_tfa_code int,
+  a_browser_headers text,
+  a_ip inet
 ) returns users as $$
 declare
   u users%rowtype;;
   matched boolean;;
 begin
-  select * from users where email = a_email into u;;
+  select * into strict u from users where lower(email) = lower(a_email);;
 
   select a_secret_hash = crypt(tfa_secret, a_secret_hash) into matched from users_tfa_secrets where user_id = u.id order by created desc limit 1;;
-  if not matched then
+  if not matched or matched is null then
     raise 'Internal error. Invalid secret hash.';;
   end if;;
 
   if user_totp_check(u.id, a_tfa_code) then
+    perform new_log(u.id, a_browser_headers, a_email, null, null, a_ip, 'login_success');;
     return u;;
   else
+    perform new_log(u.id, a_browser_headers, a_email, null, null, a_ip, 'login_failure');;
     return null;;
   end if;;
 end;;
-$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 find_user_by_email_and_password (
   a_email varchar(256),
-  a_password text
-) returns setof users as $$
+  a_password text,
+  a_browser_headers text,
+  a_ip inet
+) returns users as $$
 declare
-  enabled boolean;;
 begin
   if user_has_totp(a_email) then
     raise 'Internal error. Cannot find user by email and password if totp is enabled.';;
   end if;;
 
-  return query select * from find_user_by_email_and_password_invoker(a_email, a_password);;
+  return find_user_by_email_and_password_invoker(a_email, a_password, a_browser_headers, a_ip, false);;
 end;;
-$$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 find_user_by_email_and_password_invoker (
   a_email varchar(256),
-  a_password text
-) returns setof users as $$
+  a_password text,
+  a_browser_headers text,
+  a_ip inet,
+  a_totp_step1 boolean
+) returns users as $$
 declare
-  pass text;;
+  u_pass text;;
+  u_id bigint;;
+  u_active boolean;;
+  u_record users%rowtype;;
 begin
-  select p.password into pass from users as u
-    inner join users_passwords as p on p.user_id = u.id
+  select u.id, u.active, p.password into u_id, u_active, u_pass from users u
+    inner join users_passwords p on p.user_id = u.id
     where lower(u.email) = lower(a_email)
     order by p.created desc
     limit 1;;
 
-  return query select * from users where email = a_email and pass = crypt(a_password, pass);;
+  if not found then
+    perform new_log(null, a_browser_headers, a_email, null, null, a_ip, 'login_failure');;
+    return null;;
+  end if;;
+
+  if u_active and u_pass = crypt(a_password, u_pass) then
+    if a_totp_step1 then
+      perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_partial_success');;
+    else
+      perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_success');;
+    end if;;
+
+    select * into strict u_record from users where id = u_id;;
+    return u_record;;
+  end if;;
+
+  perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_failure');;
+  return null;;
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
@@ -1129,15 +1159,15 @@ new_log (
   a_email varchar(256),
   a_ssl_info text,
   a_browser_id text,
-  a_ipv4 int,
+  a_ip inet,
   a_type text
 ) returns void as $$
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  insert into event_log (user_id, email, ipv4, browser_headers, browser_id, ssl_info, type)
-  values (a_uid, a_email, a_ipv4, a_browser_headers, a_browser_id, a_ssl_info, a_type);;
+  insert into event_log (user_id, email, ip, browser_headers, browser_id, ssl_info, type)
+  values (a_uid, a_email, a_ip, a_browser_headers, a_browser_id, a_ssl_info, a_type);;
   return;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -1145,17 +1175,20 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 login_log (
   a_uid bigint,
-  out event_log
-) returns setof event_log as $$
+  out email varchar(256),
+  out ip text,
+  out created timestamp,
+  out type text
+) returns setof record as $$
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  return query select *
-  from event_log
-  where type in ('login_success', 'login_failure', 'logout', 'session_expired')
-    and user_id = a_uid
-  order by created desc;;
+  return query select e.email, host(e.ip), e.created, e.type
+  from event_log e
+  where e.type in ('login_success', 'login_failure', 'logout', 'session_expired')
+    and e.user_id = a_uid
+  order by e.created desc;;
 end;;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
@@ -1578,6 +1611,7 @@ drop function if exists wallets_crypto_retire(varchar(4), integer) cascade;
 drop function if exists currency_insert(varchar(4), integer) cascade;
 drop function if exists withdrawal_insert(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists withdrawal_delete(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
+drop function if exists find_user_by_email_and_password_invoker(varchar(256), text, text, inet, bool) cascade;
 drop function if exists first_agg() cascade;
 drop function if exists last_agg() cascade;
 drop aggregate if exists first(anyelement);
@@ -1607,13 +1641,15 @@ drop function if exists user_exists (bigint) cascade;
 drop function if exists user_has_totp (bigint) cascade;
 drop function if exists user_add_pgp (bigint, text, int, text) cascade;
 drop function if exists user_remove_pgp (bigint, text, int) cascade;
-drop function if exists find_user_by_email_and_password (varchar(256), text) cascade;
+drop function if exists totp_login_step1 (varchar(256), text, text, inet) cascade;
+drop function if exists totp_login_step2 (varchar(256), text, int, text, inet) cascade;
+drop function if exists find_user_by_email_and_password (varchar(256), text, text, inet) cascade;
 drop function if exists find_token (varchar(256)) cascade;
 drop function if exists delete_token (varchar(256)) cascade;
 drop function if exists delete_expired_tokens () cascade;
 drop function if exists totp_token_is_blacklisted (bigint, bigint) cascade;
 drop function if exists delete_expired_totp_blacklist_tokens () cascade;
-drop function if exists new_log (bigint, text, varchar(256), text, text, int, text) cascade;
+drop function if exists new_log (bigint, text, varchar(256), text, text, inet, text) cascade;
 drop function if exists login_log (bigint) cascade;
 drop function if exists balance (bigint) cascade;
 drop function if exists get_required_confirmations () cascade;

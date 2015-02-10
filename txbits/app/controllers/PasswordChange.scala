@@ -49,15 +49,10 @@ object PasswordChange extends Controller with SecureSocial {
 
   case class ChangeInfo(currentPassword: String, password: String)
 
-  def checkCurrentPassword[A](currentPassword: String)(implicit request: SecuredRequest[A]): Boolean = {
-    globals.userModel.findUserByEmailAndPassword(request.user.email, currentPassword).isDefined
-  }
-
   private def execute[A](f: (SecuredRequest[A], Form[ChangeInfo]) => Result)(implicit request: SecuredRequest[A]): Result = {
     val form = Form[ChangeInfo](
       mapping(
-        CurrentPassword -> nonEmptyText.verifying(
-          Messages(InvalidPasswordMessage), checkCurrentPassword(_)),
+        CurrentPassword -> nonEmptyText.verifying(),
         Password ->
           tuple(
             Password1 -> nonEmptyText.verifying(PasswordValidator.validator),
@@ -83,9 +78,13 @@ object PasswordChange extends Controller with SecureSocial {
         info => {
           import scala.language.reflectiveCalls
           // This never actually fails because we already checked that the password is valid in the validators
-          globals.userModel.userChangePass(request.user.id, info.currentPassword, info.password)
-          Mailer.sendPasswordChangedNotice(request.user.email, globals.userModel.userPgpByEmail(request.user.email))(request)
-          Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
+          if (globals.userModel.userChangePass(request.user.id, info.currentPassword, info.password)) {
+            Mailer.sendPasswordChangedNotice(request.user.email, globals.userModel.userPgpByEmail(request.user.email))(request)
+            Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
+          } else {
+            //TODO: Show an error with Messages(InvalidPasswordMessage)
+            BadRequest(SecureSocialTemplates.getPasswordChangePage(request, form))
+          }
         }
       )
     }

@@ -186,12 +186,14 @@ begin
         d.currency,
         d.amount
       );;
-      perform transfer_funds(
-        d.user_id,
-        0,
-        d.currency,
-        d.fee
-      );;
+      if d.fee > 0 then
+        perform transfer_funds(
+          d.user_id,
+          0,
+          d.currency,
+          d.fee
+        );;
+      end if;;
     end if;;
   end if;;
 end;;

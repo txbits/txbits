@@ -35,8 +35,8 @@ create table users (
     id bigint primary key,
     created timestamp default current_timestamp not null,
     email varchar(256) not null,
-    on_mailing_list bool default false,
-    tfa_enabled bool default false,
+    on_mailing_list bool default false not null,
+    tfa_enabled bool default false not null,
     verification int default 0 not null,
     pgp text,
     active bool default true not null
@@ -87,8 +87,7 @@ create table event_log (
     created timestamp default current_timestamp not null,
     email varchar(256),
     user_id bigint,
-    ipv4 integer,
-    ipv6 numeric(40),
+    ip inet,
     browser_headers text, -- these can be parsed later to produce country info
     browser_id text, -- result of deanonymization
     ssl_info text, -- what ciphers were offered, what cipher was accepted, etc.
