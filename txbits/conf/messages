@@ -85,7 +85,9 @@ exchange.account.api_keys.trade_history=Trade History
 exchange.account.api_keys.list_balance=List Balance
 exchange.account.api_keys.permissions=Permissions
 exchange.account.api_keys.delete=Delete
+exchange.account.api_keys.delete.modal.title=Delete API key
 exchange.account.api_keys.save=Save
+exchange.account.api_keys.save.modal.title=Save API key permissions
 
 tfa.on.title=Enable 2FA
 tfa.off.title=Disable 2FA

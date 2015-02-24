@@ -695,7 +695,7 @@ begin
   select tfa_enabled into strict enabled from users where id = a_id;;
 
   if enabled then
-    if user_totp_check(a_id, a_tfa_code) = false then
+    if user_totp_check(a_id, a_totp) = false then
       return false;;
     end if;;
   end if;;
@@ -723,7 +723,7 @@ begin
   select tfa_enabled into strict enabled from users where id = a_id;;
 
   if enabled then
-    if user_totp_check(a_id, a_tfa_code) = false then
+    if user_totp_check(a_id, a_totp) = false then
       return false;;
     end if;;
   end if;;

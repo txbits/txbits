@@ -176,43 +176,81 @@ $(function(){
                     api_keys[i].list_balance = api_keys[i].list_balance ? "checked" : "";
                 }
 
-                $('#api-keys').html(api_keys_template(api_keys)).find('.api-key-delete').click(function(){
-                    var $this = $(this);
-                    var id = $this.attr('api-key-id');
-                    var key = api_keys[id].api_key;
-                    var tfa_code = "";
-                    API.disable_api_key(tfa_code, key).success(function(){
-                        $.pnotify({
-                            title: 'API key disabled.',
-                            text: 'API key disabled successfully.',
-                            styling: 'bootstrap',
-                            type: 'success',
-                            text_escape: true
-                        });
-                        reload();
-                    });
-                });
+                $('#api-keys').html(api_keys_template(api_keys));
 
-                $('#api-keys').find('.api-key-save').click(function(){
-                    var $this = $(this);
-                    var id = $this.attr('api-key-id');
-                    var key = api_keys[id].api_key;
-                    var tfa_code = "";
-                    var $row = $(this).parent().parent();
-                    var trading = $row.find('.api-key-trading').is(':checked');
-                    var trade_history = $row.find('.api-key-trade-history').is(':checked');
-                    var list_balance = $row.find('.api-key-list-balance').is(':checked');
-                    API.update_api_key(tfa_code, key, trading, trade_history, list_balance).success(function(){
-                        $.pnotify({
-                            title: 'API key updated.',
-                            text: 'API key updated successfully.',
-                            styling: 'bootstrap',
-                            type: 'success',
-                            text_escape: true
+                function mk_del(tfa_code_ele, alt_this){
+                    function del(e){
+                        e.preventDefault();
+                        var $this = $(this);
+                        var id = $this.attr('api-key-id');
+                        var key = api_keys[id].api_key;
+                        var tfa_code = tfa_code_ele ? tfa_code_ele.val() : '';
+                        API.disable_api_key(tfa_code, key).success(function(){
+                            $.pnotify({
+                                title: 'API key disabled.',
+                                text: 'API key disabled successfully.',
+                                styling: 'bootstrap',
+                                type: 'success',
+                                text_escape: true
+                            });
+                            reload();
+                            $('#tfa-api-keys-delete-modal').modal('hide');
                         });
-                        reload();
+                    }
+                    if (alt_this) {
+                        return del.bind(alt_this);
+                    } else {
+                        return del;
+                    }
+                }
+
+                function mk_update(tfa_code_ele, alt_this){
+                    function update(e){
+                        e.preventDefault();
+                        var $this = $(this);
+                        var id = $this.attr('api-key-id');
+                        var key = api_keys[id].api_key;
+                        var $row = $(this).parent().parent();
+                        var trading = $row.find('.api-key-trading').is(':checked');
+                        var trade_history = $row.find('.api-key-trade-history').is(':checked');
+                        var list_balance = $row.find('.api-key-list-balance').is(':checked');
+                        var tfa_code = tfa_code_ele ? tfa_code_ele.val() : '';
+                        API.update_api_key(tfa_code, key, trading, trade_history, list_balance).success(function(){
+                            $.pnotify({
+                                title: 'API key updated.',
+                                text: 'API key updated successfully.',
+                                styling: 'bootstrap',
+                                type: 'success',
+                                text_escape: true
+                            });
+                            reload();
+                            $('#tfa-api-keys-save-modal').modal('hide');
+                        });
+                    }
+                    if (alt_this) {
+                        return update.bind(alt_this);
+                    } else {
+                        return update;
+                    }
+                }
+
+                if (user.TFAEnabled) {
+                    $('#api-keys').find('.api-key-delete').click(function(){
+                        $('#tfa-api-keys-delete-modal').find('.code').val('');
+                        $('#tfa-api-keys-delete-modal').modal();
+                        $('#tfa-api-keys-delete-modal').find('.btn-primary').off('click').click(mk_del($('#tfa-api-keys-delete-modal').find('.code'), this));
+                        $('#tfa-api-keys-delete-modal').find('form').off('submit').submit(mk_del($('#tfa-api-keys-delete-modal').find('.code'), this));
                     });
-                });
+                    $('#api-keys').find('.api-key-save').click(function(){
+                        $('#tfa-api-keys-save-modal').find('.code').val('');
+                        $('#tfa-api-keys-save-modal').modal();
+                        $('#tfa-api-keys-save-modal').find('.btn-primary').off('click').click(mk_update($('#tfa-api-keys-save-modal').find('.code'), this));
+                        $('#tfa-api-keys-save-modal').find('form').off('submit').submit(mk_update($('#tfa-api-keys-save-modal').find('.code'), this));
+                    });
+                } else {
+                    $('#api-keys').find('.api-key-delete').click(mk_del());
+                    $('#api-keys').find('.api-key-save').click(mk_update());
+                }
 
             });
         });
