@@ -171,12 +171,12 @@ $(function(){
                 for (i = 0; i < api_keys.length; i++){
                     api_keys[i].api_key_id = i;
                     api_keys[i].created = moment(Number(api_keys[i].created)).format("YYYY-MM-DD HH:mm:ss");
-                    api_keys[i].trading = api_keys[i].trading == "true" ? "checked" : "";
-                    api_keys[i].trade_history = api_keys[i].trade_history == "true" ? "checked" : "";
-                    api_keys[i].list_balance = api_keys[i].list_balance == "true" ? "checked" : "";
+                    api_keys[i].trading = api_keys[i].trading ? "checked" : "";
+                    api_keys[i].trade_history = api_keys[i].trade_history ? "checked" : "";
+                    api_keys[i].list_balance = api_keys[i].list_balance ? "checked" : "";
                 }
 
-                $('#api-keys').html(api_keys_template(api_keys)).find('.btn-danger').click(function(){
+                $('#api-keys').html(api_keys_template(api_keys)).find('.api-key-delete').click(function(){
                     var $this = $(this);
                     var id = $this.attr('api-key-id');
                     var key = api_keys[id].api_key;
@@ -185,6 +185,27 @@ $(function(){
                         $.pnotify({
                             title: 'API key disabled.',
                             text: 'API key disabled successfully.',
+                            styling: 'bootstrap',
+                            type: 'success',
+                            text_escape: true
+                        });
+                        reload();
+                    });
+                });
+
+                $('#api-keys').find('.api-key-save').click(function(){
+                    var $this = $(this);
+                    var id = $this.attr('api-key-id');
+                    var key = api_keys[id].api_key;
+                    var tfa_code = "";
+                    var $row = $(this).parent().parent();
+                    var trading = $row.find('.api-key-trading').is(':checked');
+                    var trade_history = $row.find('.api-key-trade-history').is(':checked');
+                    var list_balance = $row.find('.api-key-list-balance').is(':checked');
+                    API.update_api_key(tfa_code, key, trading, trade_history, list_balance).success(function(){
+                        $.pnotify({
+                            title: 'API key updated.',
+                            text: 'API key updated successfully.',
                             styling: 'bootstrap',
                             type: 'success',
                             text_escape: true

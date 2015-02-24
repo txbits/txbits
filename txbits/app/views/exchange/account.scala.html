@@ -253,13 +253,13 @@
             <table class="table table-condensed responsive tablescroller-head">
                 <thead>
                     <tr>
-                        <th>@Messages("terminology.time")</th>
+                        <th>@Messages("terminology.created")</th>
                         <th>@Messages("exchange.account.api_keys.api_key")</th>
                         <th>@Messages("exchange.account.api_keys.trading")</th>
                         <th>@Messages("exchange.account.api_keys.trade_history")</th>
                         <th>@Messages("exchange.account.api_keys.list_balance")</th>
                         <th class="money-heading">@Messages("exchange.account.api_keys.permissions")</th>
-                        <th class="money-heading">@Messages("exchange.account.api_keys.disable")</th>
+                        <th class="money-heading">@Messages("exchange.account.api_keys.delete")</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -267,11 +267,11 @@
                     <tr>
                         <td>{{created}}</td>
                         <td>{{api_key}}</td>
-                        <td><input type="checkbox" id="api-key-trading" {{trading}}></td>
-                        <td><input type="checkbox" id="api-key-trade-history" {{trade_history}}></td>
-                        <td><input type="checkbox" id="api-key-list-balance" {{list_balance}}></td>
-                        <td><a class="btn btn-success btn-xs pull-right" id="api-key-update" api-key-id="{{api_key_id}}">@Messages("exchange.account.api_keys.save")</a></td>
-                        <td><a class="btn btn-danger btn-xs pull-right" id="api-key-disable" api-key-id="{{api_key_id}}">@Messages("exchange.account.api_keys.delete")</a></td>
+                        <td><input type="checkbox" class="api-key-trading" {{trading}}></td>
+                        <td><input type="checkbox" class="api-key-trade-history" {{trade_history}}></td>
+                        <td><input type="checkbox" class="api-key-list-balance" {{list_balance}}></td>
+                        <td><a class="btn btn-success btn-xs pull-right api-key-save" api-key-id="{{api_key_id}}">@Messages("exchange.account.api_keys.save")</a></td>
+                        <td><a class="btn btn-danger btn-xs pull-right api-key-delete" api-key-id="{{api_key_id}}">@Messages("exchange.account.api_keys.delete")</a></td>
                     </tr>
                     {{/each}}
                 </tbody>
