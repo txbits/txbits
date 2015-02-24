@@ -152,7 +152,7 @@ $(function(){
                 e.preventDefault();
             });
 
-            $('#add-api-key').click(function(e){
+            $('#add-api-key').off('click').click(function(e){
                 API.add_api_key().success(function(){
                     $.pnotify({
                         title: 'API key added',
