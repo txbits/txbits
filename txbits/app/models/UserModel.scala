@@ -31,7 +31,7 @@ object DepositWithdrawHistory {
   implicit val format = Json.format[DepositWithdrawHistory]
 }
 
-case class ApiKey(api_key: String, created: DateTime, trading: Boolean, trade_history: Boolean, list_balance: Boolean)
+case class ApiKey(api_key: String, comment: String, created: DateTime, trading: Boolean, trade_history: Boolean, list_balance: Boolean)
 
 object ApiKey {
   implicit val writes = Json.writes[ApiKey]
@@ -406,11 +406,12 @@ class UserModel(val db: String = "default") {
     frontend.userAddApiKey.on('uid -> uid).execute()
   }
 
-  def updateApiKey(uid: Long, tfa_code: Option[String], apiKey: String, trading: Boolean, tradeHistory: Boolean, listBalance: Boolean) = DB.withConnection(db) { implicit c =>
+  def updateApiKey(uid: Long, tfa_code: Option[String], apiKey: String, comment: String, trading: Boolean, tradeHistory: Boolean, listBalance: Boolean) = DB.withConnection(db) { implicit c =>
     frontend.userUpdateApiKey.on(
       'uid -> uid,
       'tfa_code -> optStrToInt(tfa_code),
       'api_key -> apiKey,
+      'comment -> comment,
       'trading -> trading,
       'trade_history -> tradeHistory,
       'list_balance -> listBalance
@@ -432,6 +433,7 @@ class UserModel(val db: String = "default") {
   def getApiKeys(uid: Long) = DB.withConnection(db) { implicit c =>
     frontend.userGetApiKeys.on('uid -> uid)().map(row => ApiKey(
       row[String]("api_key"),
+      row[String]("comment"),
       row[DateTime]("created"),
       row[Boolean]("trading"),
       row[Boolean]("trade_history"),

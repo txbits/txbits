@@ -54,6 +54,7 @@ create table users_passwords (
 create table users_api_keys (
     user_id bigint not null,
     api_key text not null unique check(length(api_key) = 24), -- 18 bytes in base64
+    comment text not null default '',
     created timestamp default current_timestamp not null,
     active bool default true not null,
     trading bool default false not null,

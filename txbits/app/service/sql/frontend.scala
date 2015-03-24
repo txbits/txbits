@@ -51,7 +51,7 @@ object frontend {
 
   val userUpdateApiKey = SQL(
     """
-    | select update_api_key as success from update_api_key({uid}, {tfa_code}, {api_key}, {trading}, {trade_history}, {list_balance})
+    | select update_api_key as success from update_api_key({uid}, {tfa_code}, {api_key}, {comment}, {trading}, {trade_history}, {list_balance})
     """.stripMargin)
 
   val userDisableApiKey = SQL(

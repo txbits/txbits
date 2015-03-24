@@ -203,10 +203,10 @@ var API;
             });
         }),
 
-        update_api_key: APIWrap(function(code, api_key, trading, trade_history, list_balance) {
+        update_api_key: APIWrap(function(code, api_key, comment, trading, trade_history, list_balance) {
             return $.ajax(prefix+'update_api_key', {
                 type: 'POST',
-                data: JSON.stringify({tfa_code: code, api_key: api_key, trading: trading, trade_history: trade_history, list_balance: list_balance}),
+                data: JSON.stringify({tfa_code: code, api_key: api_key, comment: comment, trading: trading, trade_history: trade_history, list_balance: list_balance}),
                 dataType: 'json',
                 contentType: 'application/json'
             });

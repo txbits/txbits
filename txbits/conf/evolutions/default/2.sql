@@ -681,6 +681,7 @@ update_api_key (
   a_id bigint,
   a_totp int,
   a_api_key text,
+  a_comment text,
   a_trading bool,
   a_trade_history bool,
   a_list_balance bool
@@ -701,7 +702,7 @@ begin
   end if;;
 
   update users_api_keys set trading = a_trading,
-  trade_history = a_trade_history, list_balance = a_list_balance
+  trade_history = a_trade_history, list_balance = a_list_balance, comment = a_comment
   where user_id = a_id and api_key = a_api_key and active = true;;
   return true;;
 end;;
@@ -738,6 +739,7 @@ create or replace function
 get_api_keys (
   a_id bigint,
   out api_key text,
+  out comment text,
   out created timestamp,
   out trading boolean,
   out trade_history boolean,
@@ -748,7 +750,7 @@ begin
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
 
-  return query select uak.api_key, uak.created, uak.trading, uak.trade_history, uak.list_balance
+  return query select uak.api_key, uak.comment, uak.created, uak.trading, uak.trade_history, uak.list_balance
   from users_api_keys uak where user_id = a_id and active = true;;
 end;;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
@@ -1792,7 +1794,7 @@ drop function if exists user_change_password (bigint, text, text) cascade;
 drop function if exists trusted_action_start (varchar(256)) cascade;
 drop function if exists user_reset_password_complete (varchar(256), varchar(256), text) cascade;
 drop function if exists add_api_key (bigint) cascade;
-drop function if exists update_api_key (bigint, int, text, bool, bool, bool) cascade;
+drop function if exists update_api_key (bigint, int, text, text, bool, bool, bool) cascade;
 drop function if exists disable_api_key (bigint, int, text) cascade;
 drop function if exists get_api_keys (bigint) cascade;
 drop function if exists turnon_tfa (bigint, bigint, text) cascade;

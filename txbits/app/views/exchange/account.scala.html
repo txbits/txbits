@@ -255,6 +255,7 @@
                     <tr>
                         <th>@Messages("terminology.created")</th>
                         <th>@Messages("exchange.account.api_keys.api_key")</th>
+                        <th>@Messages("exchange.account.api_keys.comment")</th>
                         <th>@Messages("exchange.account.api_keys.trading")</th>
                         <th>@Messages("exchange.account.api_keys.trade_history")</th>
                         <th>@Messages("exchange.account.api_keys.list_balance")</th>
@@ -267,6 +268,7 @@
                     <tr>
                         <td>{{created}}</td>
                         <td>{{api_key}}</td>
+                        <td><input type="text" value="{{comment}}" class="api-key-comment"></td>
                         <td><input type="checkbox" class="api-key-trading" {{trading}}></td>
                         <td><input type="checkbox" class="api-key-trade-history" {{trade_history}}></td>
                         <td><input type="checkbox" class="api-key-list-balance" {{list_balance}}></td>

@@ -80,6 +80,7 @@ securesocial.signup.mailinglist=Receive updates about new features and changes t
 
 exchange.account.api_keys.title=API Keys
 exchange.account.api_keys.api_key=API Key
+exchange.account.api_keys.comment=Comment
 exchange.account.api_keys.trading=Trading
 exchange.account.api_keys.trade_history=Trade History
 exchange.account.api_keys.list_balance=List Balance

@@ -211,11 +211,12 @@ $(function(){
                         var id = $this.attr('api-key-id');
                         var key = api_keys[id].api_key;
                         var $row = $(this).parent().parent();
+                        var comment = $row.find('.api-key-comment').val();
                         var trading = $row.find('.api-key-trading').is(':checked');
                         var trade_history = $row.find('.api-key-trade-history').is(':checked');
                         var list_balance = $row.find('.api-key-list-balance').is(':checked');
                         var tfa_code = tfa_code_ele ? tfa_code_ele.val() : '';
-                        API.update_api_key(tfa_code, key, trading, trade_history, list_balance).success(function(){
+                        API.update_api_key(tfa_code, key, comment, trading, trade_history, list_balance).success(function(){
                             $.pnotify({
                                 title: 'API key updated.',
                                 text: 'API key updated successfully.',

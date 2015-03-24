@@ -306,7 +306,8 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     val trading = (request.request.body \ "trading").validate[Boolean].get
     val tradeHistory = (request.request.body \ "trade_history").validate[Boolean].get
     val listBalance = (request.request.body \ "list_balance").validate[Boolean].get
-    if (globals.userModel.updateApiKey(request.user.id, tfa_code, apiKey, trading, tradeHistory, listBalance)) {
+    val comment = (request.request.body \ "comment").validate[String].get
+    if (globals.userModel.updateApiKey(request.user.id, tfa_code, apiKey, comment, trading, tradeHistory, listBalance)) {
       Ok(Json.obj())
     } else {
       BadRequest(Json.obj("message" -> "Failed to update API key."))
