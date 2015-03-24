@@ -5,6 +5,9 @@
 import com.googlecode.jsonrpc4j.JsonRpcHttpClient
 import controllers.IAPI.CryptoAddress
 import java.net.{ PasswordAuthentication, URL }
+import java.net.{ PasswordAuthentication, Authenticator, URL }
+import play.api.db.DB
+import play.api.mvc.Result
 import play.api.Play.current
 import play.filters.csrf.CSRFFilter
 import play.filters.headers.SecurityHeadersFilter
@@ -17,6 +20,7 @@ import play.api.libs.json.Json
 import play.libs.Akka
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
+import service.sql.misc
 import service.txbitsUserService
 import usertrust.{ UserTrustModel, UserTrustService }
 import wallet.{ WalletModel, Wallet }
@@ -25,6 +29,12 @@ package object globals {
   val masterDB = "default"
   val masterDBWallet = "wallet"
   val masterDBTrusted = "trust"
+
+  if (Play.current.configuration.getBoolean("meta.devdb").getOrElse(false)) {
+    DB.withConnection(globals.masterDB)({ implicit c =>
+      misc.devdb.execute()
+    })
+  }
 
   val userModel = new UserModel(masterDB)
   val metaModel = new MetaModel(masterDB)
