@@ -228,7 +228,7 @@ create table deposits (
     user_id bigint not null,
     currency varchar(4) not null,
     fee numeric(23,8) not null check(fee >= 0),
-    unique(amount, id), -- for foreign key constraint on deposits_crypto
+    unique(id, amount), -- for foreign key constraint on deposits_crypto
     foreign key (currency) references currencies(currency),
     foreign key (user_id) references users(id)
 );
@@ -240,7 +240,7 @@ create table deposits_crypto (
     address varchar(34) not null,
     confirmed timestamp,
     unique(address, tx_hash, amount),
-    foreign key (amount, id) references deposits(amount, id),
+    foreign key (id, amount) references deposits(id, amount),
     foreign key (address) references users_addresses(address),
     foreign key (id) references deposits(id)
 );
@@ -259,7 +259,7 @@ create table withdrawals (
     user_id bigint not null,
     currency varchar(4) not null,
     fee numeric(23,8) not null check(fee >= 0),
-    confirmation_token varchar(256) default null, -- this is  set to non-null when the user trust service sends out the token
+    confirmation_token varchar(256) default null, -- this is set to non-null when the user trust service sends out the token
     token_expiration timestamp, -- this is set to non-null when the user trust service sends out the token
     user_confirmed boolean not null default false,
     user_rejected boolean not null default false,

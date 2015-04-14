@@ -43,7 +43,7 @@ begin
     if new_is_bid then
       update balances set hold = hold + new_amount * new_price
       where currency = new_counter and user_id = new_user_id and
-      balance >= hold + new_amount * new_price;; --todo: precision
+      balance >= hold + new_amount * new_price;;
     else
       update balances set hold = hold + new_amount
       where currency = new_base and user_id = new_user_id and
@@ -80,13 +80,11 @@ begin
         -- the volume is the minimum of the two volumes
         v := least(o.remains, o2.remains);;
 
-        perform match_new(o2.id, o.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);; --todo: precision
+        perform match_new(o2.id, o.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);;
 
         -- if order was completely filled, stop matching
         select * into strict o2 from orders where id = o2.id;;
-        if o2.remains = 0 then
-          exit;;
-        end if;;
+        exit when o2.remains = 0;;
       end loop;;
     else
       for o in select * from orders oo
@@ -104,13 +102,11 @@ begin
         -- the volume is the minimum of the two volumes
         v := least(o.remains, o2.remains);;
 
-        perform match_new(o.id, o2.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);; --todo: precision
+        perform match_new(o.id, o2.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);;
 
         -- if order was completely filled, stop matching
         select * into strict o2 from orders where id = o2.id;;
-        if o2.remains = 0 then
-          exit;;
-        end if;;
+        exit when o2.remains = 0;;
       end loop;;
     end if;;
 
@@ -165,7 +161,7 @@ begin
 
     if o.is_bid then
       update balances set hold = hold - o.remains * o.price
-      where currency = o.counter and user_id = o.user_id;; --todo: precision
+      where currency = o.counter and user_id = o.user_id;;
     else
       update balances set hold = hold - o.remains
       where currency = o.base and user_id = o.user_id;;
@@ -223,7 +219,7 @@ begin
     -- release holds on the amount that was matched
     update balances set hold = hold - new_amount
     where currency = ask.base and user_id = ask.user_id;;
-    --todo: precision
+
     update balances set hold = hold - new_amount * new_price
     where currency = bid.counter and user_id = bid.user_id;;
 
@@ -248,7 +244,7 @@ begin
         bid.user_id,
         ask.user_id,
         bid.counter,
-        new_amount * new_price --todo: precision
+        new_amount * new_price
     );;
 
     -- fees
@@ -841,7 +837,7 @@ confirm_withdrawal (
   a_token text
 ) returns boolean as $$
 declare
-  success boolean default false;;
+  success boolean not null default false;;
 begin
   -- check if the token is not issued yet (null) or is expired
   select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;;
@@ -875,7 +871,8 @@ reject_withdrawal (
   a_token text
 ) returns boolean as $$
 declare
-  success boolean default false;;
+  success boolean not null default false;;
+  w withdrawals%rowtype;;
 begin
   -- check if the token is not issued yet (null) or is expired
   select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;;
@@ -895,7 +892,8 @@ begin
   select confirmation_token = a_token into strict success from withdrawals where id = a_id;;
 
   if success then
-    update withdrawals set user_rejected = true where id = a_id;;
+    update withdrawals set user_rejected = true where id = a_id returning * into strict w;;
+    perform withdrawal_delete(w.amount, w.user_id, w.currency, w.fee);;
     return true;;
   end if;;
 
@@ -1433,8 +1431,8 @@ begin
     select currency, address, assigned from users_addresses
     where user_id = a_uid and (currency, node_id) = any
                                 (
-                                  select currency, node_id
-                                  from currencies_crypto inner join wallets_crypto
+                                  select wallets_crypto.currency, wallets_crypto.node_id
+                                  from wallets_crypto inner join currencies_crypto
                                   on currencies_crypto.currency = wallets_crypto.currency
                                   where active = true and retired = false
                                 )
