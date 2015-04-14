@@ -323,9 +323,9 @@ end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 
--- when a withdrawal is expired, return the money!
+-- when a withdrawal is expired or rejected, return the money!
 create or replace function
-withdrawal_delete (
+withdrawal_refund (
   a_amount numeric(23,8),
   a_uid bigint,
   a_currency varchar(4),
@@ -893,7 +893,7 @@ begin
 
   if success then
     update withdrawals set user_rejected = true where id = a_id returning * into strict w;;
-    perform withdrawal_delete(w.amount, w.user_id, w.currency, w.fee);;
+    perform withdrawal_refund(w.amount, w.user_id, w.currency, w.fee);;
     return true;;
   end if;;
 
@@ -1240,7 +1240,7 @@ begin
       ww.user_confirmed = false and
       ww.user_rejected = false
   loop
-    perform withdrawal_delete(w.amount, w.user_id, w.currency, w.fee);;
+    perform withdrawal_refund(w.amount, w.user_id, w.currency, w.fee);;
     delete from withdrawals where id = w.id;;
   end loop;;
   delete from tokens where expiration < current_timestamp;;
@@ -1597,7 +1597,7 @@ begin
     (
       select w.amount, w.created, w.currency, w.fee, 'w' as type, wc.address
       from withdrawals w left join withdrawals_crypto wc on w.id = wc.id
-      where user_id = a_id and wc.withdrawals_crypto_tx_id is not null
+      where user_id = a_id and (wc.withdrawals_crypto_tx_id is not null or wc.id is null)
     )
     union
     (
@@ -1776,7 +1776,7 @@ drop function if exists transfer_funds(bigint, bigint, varchar(4), numeric(23,8)
 drop function if exists wallets_crypto_retire(varchar(4), integer) cascade;
 drop function if exists currency_insert(varchar(4), integer) cascade;
 drop function if exists withdrawal_insert(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
-drop function if exists withdrawal_delete(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
+drop function if exists withdrawal_refund(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
 drop function if exists find_user_by_email_and_password_invoker(varchar(256), text, text, inet, bool) cascade;
 drop function if exists first_agg() cascade;
 drop function if exists last_agg() cascade;
