@@ -22,6 +22,18 @@
         </div>
     </div>
 
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">@Messages("exchange.account.api_keys.title")</div>
+                <div class="panel-body">
+                    <button type="submit" class="btn btn-default" id="add-api-key">Add API Key</button>
+                    <div id="api-keys"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="pgp-add-modal" tabindex="-1" role="dialog" aria-labelledby="pgp-add-modal" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -236,4 +248,86 @@
 
     </script>
 
+    <script id="api-keys-template" type="text/x-handlebars-template">
+        <div class="tablescroller">
+            <table class="table table-condensed responsive tablescroller-head">
+                <thead>
+                    <tr>
+                        <th>@Messages("terminology.created")</th>
+                        <th>@Messages("exchange.account.api_keys.api_key")</th>
+                        <th>@Messages("exchange.account.api_keys.comment")</th>
+                        <th>@Messages("exchange.account.api_keys.trading")</th>
+                        <th>@Messages("exchange.account.api_keys.trade_history")</th>
+                        <th>@Messages("exchange.account.api_keys.list_balance")</th>
+                        <th class="money-heading">@Messages("exchange.account.api_keys.permissions")</th>
+                        <th class="money-heading">@Messages("exchange.account.api_keys.delete")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each .}}
+                    <tr>
+                        <td>{{created}}</td>
+                        <td>{{api_key}}</td>
+                        <td><input type="text" value="{{comment}}" class="api-key-comment"></td>
+                        <td><input type="checkbox" class="api-key-trading" {{trading}}></td>
+                        <td><input type="checkbox" class="api-key-trade-history" {{trade_history}}></td>
+                        <td><input type="checkbox" class="api-key-list-balance" {{list_balance}}></td>
+                        <td><a class="btn btn-success btn-xs pull-right api-key-save" api-key-id="{{api_key_id}}">@Messages("exchange.account.api_keys.save")</a></td>
+                        <td><a class="btn btn-danger btn-xs pull-right api-key-delete" api-key-id="{{api_key_id}}">@Messages("exchange.account.api_keys.delete")</a></td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+    </script>
+
+    <div class="modal fade" id="tfa-api-keys-save-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="tfa-disable-modal">@Messages("exchange.account.api_keys.save.modal.title")</h4>
+                </div>
+                <div class="modal-body">
+                    <form role="form">
+                        <div class="from-group">
+                            <label for="code" class="control-label">@Messages("terminology.code")</label>
+                            <input class="form-control code" name="code" type="text"/>
+                        </div>
+                        <!-- this hack makes sure that the submit event is triggered when you press enter -->
+                        <input type="submit" class="hidden"/>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
+                    <button type="button" class="btn btn-primary">@Messages("exchange.account.api_keys.save")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="tfa-api-keys-delete-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="tfa-disable-modal">@Messages("exchange.account.api_keys.delete.modal.title")</h4>
+                </div>
+                <div class="modal-body">
+                    <form role="form">
+                        <div class="from-group">
+                            <label for="code" class="control-label">@Messages("terminology.code")</label>
+                            <input class="form-control code" name="code" type="text"/>
+                        </div>
+                        <!-- this hack makes sure that the submit event is triggered when you press enter -->
+                        <input type="submit" class="hidden"/>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
+                    <button type="button" class="btn btn-primary">@Messages("exchange.account.api_keys.delete")</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }

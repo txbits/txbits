@@ -96,7 +96,7 @@ class WalletSpec extends Specification with Mockito {
       walletModel.createConfirmedDeposit(any[CryptoCurrency], any[Int], any[Deposit]) answers { _ => true }
 
       // this is our system under test with mocked out engine and rpc parameters
-      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, walletModel))
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, walletModel, test = true))
       val wallet = walletActor.underlyingActor
 
       wallet.update()
@@ -150,7 +150,7 @@ class WalletSpec extends Specification with Mockito {
       rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) returns list
 
       // this is our system under test with mocked out engine and rpc parameters
-      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel))
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
       val wallet = walletActor.underlyingActor
 
       wallet.update()
@@ -204,7 +204,7 @@ class WalletSpec extends Specification with Mockito {
       rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) returns list
 
       // this is our system under test with mocked out engine and rpc parameters
-      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel))
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
       val wallet = walletActor.underlyingActor
 
       wallet.update()
@@ -262,7 +262,7 @@ class WalletSpec extends Specification with Mockito {
       rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) returns list
 
       // this is our system under test with mocked out engine and rpc parameters
-      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel))
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
       val wallet = walletActor.underlyingActor
 
       wallet.update()
@@ -318,7 +318,7 @@ class WalletSpec extends Specification with Mockito {
       rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) answers (_ => list)
 
       // this is our system under test with mocked out engine and rpc parameters
-      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel))
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
       val wallet = walletActor.underlyingActor
 
       wallet.update()
@@ -391,7 +391,7 @@ class WalletSpec extends Specification with Mockito {
       rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) answers (_ => list)
 
       // this is our system under test with mocked out engine and rpc parameters
-      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel))
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
       val wallet = walletActor.underlyingActor
 
       wallet.update()
@@ -475,7 +475,7 @@ class WalletSpec extends Specification with Mockito {
       rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) answers (_ => list)
 
       // this is our system under test with mocked out engine and rpc parameters
-      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel))
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
       val wallet = walletActor.underlyingActor
 
       wallet.update()
@@ -628,7 +628,7 @@ class WalletSpec extends Specification with Mockito {
       rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) returns list
 
       // this is our system under test with mocked out engine and rpc parameters
-      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel))
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
       val wallet = walletActor.underlyingActor
 
       wallet.update()

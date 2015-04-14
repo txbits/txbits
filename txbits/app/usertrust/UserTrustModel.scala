@@ -17,7 +17,7 @@ class UserTrustModel(val db: String = "default") {
   }
 
   def getPendingWithdrawalRequests = DB.withConnection(db) { implicit c =>
-    SQLText.getPendindWithdrawalRequests().map(row =>
+    SQLText.getPendingWithdrawalRequests().map(row =>
       (
         Withdrawal(
           row[Long]("id"),

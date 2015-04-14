@@ -9,7 +9,8 @@
 -- when a new order is placed we try to match it
 create or replace function 
 order_new(
-  new_user_id bigint,
+  a_uid bigint,
+  a_api_key text,
   new_base varchar(4),
   new_counter varchar(4),
   new_amount numeric(23,8),
@@ -21,9 +22,21 @@ declare
     o2 orders%rowtype;; -- second order (chronologically)
     v numeric(23,8);; -- volume of the match (when it happens)
     fee numeric(23,8);; -- fee % to be paid
+    new_user_id bigint;;
 begin
-    if new_user_id = 0 then
+    if a_uid = 0 then
       raise 'User id 0 is not allowed to use this function.';;
+    end if;;
+
+    if a_api_key is not null then
+      select user_id into new_user_id from users_api_keys
+      where api_key = a_api_key and active = true and trading = true;;
+    else
+      new_user_id := a_uid;;
+    end if;;
+
+    if new_user_id is null then
+      return null;;
     end if;;
 
     -- increase holds
@@ -108,14 +121,31 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 -- cancel an order and release any holds left open
 create or replace function
 order_cancel(
-  o_id bigint,
-  o_user_id bigint
-) returns boolean as $$
+  a_uid bigint,
+  a_api_key text,
+  o_id bigint
+  ) returns boolean as $$
 declare
     o orders%rowtype;;
     b varchar(4);;
     c varchar(4);;
+    o_user_id bigint;;
 begin
+    if a_uid = 0 then
+      raise 'User id 0 is not allowed to use this function.';;
+    end if;;
+
+    if a_api_key is not null then
+      select user_id into o_user_id from users_api_keys
+      where api_key = a_api_key and active = true and trading = true;;
+    else
+      o_user_id := a_uid;;
+    end if;;
+
+    if o_user_id is null then
+      return null;;
+    end if;;
+
     select base, counter into b, c from orders
     where id = o_id and user_id = o_user_id and closed = false and remains > 0;;
 
@@ -632,6 +662,99 @@ begin
   return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
+add_api_key (
+  a_id bigint,
+  a_api_key text
+) returns void as $$
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  insert into users_api_keys(user_id, api_key) values (a_id, a_api_key);;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
+update_api_key (
+  a_id bigint,
+  a_totp int,
+  a_api_key text,
+  a_comment text,
+  a_trading bool,
+  a_trade_history bool,
+  a_list_balance bool
+) returns boolean as $$
+declare
+  enabled boolean;;
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  select tfa_enabled into strict enabled from users where id = a_id;;
+
+  if enabled then
+    if user_totp_check(a_id, a_totp) = false then
+      return false;;
+    end if;;
+  end if;;
+
+  update users_api_keys set trading = a_trading,
+  trade_history = a_trade_history, list_balance = a_list_balance, comment = a_comment
+  where user_id = a_id and api_key = a_api_key and active = true;;
+  return true;;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
+disable_api_key (
+  a_id bigint,
+  a_totp int,
+  a_api_key text
+) returns boolean as $$
+declare
+  enabled boolean;;
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  select tfa_enabled into strict enabled from users where id = a_id;;
+
+  if enabled then
+    if user_totp_check(a_id, a_totp) = false then
+      return false;;
+    end if;;
+  end if;;
+
+  update users_api_keys set active = false
+  where user_id = a_id and api_key = a_api_key and active = true;;
+  return true;;
+end;;
+$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
+get_api_keys (
+  a_id bigint,
+  out api_key text,
+  out comment text,
+  out created timestamp,
+  out trading boolean,
+  out trade_history boolean,
+  out list_balance boolean
+) returns setof record as $$
+begin
+  if a_id = 0 then
+    raise 'User id 0 is not allowed to use this function.';;
+  end if;;
+
+  return query select uak.api_key, uak.comment, uak.created, uak.trading, uak.trade_history, uak.list_balance
+  from users_api_keys uak where user_id = a_id and active = true;;
+end;;
+$$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 turnon_tfa (
@@ -1195,16 +1318,31 @@ $$ language plpgsql stable security definer set search_path = public, pg_temp co
 create or replace function
 balance (
   a_uid bigint,
+  a_api_key text,
   out currency varchar(4),
   out amount numeric(23,8),
   out hold numeric(23,8)
 ) returns setof record as $$
+declare
+  a_user_id bigint;;
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
+
+  if a_api_key is not null then
+    select user_id into a_user_id from users_api_keys
+    where api_key = a_api_key and active = true and list_balance = true;;
+  else
+    a_user_id := a_uid;;
+  end if;;
+
+  if a_user_id is null then
+    return;;
+  end if;;
+
   return query select c.currency, coalesce(b.balance, 0) as amount, b.hold from currencies c
-  left outer join balances b on c.currency = b.currency and user_id = a_uid;;
+  left outer join balances b on c.currency = b.currency and user_id = a_user_id;;
 end;;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
@@ -1351,6 +1489,7 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 user_pending_trades (
   a_uid bigint,
+  a_api_key text,
   out id bigint,
   out is_bid bool,
   out amount numeric(23,8),
@@ -1359,12 +1498,26 @@ user_pending_trades (
   out counter varchar(4),
   out created timestamp
 ) returns setof record as $$
+declare
+  a_user_id bigint;;
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
+
+  if a_api_key is not null then
+    select user_id into a_user_id from users_api_keys
+    where api_key = a_api_key and active = true and trading = true;;
+  else
+    a_user_id := a_uid;;
+  end if;;
+
+  if a_user_id is null then
+    return;;
+  end if;;
+
   return query select o.id, o.is_bid, o.remains as amount, o.price, o.base, o.counter, o.created from orders o
-  where user_id = a_uid and closed = false and o.remains > 0
+  where user_id = a_user_id and closed = false and o.remains > 0
   order by created desc;;
 end;;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
@@ -1389,7 +1542,8 @@ $$ language sql stable security definer set search_path = public, pg_temp cost 1
 
 create or replace function
 trade_history (
-  a_id bigint,
+  a_uid bigint,
+  a_api_key text,
   out amount numeric(23,8),
   out created timestamp,
   out price numeric(23,8),
@@ -1398,10 +1552,24 @@ trade_history (
   out type text,
   out fee numeric(23,8)
 ) returns setof record as $$
+declare
+  a_id bigint;;
 begin
-  if a_id = 0 then
+  if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
+
+  if a_api_key is not null then
+    select user_id into a_id from users_api_keys
+    where api_key = a_api_key and active = true and trade_history = true;;
+  else
+    a_id := a_uid;;
+  end if;;
+
+  if a_id is null then
+    return;;
+  end if;;
+
   return query select th.amount, th.created, th.price, th.base, th.counter, th.type, th.fee from (
       select m.amount, m.created, m.price, m.base, m.counter, 'bid' as type, m.bid_fee as fee
       from matches m where bid_user_id = a_id
@@ -1619,13 +1787,17 @@ drop aggregate if exists last(anyelement);
 drop aggregate if exists array_agg_mult(anyarray);
 
 -- security definer functions
-drop function if exists order_new (bigint, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) cascade;
-drop function if exists order_cancel (bigint, bigint) cascade;
+drop function if exists order_new (bigint, text, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) cascade;
+drop function if exists order_cancel (bigint, text, bigint) cascade;
 drop function if exists create_user_complete (varchar(256), text, bool, varchar(256)) cascade;
 drop function if exists update_user (bigint, varchar(256), bool) cascade;
 drop function if exists user_change_password (bigint, text, text) cascade;
 drop function if exists trusted_action_start (varchar(256)) cascade;
 drop function if exists user_reset_password_complete (varchar(256), varchar(256), text) cascade;
+drop function if exists add_api_key (bigint, text) cascade;
+drop function if exists update_api_key (bigint, int, text, text, bool, bool, bool) cascade;
+drop function if exists disable_api_key (bigint, int, text) cascade;
+drop function if exists get_api_keys (bigint) cascade;
 drop function if exists turnon_tfa (bigint, bigint, text) cascade;
 drop function if exists update_tfa_secret (bigint, varchar(256), varchar(6)) cascade;
 drop function if exists turnoff_tfa (bigint, text) cascade;
@@ -1651,15 +1823,15 @@ drop function if exists totp_token_is_blacklisted (bigint, bigint) cascade;
 drop function if exists delete_expired_totp_blacklist_tokens () cascade;
 drop function if exists new_log (bigint, text, varchar(256), text, text, inet, text) cascade;
 drop function if exists login_log (bigint) cascade;
-drop function if exists balance (bigint) cascade;
+drop function if exists balance (bigint, text) cascade;
 drop function if exists get_required_confirmations () cascade;
 drop function if exists get_addresses (bigint, varchar(4)) cascade;
 drop function if exists get_all_addresses (bigint) cascade;
 drop function if exists get_all_withdrawals (bigint) cascade;
 drop function if exists get_all_deposits (bigint) cascade;
-drop function if exists user_pending_trades (bigint) cascade;
+drop function if exists user_pending_trades (bigint, text) cascade;
 drop function if exists recent_trades (varchar(4), varchar(4)) cascade;
-drop function if exists trade_history (bigint) cascade;
+drop function if exists trade_history (bigint, text) cascade;
 drop function if exists deposit_withdraw_history (bigint) cascade;
 drop function if exists open_asks (varchar(4), varchar(4)) cascade;
 drop function if exists open_bids (varchar(4), varchar(4)) cascade;

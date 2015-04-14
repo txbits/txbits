@@ -24,7 +24,7 @@ import play.api.test.WithApplication
 import org.specs2.execute.AsResult
 import org.joda.time.DateTime
 import helpers._
-import controllers.API.CryptoAddress
+import controllers.IAPI.CryptoAddress
 
 @RunWith(classOf[JUnitRunner])
 class EngineModelSpec extends Specification with Mockito {

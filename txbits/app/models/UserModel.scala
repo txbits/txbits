@@ -31,6 +31,13 @@ object DepositWithdrawHistory {
   implicit val format = Json.format[DepositWithdrawHistory]
 }
 
+case class ApiKey(api_key: String, comment: String, created: DateTime, trading: Boolean, trade_history: Boolean, list_balance: Boolean)
+
+object ApiKey {
+  implicit val writes = Json.writes[ApiKey]
+  implicit val format = Json.format[ApiKey]
+}
+
 class UserModel(val db: String = "default") {
 
   import globals.timestampColumn
@@ -182,6 +189,20 @@ class UserModel(val db: String = "default") {
             None
         }
       ).head
+  }
+
+  def apiTradeHistory(apiKey: String) = DB.withConnection(db) { implicit c =>
+    frontend.apiTradeHistory.on(
+      'api_key -> apiKey
+    )().map(row =>
+        TradeHistory(row[BigDecimal]("amount").bigDecimal.toPlainString,
+          row[BigDecimal]("fee").bigDecimal.toPlainString,
+          row[DateTime]("created"),
+          row[BigDecimal]("price").bigDecimal.toPlainString,
+          row[String]("base"),
+          row[String]("counter"),
+          row[String]("type"))
+      ).toList
   }
 
   def tradeHistory(uid: Long) = DB.withConnection(db) { implicit c =>
@@ -379,6 +400,45 @@ class UserModel(val db: String = "default") {
     )().map(row =>
         row[Option[String]]("pgp")
       ).head
+  }
+
+  def addApiKey(uid: Long, apiKey: String) = DB.withConnection(db) { implicit c =>
+    frontend.userAddApiKey.on('uid -> uid, 'api_key -> apiKey).execute()
+  }
+
+  def updateApiKey(uid: Long, tfa_code: Option[String], apiKey: String, comment: String, trading: Boolean, tradeHistory: Boolean, listBalance: Boolean) = DB.withConnection(db) { implicit c =>
+    frontend.userUpdateApiKey.on(
+      'uid -> uid,
+      'tfa_code -> optStrToInt(tfa_code),
+      'api_key -> apiKey,
+      'comment -> comment,
+      'trading -> trading,
+      'trade_history -> tradeHistory,
+      'list_balance -> listBalance
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
+  }
+
+  def disableApiKey(uid: Long, tfa_code: Option[String], apiKey: String) = DB.withConnection(db) { implicit c =>
+    frontend.userDisableApiKey.on(
+      'uid -> uid,
+      'tfa_code -> optStrToInt(tfa_code),
+      'api_key -> apiKey
+    )().map(row =>
+        row[Boolean]("success")
+      ).head
+  }
+
+  def getApiKeys(uid: Long) = DB.withConnection(db) { implicit c =>
+    frontend.userGetApiKeys.on('uid -> uid)().map(row => ApiKey(
+      row[String]("api_key"),
+      row[String]("comment"),
+      row[DateTime]("created"),
+      row[Boolean]("trading"),
+      row[Boolean]("trade_history"),
+      row[Boolean]("list_balance"))
+    ).toList
   }
 
   private def optStrToInt(optStr: Option[String]) = {

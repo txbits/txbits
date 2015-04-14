@@ -18,6 +18,7 @@ terminology.login=Log In
 terminology.signup=Sign up
 terminology.logout=Log Out
 terminology.time=Time
+terminology.created=Created
 terminology.value=Value
 terminology.type=Type
 terminology.cancel=Cancel
@@ -76,6 +77,18 @@ exchange.account.tfa_withdrawal=Two-Factor Authentication on Withdrawals
 exchange.account.tfa_type=Two-Factor Authentication Type
 exchange.account.mailinglist=Receive updates about new features and changes to TxBits
 securesocial.signup.mailinglist=Receive updates about new features and changes to TxBits
+
+exchange.account.api_keys.title=API Keys
+exchange.account.api_keys.api_key=API Key
+exchange.account.api_keys.comment=Comment
+exchange.account.api_keys.trading=Trading
+exchange.account.api_keys.trade_history=Trade History
+exchange.account.api_keys.list_balance=List Balance
+exchange.account.api_keys.permissions=Permissions
+exchange.account.api_keys.delete=Delete
+exchange.account.api_keys.delete.modal.title=Delete API key
+exchange.account.api_keys.save=Save
+exchange.account.api_keys.save.modal.title=Save API key permissions
 
 tfa.on.title=Enable 2FA
 tfa.off.title=Disable 2FA

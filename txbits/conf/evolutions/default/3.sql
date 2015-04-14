@@ -48,6 +48,7 @@ delete from deposits_crypto;
 delete from deposits_other;
 delete from deposits;
 delete from users_passwords;
+delete from users_api_keys;
 delete from users_tfa_secrets;
 delete from users_backup_otps;
 delete from users_addresses;

@@ -51,6 +51,19 @@ create table users_passwords (
     primary key (user_id, created)
 );
 
+create table users_api_keys (
+    user_id bigint not null,
+    api_key text not null unique check(length(api_key) = 24), -- 18 bytes in base64
+    comment text not null default '',
+    created timestamp default current_timestamp not null,
+    active bool default true not null,
+    trading bool default false not null,
+    trade_history bool default false not null,
+    list_balance bool default false not null,
+    foreign key (user_id) references users(id),
+    primary key (user_id, created)
+);
+
 create table users_tfa_secrets (
     user_id bigint not null,
     tfa_secret varchar(256),
@@ -322,6 +335,7 @@ drop table if exists markets cascade;
 drop table if exists tokens cascade;
 drop table if exists users cascade;
 drop table if exists users_passwords cascade;
+drop table if exists users_api_keys cascade;
 drop table if exists users_backup_otps cascade;
 drop table if exists users_tfa_secrets cascade;
 drop table if exists users_addresses cascade;
