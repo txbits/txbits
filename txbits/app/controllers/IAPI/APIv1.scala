@@ -9,6 +9,8 @@ import play.api.mvc._
 import play.api.libs.json._
 import service.{ PGP, TOTPUrl }
 import org.postgresql.util.PSQLException
+import org.apache.commons.codec.binary.Base64.encodeBase64
+import java.security.SecureRandom
 
 object APIv1 extends Controller with securesocial.core.SecureSocial {
 
@@ -296,7 +298,11 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def addApiKey() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
-    globals.userModel.addApiKey(request.user.id)
+    val random = new SecureRandom
+    val bytes = new Array[Byte](18)
+    random.nextBytes(bytes)
+    val apiKey = new String(encodeBase64(bytes))
+    globals.userModel.addApiKey(request.user.id, apiKey)
     Ok(Json.obj())
   }
 
@@ -306,7 +312,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     val trading = (request.request.body \ "trading").validate[Boolean].get
     val tradeHistory = (request.request.body \ "trade_history").validate[Boolean].get
     val listBalance = (request.request.body \ "list_balance").validate[Boolean].get
-    val comment = (request.request.body \ "comment").validate[String].get
+    val comment = (request.request.body \ "comment").validate[String].get.take(32)
     if (globals.userModel.updateApiKey(request.user.id, tfa_code, apiKey, comment, trading, tradeHistory, listBalance)) {
       Ok(Json.obj())
     } else {

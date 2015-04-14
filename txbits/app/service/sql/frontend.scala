@@ -46,7 +46,7 @@ object frontend {
 
   val userAddApiKey = SQL(
     """
-    | select add_api_key({uid})
+    | select add_api_key({uid}, {api_key})
     """.stripMargin)
 
   val userUpdateApiKey = SQL(

@@ -665,14 +665,15 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 
 create or replace function
 add_api_key (
-  a_id bigint
+  a_id bigint,
+  a_api_key text
 ) returns void as $$
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
 
-  insert into users_api_keys(user_id, api_key) values (a_id, encode(gen_random_bytes(18), 'base64'));;
+  insert into users_api_keys(user_id, api_key) values (a_id, a_api_key);;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -1793,7 +1794,7 @@ drop function if exists update_user (bigint, varchar(256), bool) cascade;
 drop function if exists user_change_password (bigint, text, text) cascade;
 drop function if exists trusted_action_start (varchar(256)) cascade;
 drop function if exists user_reset_password_complete (varchar(256), varchar(256), text) cascade;
-drop function if exists add_api_key (bigint) cascade;
+drop function if exists add_api_key (bigint, text) cascade;
 drop function if exists update_api_key (bigint, int, text, text, bool, bool, bool) cascade;
 drop function if exists disable_api_key (bigint, int, text) cascade;
 drop function if exists get_api_keys (bigint) cascade;

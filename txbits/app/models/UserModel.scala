@@ -402,8 +402,8 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
-  def addApiKey(uid: Long) = DB.withConnection(db) { implicit c =>
-    frontend.userAddApiKey.on('uid -> uid).execute()
+  def addApiKey(uid: Long, apiKey: String) = DB.withConnection(db) { implicit c =>
+    frontend.userAddApiKey.on('uid -> uid, 'api_key -> apiKey).execute()
   }
 
   def updateApiKey(uid: Long, tfa_code: Option[String], apiKey: String, comment: String, trading: Boolean, tradeHistory: Boolean, listBalance: Boolean) = DB.withConnection(db) { implicit c =>
