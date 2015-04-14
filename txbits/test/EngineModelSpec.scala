@@ -227,7 +227,7 @@ class EngineModelSpec extends Specification with Mockito {
       val pending = globals.engineModel.pendingWithdrawals(uid)
 
       pending("LTC").head.amount must beEqualTo("12.30000000")
-      pending("LTC").head.fee must beEqualTo((12.3 * feeLinear + feeConstant).toString + "00000") //TODO: less hacky
+      pending("LTC").head.fee must beEqualTo(BigDecimal((1e8 * (12.3 * feeLinear + feeConstant)).toInt, 8).bigDecimal.toPlainString)
       pending("LTC").head.info must beEqualTo("addr")
     }
 

@@ -121,17 +121,17 @@ class EngineModel(val db: String = "default") {
   }
 
   def withdraw(uid: Long, currency: String, amount: BigDecimal, address: String, tfa_code: Option[String]) = DB.withConnection(db) { implicit c =>
-    var code = tfa_code.getOrElse("0")
-    if (code == "") {
-      code = "0"
+    val code = tfa_code.getOrElse("0") match {
+      case "" => 0
+      case c: String => c.toInt
     }
     frontend.withdrawCrypto.on(
       'uid -> uid,
       'currency -> currency,
       'amount -> amount.bigDecimal,
       'address -> address,
-      'tfa_code -> code.toInt
-    ).map(row => row[Long]("id")).list.headOption
+      'tfa_code -> code
+    )().map(row => row[Option[Long]]("id")).head
   }
 
   def confirmWithdrawal(id: Long, token: String) = DB.withConnection(db) { implicit c =>

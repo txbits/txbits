@@ -4,7 +4,7 @@ name := "txbits"
 
 version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.6"
 
 libraryDependencies ++= Seq(
   ws,
@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.play.plugins" %% "play-plugins-util" % "2.3.0",
   "org.mindrot" % "jbcrypt" % "0.3m",
   "org.mockito" % "mockito-all" % "1.9.5",
-  "com.typesafe.akka" %% "akka-testkit" % "2.3.5" % "test",
+  "com.typesafe.akka" %% "akka-testkit" % "2.3.9" % "test",
   "com.github.briandilley.jsonrpc4j" % "jsonrpc4j" % "1.1",
   "org.postgresql" % "postgresql" % "9.3-1103-jdbc4",
   "com.google" % "bitcoinj" % "0.11",
@@ -30,8 +30,7 @@ libraryDependencies ++= Seq(
 resolvers ++= Seq(
   "Spy Repository" at "http://files.couchbase.com/maven2",
   "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/releases",
-  Resolver.url("sbt-plugin-releases", new URL("http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),
-  Resolver.typesafeRepo("releases")
+  Resolver.url("sbt-plugin-releases", new URL("http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
