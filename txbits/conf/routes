@@ -31,12 +31,12 @@ GET         /chlang/:lang                              controllers.Application.c
 GET         /assets/*file                              controllers.Assets.at(path="/public", file)
 
 # API key actions
-POST        /api/1/api_bid                             controllers.API.APIv1.apiBid
-POST        /api/1/api_ask                             controllers.API.APIv1.apiAsk
-POST        /api/1/api_cancel                          controllers.API.APIv1.apiCancel
-POST        /api/1/api_pending_trades                  controllers.API.APIv1.apiPendingTrades
-POST        /api/1/api_trade_history                   controllers.API.APIv1.apiTradeHistory
-POST        /api/1/api_balance                         controllers.API.APIv1.apiBalance
+POST        /api/1/bid                                  controllers.API.APIv1.bid
+POST        /api/1/ask                                  controllers.API.APIv1.ask
+POST        /api/1/cancel                               controllers.API.APIv1.cancel
+POST        /api/1/pending_trades                       controllers.API.APIv1.pendingTrades
+POST        /api/1/trade_history                        controllers.API.APIv1.tradeHistory
+POST        /api/1/balance                              controllers.API.APIv1.balance
 
 # APIv1
 GET         /iapi/1                                     controllers.IAPI.APIv1.index

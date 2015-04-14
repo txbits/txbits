@@ -6,7 +6,7 @@ import play.api.libs.json._
 
 object APIv1 extends Controller {
 
-  def apiBalance = Action(parse.json) { implicit request =>
+  def balance = Action(parse.json) { implicit request =>
     val body = request.body
     (for (
       apiKey <- (body \ "api_key").validate[String]
@@ -25,7 +25,7 @@ object APIv1 extends Controller {
     )
   }
 
-  def apiAsk = Action(parse.json) { implicit request =>
+  def ask = Action(parse.json) { implicit request =>
     try {
       val body = request.body
       (for (
@@ -63,7 +63,7 @@ object APIv1 extends Controller {
     }
   }
 
-  def apiBid = Action(parse.json) { implicit request =>
+  def bid = Action(parse.json) { implicit request =>
     try {
       val body = request.body
       (for (
@@ -101,7 +101,7 @@ object APIv1 extends Controller {
     }
   }
 
-  def apiCancel = Action(parse.json) { implicit request =>
+  def cancel = Action(parse.json) { implicit request =>
     val body = request.body
     (for (
       apiKey <- (body \ "api_key").validate[String];
@@ -118,7 +118,7 @@ object APIv1 extends Controller {
     )
   }
 
-  def apiTradeHistory = Action(parse.json) { implicit request =>
+  def tradeHistory = Action(parse.json) { implicit request =>
     val body = request.body
     (for (
       apiKey <- (body \ "api_key").validate[String]
@@ -129,7 +129,7 @@ object APIv1 extends Controller {
     )
   }
 
-  def apiPendingTrades = Action(parse.json) { implicit request =>
+  def pendingTrades = Action(parse.json) { implicit request =>
     val body = request.body
     (for (
       apiKey <- (body \ "api_key").validate[String]
