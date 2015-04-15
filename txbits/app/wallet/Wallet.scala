@@ -246,8 +246,8 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
 }
 
 object Wallet {
-  def props(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, params: WalletParams, walletModel: WalletModel) = {
-    Props(classOf[Wallet], rpc, currency, nodeId, params, walletModel)
+  def props(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, params: WalletParams, walletModel: WalletModel, test: Boolean = false) = {
+    Props(classOf[Wallet], rpc, currency, nodeId, params, walletModel, test)
   }
   object CryptoCurrency extends Enumeration {
     type CryptoCurrency = Value
