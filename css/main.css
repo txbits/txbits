@@ -1,0 +1,180 @@
+body {
+    position: relative;
+    font-family: Helvetica,arial,freesans,clean,sans-serif;
+    margin-top: 70px;
+}
+
+
+.navbar-exchange {
+    background-color: #000000;
+    border-color: #ffffff;
+}
+.navbar-exchange .nav .active {
+    background-color: #FFFFFF;
+}
+.navbar-exchange .nav .active a{
+    color: #000000;
+}
+.navbar-exchange a {
+    color: #FFFFFF;
+}
+.navbar-exchange .nav .active a:hover, .navbar-exchange .nav .active a:active, .navbar-exchange .nav .active a:focus {
+    background-color: #eeeeee;
+}
+.navbar-exchange .nav a:hover, .navbar-exchange .nav a:active, .navbar-exchange .nav a:focus {
+    background-color: #555555;
+}
+.navbar-exchange .navbar-toggle {
+    background-color: #000000;
+}
+.navbar-exchange .navbar-toggle .icon-bar {
+    background-color: #ffffff;
+}
+
+.content > .content-body {
+    padding:10px 20px;
+    min-height:570px;
+}
+
+.content.contentpage {
+    margin-left: 0;
+}
+
+.panel-ext {
+    margin-right: 20px;
+}
+
+.panel-ext .btn-group.language {
+    margin-top:0; 
+    margin-right: 10px;
+}
+
+.ticker-row {
+    position: relative;
+}
+
+.ticker-controls {
+    position:absolute;
+    right:7px;
+    top:4px;
+}
+
+.money {
+    font-family:monospace;
+    text-align:right;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.limit-width {
+    max-width: 150px;
+    text-overflow: ellipsis;
+    overflow:hidden;
+    white-space: nowrap;
+}
+
+.dl-small>dt {
+    width:50px;
+}
+.dl-small>dd {
+    margin-left:60px;
+}
+
+.big-ticker-pair {
+    text-align: right;
+    font-weight: bold;
+}
+
+.money-heading {
+    text-align: right;
+}
+
+.qr-code {
+    width:200px
+}
+
+.subtitle {
+    color: #AAAAAA;
+}
+
+.intro-image {
+    background-image: url("../img/texture.jpg");
+    color:#ffffff;
+    text-align: center;
+    margin-top: -20px;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    height: 280px;
+    z-index: 2;
+}
+
+.sign-up-text {
+    margin-right: 10px;
+    font-size: 2em;
+}
+
+#signup-wrap {
+    padding: 1em;
+    background-color: #eeeeee;
+}
+#login-wrap {
+    padding: 1em;
+    background-color: #eeeeee;
+}
+
+.content {
+    background-color: #ffffff;
+    position: relative;
+    z-index: 3;
+    top: 200px;
+    overflow: hidden;
+}
+
+.detailed-points p {
+    font-size: 1.5em;
+}
+
+.beta {
+    color: #cccccc;
+    font-size: 3em;
+    font-weight: bold;
+}
+
+.footerwrap {
+    background-color: #eeeeee;
+    padding-top: 20px;
+}
+
+#beta-wrap {
+    background-color: #ffffff;
+}
+
+#ticker-wrap {
+    padding-top: 20px;
+}
+
+.linkable {
+    margin-top: -60px;
+    padding-top: 60px;
+}
+
+#pair-picker {
+    margin-bottom: 10px;
+}
+
+#bid, #ask {
+    margin-bottom: 20px;
+}
+
+.tablescroller {
+    max-height: 300px;
+    overflow: auto;
+}
+
+.tablescroller>table {
+    margin-bottom: 0;
+}
