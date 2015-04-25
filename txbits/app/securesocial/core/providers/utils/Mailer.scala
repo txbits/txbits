@@ -113,7 +113,13 @@ object Mailer {
       try {
         email.send
       } catch {
-        case ex: Throwable => Logger.debug(strBody); throw ex
+        case ex: Throwable => {
+          // important: Print the bodies of emails in logs only if dealing with fake money
+          if (Play.current.configuration.getBoolean("fakeexchange").get) {
+            Logger.debug("Failed to send email to %s, email body:\n%s".format(recipient, strBody))
+          }
+          throw ex
+        }
       }
     }
   }
