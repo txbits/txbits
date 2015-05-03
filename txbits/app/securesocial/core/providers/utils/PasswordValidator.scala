@@ -26,6 +26,6 @@ object PasswordValidator {
 
   val validator = Constraint[String](Some("Password complexity constraint"), "") {
     case password: String if password.length >= min_len => Valid
-    case password => Invalid(Messages("securesocial.signup.invalidPassword", 12))
+    case password => Invalid(Messages("securesocial.signup.invalidPassword", min_len))
   }
 }
