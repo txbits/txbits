@@ -8,8 +8,6 @@ import models.Withdrawal
 import org.joda.time.DateTime
 
 class UserTrustModel(val db: String = "default") {
-  import globals.timestampColumn
-
   def getTrustedActionRequests = DB.withConnection(db) { implicit c =>
     SQLText.getTrustedActionRequests().map(row =>
       (row[String]("email"), row[Boolean]("is_signup"))

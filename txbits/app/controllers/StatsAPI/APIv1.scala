@@ -137,7 +137,6 @@ object APIv1 extends Controller {
 
   //TODO: move this out of postgres and into something more suited for this kind of data
   def chartFromDB(base: String, counter: String) = DB.withConnection(masterDB) { implicit c =>
-    import globals.bigDecimalColumn
     frontend.chartFromDb.on(
       'base -> base,
       'counter -> counter
