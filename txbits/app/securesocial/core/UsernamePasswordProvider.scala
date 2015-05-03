@@ -58,8 +58,6 @@ class UsernamePasswordProvider(application: Application) extends Plugin with Reg
     Logger.info("[securesocial] unloaded identity provider: %s".format(id))
   }
 
-  def authMethod = AuthenticationMethod.UserPassword
-
   /**
    * Reads a property from the application.conf
    * @param property

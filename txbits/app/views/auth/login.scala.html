@@ -1,10 +1,8 @@
 @(loginForm: Form[(String,String)], errorMsg: Option[String] = None)(implicit request: RequestHeader, lang: Lang)
 @import securesocial.core.UsernamePasswordProvider
-@import securesocial.core.UsernamePasswordProvider
 
 @import helper._
 @import securesocial.core.Registry
-@import securesocial.core.AuthenticationMethod._
 
 @scripts = {
     <script src="@routes.Assets.at("js/login.js")"></script>
