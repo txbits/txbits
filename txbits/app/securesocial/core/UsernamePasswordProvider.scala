@@ -34,28 +34,21 @@ import models.{ LogEvent, LogType, LogModel }
 /**
  * A username password provider
  */
-class UsernamePasswordProvider(application: Application) extends Plugin with Registrable {
-
-  override def id = "userpass"
-
-  val SecureSocialKey = "securesocial."
-  val Dot = "."
-
-  override def toString = id
-  def propertyKey = SecureSocialKey + id + Dot
+class UsernamePasswordProvider(application: Application) extends Plugin {
+  def propertyKey = "securesocial.userpass."
 
   /**
    * Registers the provider in the Provider Registry
    */
   override def onStart() {
-    Logger.info("[securesocial] loaded identity provider: %s".format(id))
+    Logger.info("[securesocial] loaded identity provider")
   }
 
   /**
    * Unregisters the provider
    */
   override def onStop() {
-    Logger.info("[securesocial] unloaded identity provider: %s".format(id))
+    Logger.info("[securesocial] unloaded identity provider")
   }
 
   /**
@@ -66,13 +59,13 @@ class UsernamePasswordProvider(application: Application) extends Plugin with Reg
   def loadProperty(property: String): Option[String] = {
     val result = application.configuration.getString(propertyKey + property)
     if (!result.isDefined) {
-      Logger.error("[securesocial] Missing property " + property + " for provider " + id)
+      Logger.error("[securesocial] Missing property " + property + " for identity provider")
     }
     result
   }
 
   protected def throwMissingPropertiesException() {
-    val msg = "[securesocial] Missing properties for provider '%s'. Verify your configuration file is properly set.".format(id)
+    val msg = "[securesocial] Missing properties for provider 'userpass'. Verify your configuration file is properly set."
     Logger.error(msg)
     throw new RuntimeException(msg)
   }
@@ -104,7 +97,6 @@ object UsernamePasswordProvider {
 
   private val SendWelcomeEmailKey = "securesocial.userpass.sendWelcomeEmail"
   private val EnableGravatarKey = "securesocial.userpass.enableGravatarSupport"
-  private val Hasher = "securesocial.userpass.hasher"
   private val EnableTokenJob = "securesocial.userpass.enableTokenJob"
   private val SignupSkipLogin = "securesocial.userpass.signupSkipLogin"
 
