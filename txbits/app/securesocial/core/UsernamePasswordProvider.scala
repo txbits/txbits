@@ -31,59 +31,6 @@ import controllers.SecureSocialTemplates
 import service.txbitsUserService
 import models.{ LogEvent, LogType, LogModel }
 
-/**
- * A username password provider
- */
-class UsernamePasswordProvider(application: Application) extends Plugin with Registrable {
-
-  override def id = "userpass"
-
-  val SecureSocialKey = "securesocial."
-  val Dot = "."
-
-  override def toString = id
-  def propertyKey = SecureSocialKey + id + Dot
-
-  /**
-   * Registers the provider in the Provider Registry
-   */
-  override def onStart() {
-    Logger.info("[securesocial] loaded identity provider: %s".format(id))
-  }
-
-  /**
-   * Unregisters the provider
-   */
-  override def onStop() {
-    Logger.info("[securesocial] unloaded identity provider: %s".format(id))
-  }
-
-  def authMethod = AuthenticationMethod.UserPassword
-
-  /**
-   * Reads a property from the application.conf
-   * @param property
-   * @return
-   */
-  def loadProperty(property: String): Option[String] = {
-    val result = application.configuration.getString(propertyKey + property)
-    if (!result.isDefined) {
-      Logger.error("[securesocial] Missing property " + property + " for provider " + id)
-    }
-    result
-  }
-
-  protected def throwMissingPropertiesException() {
-    val msg = "[securesocial] Missing properties for provider '%s'. Verify your configuration file is properly set.".format(id)
-    Logger.error(msg)
-    throw new RuntimeException(msg)
-  }
-
-  protected def awaitResult(future: Future[WSResponse]) = {
-    Await.result(future, UsernamePasswordProvider.secondsToWait)
-  }
-}
-
 object UsernamePasswordProvider {
 
   val sslEnabled: Boolean = {
@@ -105,10 +52,7 @@ object UsernamePasswordProvider {
   }
 
   private val SendWelcomeEmailKey = "securesocial.userpass.sendWelcomeEmail"
-  private val EnableGravatarKey = "securesocial.userpass.enableGravatarSupport"
-  private val Hasher = "securesocial.userpass.hasher"
   private val EnableTokenJob = "securesocial.userpass.enableTokenJob"
-  private val SignupSkipLogin = "securesocial.userpass.signupSkipLogin"
 
   val loginForm = Form(
     tuple(
@@ -118,9 +62,8 @@ object UsernamePasswordProvider {
   )
 
   lazy val sendWelcomeEmail = current.configuration.getBoolean(SendWelcomeEmailKey).getOrElse(true)
-  lazy val enableGravatar = current.configuration.getBoolean(EnableGravatarKey).getOrElse(true)
   lazy val enableTokenJob = current.configuration.getBoolean(EnableTokenJob).getOrElse(true)
-  lazy val signupSkipLogin = current.configuration.getBoolean(SignupSkipLogin).getOrElse(false)
+  lazy val signupSkipLogin = false
 }
 
 /**

@@ -1,3 +1,7 @@
+// Copyright (c) 2014 Viktor Stanchev & Kirk Zathey.
+// This file is licensed under the Affero General Public License version 3 or later,
+// see the accompanying file COPYING or http://www.gnu.org/licenses/agpl.html.
+
 package usertrust
 
 import play.api.db.DB
@@ -8,8 +12,6 @@ import models.Withdrawal
 import org.joda.time.DateTime
 
 class UserTrustModel(val db: String = "default") {
-  import globals.timestampColumn
-
   def getTrustedActionRequests = DB.withConnection(db) { implicit c =>
     SQLText.getTrustedActionRequests().map(row =>
       (row[String]("email"), row[Boolean]("is_signup"))

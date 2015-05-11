@@ -29,8 +29,6 @@ object DwLimit {
 
 class MetaModel(val db: String = "default") {
 
-  import globals.bigDecimalColumn
-
   val currencies = DB.withConnection(db)(implicit c => {
     frontend.getCurrencies().map(_[String]("currency")).toList
   })
