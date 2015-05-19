@@ -21,7 +21,9 @@ declare
     o orders%rowtype;; -- first order (chronologically)
     o2 orders%rowtype;; -- second order (chronologically)
     v numeric(23,8);; -- volume of the match (when it happens)
-    fee numeric(23,8);; -- fee % to be paid
+    f numeric(23,8);; -- fee % for first order (maker)
+    f2 numeric(23,8);; -- fee % for second order (taker)
+    fee trade_fees%rowtype;;
     new_user_id bigint;;
 begin
     if a_uid = 0 then
@@ -56,7 +58,13 @@ begin
     end if;;
 
     -- trade fees
-    select linear into strict fee from trade_fees;;
+    select * into strict fee from trade_fees;;
+    if fee.one_way then
+      f := 0;;
+    else
+      f := fee.linear;;
+    end if;;
+    f2 := fee.linear;;
 
     perform pg_advisory_xact_lock(id) from markets where base = new_base and counter = new_counter;;
 
@@ -80,7 +88,7 @@ begin
         -- the volume is the minimum of the two volumes
         v := least(o.remains, o2.remains);;
 
-        perform match_new(o2.id, o.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);;
+        perform match_new(o2.id, o.id, o2.is_bid, f2 * v, f * o.price * v, v, o.price);;
 
         -- if order was completely filled, stop matching
         select * into strict o2 from orders where id = o2.id;;
@@ -102,7 +110,7 @@ begin
         -- the volume is the minimum of the two volumes
         v := least(o.remains, o2.remains);;
 
-        perform match_new(o.id, o2.id, o2.is_bid, fee * v, fee * o.price * v, v, o.price);;
+        perform match_new(o.id, o2.id, o2.is_bid, f * v, f2 * o.price * v, v, o.price);;
 
         -- if order was completely filled, stop matching
         select * into strict o2 from orders where id = o2.id;;

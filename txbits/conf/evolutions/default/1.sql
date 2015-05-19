@@ -28,7 +28,8 @@ create table dw_fees (
 );
 
 create table trade_fees (
-    linear numeric(23,8) not null check(linear >= 0)
+    linear numeric(23,8) not null check(linear >= 0),
+    one_way bool default false not null -- toggle fees for market makers
 );
 
 create table users (
