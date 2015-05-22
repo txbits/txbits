@@ -106,6 +106,7 @@ create table event_log (
     ssl_info text, -- what ciphers were offered, what cipher was accepted, etc.
     type text -- one of: login_partial_success, login_success, login_failure, logout, session_expired
 );
+create index login_log_idx on event_log(user_id, created desc) where type in ('login_success', 'login_failure', 'logout', 'session_expired');
 
 create table balances (
     user_id bigint not null,
@@ -232,6 +233,7 @@ create table deposits (
     foreign key (currency) references currencies(currency),
     foreign key (user_id) references users(id)
 );
+create index deposits_idx on deposits(user_id, created desc);
 
 create table deposits_crypto (
     id bigint not null primary key,
@@ -269,6 +271,7 @@ create table withdrawals (
 );
 create index withdrawals_confirmation_token_idx on withdrawals(confirmation_token);
 create index withdrawals_limit_idx on withdrawals(user_id, currency, created desc);
+create index withdrawals_idx on withdrawals(user_id, created desc);
 
 create sequence withdrawals_crypto_tx_id_seq;
 create table withdrawals_crypto_tx (
@@ -322,6 +325,21 @@ create table tokens (
 );
 create index tokens_expiration_idx on tokens(expiration desc);
 
+-- aggregate match statistics in 30 minute buckets
+create table stats_30_min (
+    base varchar(4) not null,
+    counter varchar(4) not null,
+    start_of_period timestamp not null check(extract(minute from start_of_period) in (0, 30)),
+    volume numeric(23,8) not null,
+    average numeric(23,8) not null,
+    low numeric(23,8) not null,
+    high numeric(23,8) not null,
+    open numeric(23,8) not null,
+    close numeric(23,8) not null,
+    foreign key (base, counter) references markets(base, counter),
+    primary key (base, counter, start_of_period)
+);
+
 # --- !Downs
 
 drop table if exists balances cascade;
@@ -331,6 +349,7 @@ drop table if exists deposits cascade;
 drop table if exists deposits_crypto cascade;
 drop table if exists deposits_other cascade;
 drop table if exists matches cascade;
+drop table if exists stats_30_min cascade;
 drop table if exists markets cascade;
 drop table if exists tokens cascade;
 drop table if exists users cascade;

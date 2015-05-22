@@ -67,9 +67,11 @@ class LogModel(val db: String = "default") {
     ).execute()
   }
 
-  def getLoginEvents(uid: Long) = DB.withConnection(db) { implicit c =>
+  def getLoginEvents(uid: Long, before: Option[DateTime] = None, limit: Option[Int] = None) = DB.withConnection(db) { implicit c =>
     frontend.loginLog.on(
-      'user_id -> uid
+      'user_id -> uid,
+      'before -> before,
+      'limit -> limit
     )().map(row => LoginEvent(
         row[Option[String]]("email"),
         row[Option[String]]("ip"),

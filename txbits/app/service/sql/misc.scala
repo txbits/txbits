@@ -32,6 +32,7 @@ object misc {
       |delete from wallets_crypto;
       |delete from balances;
       |delete from matches;
+      |delete from stats_30_min;
       |delete from orders;
       |delete from markets;
       |delete from withdrawal_limits;
@@ -110,6 +111,7 @@ object misc {
       |delete from wallets_crypto;
       |delete from balances;
       |delete from matches;
+      |delete from stats_30_min;
       |delete from orders;
       |delete from markets;
       |delete from withdrawal_limits;

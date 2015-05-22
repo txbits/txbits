@@ -187,23 +187,12 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
-  def apiTradeHistory(apiKey: String) = DB.withConnection(db) { implicit c =>
-    frontend.apiTradeHistory.on(
-      'api_key -> apiKey
-    )().map(row =>
-        TradeHistory(row[BigDecimal]("amount").bigDecimal.toPlainString,
-          row[BigDecimal]("fee").bigDecimal.toPlainString,
-          row[DateTime]("created"),
-          row[BigDecimal]("price").bigDecimal.toPlainString,
-          row[String]("base"),
-          row[String]("counter"),
-          row[String]("type"))
-      ).toList
-  }
-
-  def tradeHistory(uid: Long) = DB.withConnection(db) { implicit c =>
+  def tradeHistory(uid: Option[Long], apiKey: Option[String], before: Option[DateTime] = None, limit: Option[Int] = None) = DB.withConnection(db) { implicit c =>
     frontend.tradeHistory.on(
-      'id -> uid
+      'id -> uid,
+      'api_key -> apiKey,
+      'before -> before,
+      'limit -> limit
     )().map(row =>
         TradeHistory(row[BigDecimal]("amount").bigDecimal.toPlainString,
           row[BigDecimal]("fee").bigDecimal.toPlainString,
@@ -215,9 +204,11 @@ class UserModel(val db: String = "default") {
       ).toList
   }
 
-  def depositWithdrawHistory(uid: Long) = DB.withConnection(db) { implicit c =>
+  def depositWithdrawHistory(uid: Long, before: Option[DateTime] = None, limit: Option[Int] = None) = DB.withConnection(db) { implicit c =>
     frontend.depositWithdrawHistory.on(
-      'id -> uid
+      'id -> uid,
+      'before -> before,
+      'limit -> limit
     )().map(row =>
         DepositWithdrawHistory(
           row[BigDecimal]("amount").bigDecimal.toPlainString,

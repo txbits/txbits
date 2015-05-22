@@ -43,32 +43,16 @@ class EngineModel(val db: String = "default") {
 
   // regular apis
 
-  def apiBalance(apiKey: String) = DB.withConnection(db) { implicit c =>
-    frontend.apiBalance.on('api_key -> apiKey)().map(row =>
+  def balance(uid: Option[Long], apiKey: Option[String]) = DB.withConnection(db) { implicit c =>
+    frontend.balance.on('uid -> uid, 'api_key -> apiKey)().map(row =>
       row[String]("currency") -> (row[BigDecimal]("amount"), row[BigDecimal]("hold"))
     ).toMap
   }
 
-  def balance(uid: Long) = DB.withConnection(db) { implicit c =>
-    frontend.balance.on('uid -> uid)().map(row =>
-      row[String]("currency") -> (row[BigDecimal]("amount"), row[BigDecimal]("hold"))
-    ).toMap
-  }
-
-  def apiAskBid(apiKey: String, base: String, counter: String, amount: BigDecimal, price: BigDecimal, isBid: Boolean) = DB.withConnection(db) { implicit c =>
-    frontend.apiOrderNew.on(
-      'api_key -> apiKey,
-      'base -> base,
-      'counter -> counter,
-      'amount -> amount.bigDecimal,
-      'price -> price.bigDecimal,
-      'is_bid -> isBid
-    )().map(_[Boolean]("order_new")).head
-  }
-
-  def askBid(uid: Long, base: String, counter: String, amount: BigDecimal, price: BigDecimal, isBid: Boolean) = DB.withConnection(db) { implicit c =>
+  def askBid(uid: Option[Long], apiKey: Option[String], base: String, counter: String, amount: BigDecimal, price: BigDecimal, isBid: Boolean) = DB.withConnection(db) { implicit c =>
     frontend.orderNew.on(
       'uid -> uid,
+      'api_key -> apiKey,
       'base -> base,
       'counter -> counter,
       'amount -> amount.bigDecimal,
@@ -84,14 +68,8 @@ class EngineModel(val db: String = "default") {
     )).head
   }
 
-  def apiUserPendingTrades(apiKey: String) = DB.withConnection(db) { implicit c =>
-    frontend.userPendingTrades.on('api_key -> apiKey)().map(row =>
-      Trade(row[Long]("id"), if (row[Boolean]("is_bid")) "bid" else "ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"), row[DateTime]("created"))
-    ).toList
-  }
-
-  def userPendingTrades(uid: Long) = DB.withConnection(db) { implicit c =>
-    frontend.userPendingTrades.on('uid -> uid)().map(row =>
+  def userPendingTrades(uid: Option[Long], apiKey: Option[String], before: Option[DateTime] = None, limit: Option[Int] = None) = DB.withConnection(db) { implicit c =>
+    frontend.userPendingTrades.on('uid -> uid, 'api_key -> apiKey, 'before -> before, 'limit -> limit)().map(row =>
       Trade(row[Long]("id"), if (row[Boolean]("is_bid")) "bid" else "ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"), row[DateTime]("created"))
     ).toList
   }
@@ -108,14 +86,9 @@ class EngineModel(val db: String = "default") {
     ).toList
   }
 
-  def apiCancel(apiKey: String, orderId: Long) = DB.withConnection(db) { implicit c =>
+  def cancel(uid: Option[Long], apiKey: Option[String], orderId: Long) = DB.withConnection(db) { implicit c =>
     // the database confirms for us that the user owns the transaction before cancelling it
-    frontend.orderCancel.on('api_key -> apiKey, 'id -> orderId)().map(row => row[Boolean]("order_cancel")).head
-  }
-
-  def cancel(uid: Long, orderId: Long) = DB.withConnection(db) { implicit c =>
-    // the database confirms for us that the user owns the transaction before cancelling it
-    frontend.orderCancel.on('uid -> uid, 'id -> orderId)().map(row => row[Boolean]("order_cancel")).head
+    frontend.orderCancel.on('uid -> uid, 'api_key -> apiKey, 'id -> orderId)().map(row => row[Boolean]("order_cancel")).head
   }
 
   def withdraw(uid: Long, currency: String, amount: BigDecimal, address: String, tfa_code: Option[String]) = DB.withConnection(db) { implicit c =>

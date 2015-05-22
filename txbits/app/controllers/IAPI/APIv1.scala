@@ -49,7 +49,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def balance = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    val balances = globals.engineModel.balance(request.user.id)
+    val balances = globals.engineModel.balance(Some(request.user.id), None)
     Ok(Json.toJson(balances.map({ c =>
       Json.obj(
         "currency" -> c._1,
@@ -72,7 +72,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.askBid(request.user.id, base, counter, amount, price, isBid = false)
+              val res = globals.engineModel.askBid(Some(request.user.id), None, base, counter, amount, price, isBid = false)
               if (res) {
                 Ok(Json.obj())
               } else {
@@ -109,7 +109,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.askBid(request.user.id, base, counter, amount, price, isBid = true)
+              val res = globals.engineModel.askBid(Some(request.user.id), None, base, counter, amount, price, isBid = true)
               if (res) {
                 Ok(Json.obj())
               } else {
@@ -137,7 +137,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   def cancel = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     request.request.body.validate(rds_cancel).map {
       case (order) =>
-        val res = globals.engineModel.cancel(request.user.id, order)
+        val res = globals.engineModel.cancel(Some(request.user.id), None, order)
         if (res) {
           Ok(Json.obj())
         } else {
@@ -181,7 +181,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def tradeHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.toJson(userModel.tradeHistory(request.user.id)))
+    Ok(Json.toJson(userModel.tradeHistory(Some(request.user.id), None)))
   }
 
   def loginHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
@@ -189,7 +189,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def pendingTrades = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    val orders = globals.engineModel.userPendingTrades(request.user.id)
+    val orders = globals.engineModel.userPendingTrades(Some(request.user.id), None)
     Ok(Json.toJson(orders))
   }
 
