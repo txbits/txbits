@@ -331,7 +331,6 @@ create table stats_30_min (
     counter varchar(4) not null,
     start_of_period timestamp not null check(extract(minute from start_of_period) in (0, 30)),
     volume numeric(23,8) not null,
-    average numeric(23,8) not null,
     low numeric(23,8) not null,
     high numeric(23,8) not null,
     open numeric(23,8) not null,

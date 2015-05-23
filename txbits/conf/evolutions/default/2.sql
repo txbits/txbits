@@ -1765,13 +1765,12 @@ chart_from_db (
   a_counter varchar(4),
   out start_of_period timestamp,
   out volume numeric(23,8),
-  out average numeric(23,8),
   out low numeric(23,8),
   out high numeric(23,8),
   out open numeric(23,8),
   out close numeric(23,8)
 ) returns setof record as $$
-  select s.start_of_period, s.volume, s.average, s.low, s.high, s.open, s.close
+  select s.start_of_period, s.volume, s.low, s.high, s.open, s.close
   from stats_30_min s
   where s.base = a_base and s.counter = a_counter and s.start_of_period > current_timestamp - interval '24 hours'
   order by s.start_of_period ASC limit 48;;
@@ -1828,13 +1827,12 @@ begin
   period := date_trunc('hour', current_timestamp) + INTERVAL '30 min' * trunc(extract(minute from current_timestamp) / 30);;
 
   update stats_30_min set volume = volume + new_amount,
-  average = average * volume / (volume + new_amount) + new_price / (volume + new_amount),
   low = least(low, new_price), high = greatest(high, new_price), close = new_price
   where base = new_base and counter = new_counter and start_of_period = period;;
 
   if not found then
-    insert into stats_30_min (base, counter, start_of_period, volume, average, low, high, open, close)
-    values (new_base, new_counter, period, new_amount, new_price, new_price, new_price, new_price, new_price);;
+    insert into stats_30_min (base, counter, start_of_period, volume, low, high, open, close)
+    values (new_base, new_counter, period, new_amount, new_price, new_price, new_price, new_price);;
   end if;;
 end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
