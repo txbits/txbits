@@ -43,6 +43,13 @@ class EngineModel(val db: String = "default") {
 
   // regular apis
 
+  def flushMarketCaches(base: String, counter: String) {
+    val caches = List("orders", "trades", "stats", "tickers")
+    for (c <- caches) {
+      play.api.cache.Cache.remove("%s.%s.%s".format(base, counter, c))
+    }
+  }
+
   def balance(uid: Option[Long], apiKey: Option[String]) = DB.withConnection(db) { implicit c =>
     frontend.balance.on('uid -> uid, 'api_key -> apiKey)().map(row =>
       row[String]("currency") -> (row[BigDecimal]("amount"), row[BigDecimal]("hold"))
@@ -50,7 +57,7 @@ class EngineModel(val db: String = "default") {
   }
 
   def askBid(uid: Option[Long], apiKey: Option[String], base: String, counter: String, amount: BigDecimal, price: BigDecimal, isBid: Boolean) = DB.withConnection(db) { implicit c =>
-    frontend.orderNew.on(
+    val res = frontend.orderNew.on(
       'uid -> uid,
       'api_key -> apiKey,
       'base -> base,
@@ -58,14 +65,36 @@ class EngineModel(val db: String = "default") {
       'amount -> amount.bigDecimal,
       'price -> price.bigDecimal,
       'is_bid -> isBid
-    )().map(_[Boolean]("order_new")).head
+    )().map(_[Option[Boolean]]("order_new")).head
+    if (res.isDefined) {
+      flushMarketCaches(base, counter)
+    }
+    res.get
   }
 
   def ordersDepth(base: String, counter: String) = DB.withConnection(db) { implicit c =>
-    frontend.ordersDepth.on('base -> base, 'counter -> counter)().map(row => (
-      row[Option[Array[Array[java.math.BigDecimal]]]]("asks").getOrElse(Array[Array[java.math.BigDecimal]]()),
-      row[Option[Array[Array[java.math.BigDecimal]]]]("bids").getOrElse(Array[Array[java.math.BigDecimal]]())
-    )).head
+    play.api.cache.Cache.getOrElse("%s.%s.orders".format(base, counter)) {
+      val PriceIndex = 0
+      val AmountIndex = 1
+      val (asks, bids) = frontend.ordersDepth.on('base -> base, 'counter -> counter)().map(row => (
+        row[Option[Array[Array[java.math.BigDecimal]]]]("asks").getOrElse(Array[Array[java.math.BigDecimal]]()),
+        row[Option[Array[Array[java.math.BigDecimal]]]]("bids").getOrElse(Array[Array[java.math.BigDecimal]]())
+      )).head
+      Json.obj(
+        "asks" -> asks.map { a: Array[java.math.BigDecimal] =>
+          Json.obj(
+            "amount" -> a(AmountIndex).toPlainString,
+            "price" -> a(PriceIndex).toPlainString
+          )
+        },
+        "bids" -> bids.map { b: Array[java.math.BigDecimal] =>
+          Json.obj(
+            "amount" -> b(AmountIndex).toPlainString,
+            "price" -> b(PriceIndex).toPlainString
+          )
+        }
+      )
+    }
   }
 
   def userPendingTrades(uid: Option[Long], apiKey: Option[String], before: Option[DateTime] = None, limit: Option[Int] = None) = DB.withConnection(db) { implicit c =>
@@ -74,21 +103,18 @@ class EngineModel(val db: String = "default") {
     ).toList
   }
 
-  def openAsks(base: String, counter: String) = DB.withConnection(db) { implicit c =>
-    frontend.openAsks.on('base -> base, 'counter -> counter)().map(row =>
-      OpenOrder("ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
-    ).toList
-  }
-
-  def openBids(base: String, counter: String) = DB.withConnection(db) { implicit c =>
-    frontend.openBids.on('base -> base, 'counter -> counter)().map(row =>
-      OpenOrder("bid", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"))
-    ).toList
-  }
-
   def cancel(uid: Option[Long], apiKey: Option[String], orderId: Long) = DB.withConnection(db) { implicit c =>
     // the database confirms for us that the user owns the transaction before cancelling it
-    frontend.orderCancel.on('uid -> uid, 'api_key -> apiKey, 'id -> orderId)().map(row => row[Boolean]("order_cancel")).head
+    val res = frontend.orderCancel.on('uid -> uid, 'api_key -> apiKey, 'id -> orderId)().map(row =>
+      (row[Option[String]]("base"), row[Option[String]]("counter"))
+    ).head
+    res match {
+      case (Some(base: String), Some(counter: String)) =>
+        flushMarketCaches(base, counter)
+        true
+      case _ =>
+        false
+    }
   }
 
   def withdraw(uid: Long, currency: String, amount: BigDecimal, address: String, tfa_code: Option[String]) = DB.withConnection(db) { implicit c =>
@@ -173,18 +199,21 @@ class EngineModel(val db: String = "default") {
   }
 
   def recentTrades(base: String, counter: String) = DB.withConnection(db) { implicit c =>
-    frontend.recentTrades.on(
-      'base -> base,
-      'counter -> counter
-    )().map(row =>
-        TradeHistory(row[BigDecimal]("amount").bigDecimal.toPlainString,
-          BigDecimal(0).toString(), //the fee doesn't matter... TODO: don't include the fee here
-          row[DateTime]("created"),
-          row[BigDecimal]("price").bigDecimal.toPlainString,
-          row[String]("base"),
-          row[String]("counter"),
-          if (row[Boolean]("is_bid")) "bid" else "ask")
-      ).toList
+    play.api.cache.Cache.getOrElse("%s.%s.trades".format(base, counter)) {
+      Json.toJson(frontend.recentTrades.on(
+        'base -> base,
+        'counter -> counter
+      )().map(row =>
+          TradeHistory(row[BigDecimal]("amount").bigDecimal.toPlainString,
+            BigDecimal(0).toString(), //the fee doesn't matter... TODO: don't include the fee here
+            row[DateTime]("created"),
+            row[BigDecimal]("price").bigDecimal.toPlainString,
+            row[String]("base"),
+            row[String]("counter"),
+            if (row[Boolean]("is_bid")) "bid" else "ask")
+        ).toList
+      )
+    }
   }
 
 }
@@ -200,13 +229,6 @@ case class Trade(id: Long, typ: String, amount: String, price: String, base: Str
 object Trade {
   implicit val writes = Json.writes[Trade]
   implicit val format = Json.format[Trade]
-}
-
-case class OpenOrder(typ: String, amount: String, price: String, base: String, counter: String)
-
-object OpenOrder {
-  implicit val writes = Json.writes[OpenOrder]
-  implicit val format = Json.format[OpenOrder]
 }
 
 case class Match(amount: BigDecimal, price: BigDecimal, created: DateTime, base: String, counter: String)

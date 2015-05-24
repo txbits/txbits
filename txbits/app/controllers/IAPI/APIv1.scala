@@ -149,31 +149,21 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def openTrades(base: String, counter: String) = Action { implicit request =>
-    val PriceIndex = 0
-    val AmountIndex = 1
     // a specific pair will be given as an argument
-    val (asks, bids) = globals.engineModel.ordersDepth(base, counter)
-
-    Ok(Json.obj(
-      "asks" -> asks.map { a: Array[java.math.BigDecimal] =>
-        Json.obj(
-          "amount" -> a(AmountIndex).toPlainString,
-          "price" -> a(PriceIndex).toPlainString
-        )
-      },
-      "bids" -> bids.map { b: Array[java.math.BigDecimal] =>
-        Json.obj(
-          "amount" -> b(AmountIndex).toPlainString,
-          "price" -> b(PriceIndex).toPlainString
-        )
-      }
-    )
-    )
+    if (globals.metaModel.activeMarkets.contains(base, counter)) {
+      Ok(globals.engineModel.ordersDepth(base, counter))
+    } else {
+      BadRequest(Json.obj("message" -> "Invalid pair."))
+    }
   }
 
   def recentTrades(base: String, counter: String) = Action { implicit request =>
     // a specific pair will be given as an argument
-    Ok(Json.toJson(engineModel.recentTrades(base, counter)))
+    if (globals.metaModel.activeMarkets.contains(base, counter)) {
+      Ok(engineModel.recentTrades(base, counter))
+    } else {
+      BadRequest(Json.obj("message" -> "Invalid pair."))
+    }
   }
 
   def depositWithdrawHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>

@@ -217,7 +217,7 @@ object frontend {
 
   val orderCancel = SQL(
     """
-    | select * from order_cancel({uid}, {api_key}, {id})
+    | select base, counter from order_cancel({uid}, {api_key}, {id})
     |""".stripMargin)
 
   val userPendingTrades = SQL(
@@ -238,16 +238,6 @@ object frontend {
   val depositWithdrawHistory = SQL(
     """
     | select * from deposit_withdraw_history({id}, {before}, {limit})
-    |""".stripMargin)
-
-  val openAsks = SQL(
-    """
-    | select * from open_asks({base}, {counter})
-    |""".stripMargin)
-
-  val openBids = SQL(
-    """
-    | select * from open_bids({base}, {counter})
     |""".stripMargin)
 
   val ordersDepth = SQL(

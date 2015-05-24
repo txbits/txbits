@@ -120,7 +120,7 @@ order_cancel(
   a_uid bigint,
   a_api_key text,
   o_id bigint
-  ) returns boolean as $$
+  ) returns orders as $$
 declare
     o orders%rowtype;;
     b varchar(4);;
@@ -146,7 +146,7 @@ begin
     where id = o_id and user_id = o_user_id and closed = false and remains > 0;;
 
     if not found then
-      return false;;
+      return null;;
     end if;;
 
     perform pg_advisory_xact_lock(id) from markets where base = b and counter = c;;
@@ -156,7 +156,7 @@ begin
     returning * into o;;
 
     if not found then
-      return false;;
+      return null;;
     end if;;
 
     if o.is_bid then
@@ -167,7 +167,7 @@ begin
       where currency = o.base and user_id = o.user_id;;
     end if;;
 
-    return true;;
+    return o;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -1242,8 +1242,8 @@ begin
       ww.user_confirmed = false and
       ww.user_rejected = false
   loop
+    update withdrawals set user_rejected = true where id = w.id;;
     perform withdrawal_refund(w.amount, w.user_id, w.currency, w.fee);;
-    delete from withdrawals where id = w.id;;
   end loop;;
   delete from tokens where expiration < current_timestamp;;
 end;;
