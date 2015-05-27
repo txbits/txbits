@@ -44,8 +44,8 @@ class EngineModel(val db: String = "default") {
   // regular apis
 
   def flushMarketCaches(base: String, counter: String) {
-    val caches = List("orders", "trades", "stats", "tickers")
-    for (c <- caches) {
+    val caches = List("orders", "trades", "stats", "ticker")
+    caches.foreach { c =>
       play.api.cache.Cache.remove("%s.%s.%s".format(base, counter, c))
     }
   }

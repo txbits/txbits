@@ -293,5 +293,36 @@ class EngineModelSpec extends Specification with Mockito {
         }
       }
     }
+
+    "cache market data" in new WithCleanTestDbApplication {
+      val asker = globals.userModel.create("test@test.test", "", false).get
+      val bidder = globals.userModel.create("test2@test.test", "", false).get
+
+      globals.userModel.addFakeMoney(asker, "LTC", 2)
+      globals.userModel.addFakeMoney(bidder, "USD", 1)
+
+      globals.engineModel.askBid(Some(asker), None, "LTC", "USD", 2, 1, false)
+      globals.engineModel.askBid(Some(bidder), None, "LTC", "USD", 1, 1, true)
+
+      // Read values out of database will populate cache
+      val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
+      val trades_res = globals.engineModel.recentTrades("LTC", "USD")
+      val stats_res = controllers.StatsAPI.APIv1.chartFromDB("LTC", "USD")
+      val ticker_res = controllers.StatsAPI.APIv1.tickerFromDb.head
+
+      // Verify the cache contains the expected values
+      play.api.cache.Cache.get("%s.%s.orders".format("LTC", "USD")) should beEqualTo(Some(orders_res))
+      play.api.cache.Cache.get("%s.%s.trades".format("LTC", "USD")) should beEqualTo(Some(trades_res))
+      play.api.cache.Cache.get("%s.%s.stats".format("LTC", "USD")) should beEqualTo(Some(stats_res))
+      play.api.cache.Cache.get("%s.%s.ticker".format("LTC", "USD")) should beEqualTo(Some(ticker_res))
+
+      globals.engineModel.flushMarketCaches("LTC", "USD")
+
+      // Verify the cached values are removed after flushing
+      play.api.cache.Cache.get("%s.%s.orders".format("LTC", "USD")) should beEmpty
+      play.api.cache.Cache.get("%s.%s.trades".format("LTC", "USD")) should beEmpty
+      play.api.cache.Cache.get("%s.%s.stats".format("LTC", "USD")) should beEmpty
+      play.api.cache.Cache.get("%s.%s.ticker".format("LTC", "USD")) should beEmpty
+    }
   }
 }

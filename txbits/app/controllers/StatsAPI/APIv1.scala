@@ -89,12 +89,9 @@ object APIv1 extends Controller {
     }
   }
 
-  // TODO: cache this?
-  // TODO: This is very inefficient!!! This needs to be fixed
   def tickerFromDb = DB.withConnection(masterDB) { implicit c =>
     globals.metaModel.validPairs.flatMap {
       case (base, counter, active, minAmount) =>
-        //TODO: this is a temporary hack that uses the chart query and then extracts the data from it
         val res: List[Seq[JsNumber]] = chartFromDB(base, counter)
         if (!res.isEmpty) {
           val ticker = play.api.cache.Cache.getOrElse("%s.%s.ticker".format(base, counter)) {
@@ -137,7 +134,6 @@ object APIv1 extends Controller {
     (in, out)
   }
 
-  //TODO: move this out of postgres and into something more suited for this kind of data
   def chartFromDB(base: String, counter: String) = DB.withConnection(masterDB) { implicit c =>
     play.api.cache.Cache.getOrElse("%s.%s.stats".format(base, counter)) {
       frontend.chartFromDb.on(
