@@ -100,8 +100,9 @@ class DefaultIdGenerator(app: Application) extends IdGenerator(app) {
   //todo: this needs improvement, several threads will wait for the synchronized block in SecureRandom.
   // I will probably need a pool of SecureRandom instances.
   val random = new SecureRandom()
-  // memcache can handle only 250 character keys. 128 bytes is 256 characters.
-  val DefaultSizeInBytes = 125
+  // memcache can handle only 250 character keys. 128 bytes is 256 characters in hex.
+  val IdPrefix = "user."
+  val DefaultSizeInBytes = 122
   val IdLengthKey = "securesocial.idLengthInBytes"
   val IdSizeInBytes = app.configuration.getInt(IdLengthKey).getOrElse(DefaultSizeInBytes)
 
@@ -113,7 +114,7 @@ class DefaultIdGenerator(app: Application) extends IdGenerator(app) {
   def generate: String = {
     var randomValue = new Array[Byte](IdSizeInBytes)
     random.nextBytes(randomValue)
-    Codecs.toHexString(randomValue)
+    IdPrefix + Codecs.toHexString(randomValue)
   }
 }
 
