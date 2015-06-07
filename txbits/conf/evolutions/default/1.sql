@@ -138,6 +138,8 @@ create table markets (
     limit_min numeric(23,8) not null check(limit_min > 0), -- minimum amount of base currency in an order
     active bool default true not null, -- false prevents new orders from being inserted
     position int not null, -- used for displaying
+    total_base numeric(23,8) default 0 not null,
+    total_counter numeric(23,8) default 0 not null,
     foreign key (base) references currencies(currency),
     foreign key (counter) references currencies(currency)
 );

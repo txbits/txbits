@@ -65,6 +65,9 @@ begin
     returning * into strict o2;;
 
     if new_is_bid then
+      update markets set total_counter = total_counter + new_amount * new_price
+      where base = new_base and counter = new_counter;;
+
       for o in select * from orders oo
         where
           oo.remains > 0 and
@@ -87,6 +90,9 @@ begin
         exit when o2.remains = 0;;
       end loop;;
     else
+      update markets set total_base = total_base + new_amount
+      where base = new_base and counter = new_counter;;
+
       for o in select * from orders oo
         where
           oo.remains > 0 and
@@ -162,9 +168,15 @@ begin
     if o.is_bid then
       update balances set hold = hold - o.remains * o.price
       where currency = o.counter and user_id = o.user_id;;
+
+      update markets set total_counter = total_counter - o.remains * o.price
+      where base = o.base and counter = o.counter;;
     else
       update balances set hold = hold - o.remains
       where currency = o.base and user_id = o.user_id;;
+
+      update markets set total_base = total_base - o.remains
+      where base = o.base and counter = o.counter;;
     end if;;
 
     return o;;
@@ -222,6 +234,10 @@ begin
 
     update balances set hold = hold - new_amount * new_price
     where currency = bid.counter and user_id = bid.user_id;;
+
+    update markets set total_base = total_base - new_amount,
+    total_counter = total_counter - new_amount * new_price
+    where base = bid.base and counter = bid.counter;;
 
     -- reducing order volumes and reducing remaining volumes
     update orders set remains = remains - new_amount,
@@ -1700,13 +1716,19 @@ orders_depth(
   a_base varchar(4),
   a_counter varchar(4),
   out asks numeric(23,8)[][],
-  out bids numeric(23,8)[][]
+  out bids numeric(23,8)[][],
+  out total_base numeric(23,8),
+  out total_counter numeric(23,8)
 ) returns record as $$
     select (
       nullif((select array_agg_mult(array[array[price, amount]]) from open_asks(a_base, a_counter)), array[]::numeric(23,8)[])
     ), (
       nullif((select array_agg_mult(array[array[price, amount]]) from open_bids(a_base, a_counter)), array[]::numeric(23,8)[])
-    );;
+    ), (
+      total_base
+    ), (
+      total_counter
+    ) from markets where base = a_base and counter = a_counter;;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function

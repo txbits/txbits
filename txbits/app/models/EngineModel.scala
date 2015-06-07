@@ -76,9 +76,11 @@ class EngineModel(val db: String = "default") {
     play.api.cache.Cache.getOrElse("%s.%s.orders".format(base, counter)) {
       val PriceIndex = 0
       val AmountIndex = 1
-      val (asks, bids) = frontend.ordersDepth.on('base -> base, 'counter -> counter)().map(row => (
+      val (asks, bids, total_base, total_counter) = frontend.ordersDepth.on('base -> base, 'counter -> counter)().map(row => (
         row[Option[Array[Array[java.math.BigDecimal]]]]("asks").getOrElse(Array[Array[java.math.BigDecimal]]()),
-        row[Option[Array[Array[java.math.BigDecimal]]]]("bids").getOrElse(Array[Array[java.math.BigDecimal]]())
+        row[Option[Array[Array[java.math.BigDecimal]]]]("bids").getOrElse(Array[Array[java.math.BigDecimal]]()),
+        row[java.math.BigDecimal]("total_base"),
+        row[java.math.BigDecimal]("total_counter")
       )).head
       Json.obj(
         "asks" -> asks.map { a: Array[java.math.BigDecimal] =>
@@ -92,7 +94,9 @@ class EngineModel(val db: String = "default") {
             "amount" -> b(AmountIndex).toPlainString,
             "price" -> b(PriceIndex).toPlainString
           )
-        }
+        },
+        "total_base" -> total_base.toPlainString,
+        "total_counter" -> total_counter.toPlainString
       )
     }
   }

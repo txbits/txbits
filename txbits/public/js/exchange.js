@@ -96,6 +96,7 @@ $(function(){
                         bids.orders[i].amount = zerosToSpaces(bids.orders[i].amount);
                         bids.orders[i].price = zerosToSpaces(bids.orders[i].price);
                     }
+                    bids.total_counter = zerosTrim(data.total_counter);
                     var asks = {};
                     asks.orders = data.asks;
                     asks.base = base;
@@ -105,6 +106,7 @@ $(function(){
                         asks.orders[i].amount = zerosToSpaces(asks.orders[i].amount);
                         asks.orders[i].price = zerosToSpaces(asks.orders[i].price);
                     }
+                    asks.total_base = zerosTrim(data.total_base);
 
                     $('#open-bids').html(ob_template(bids));
                     $('#open-asks').html(oa_template(asks));
