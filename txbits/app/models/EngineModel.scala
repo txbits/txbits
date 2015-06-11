@@ -82,22 +82,7 @@ class EngineModel(val db: String = "default") {
         row[java.math.BigDecimal]("total_base"),
         row[java.math.BigDecimal]("total_counter")
       )).head
-      Json.obj(
-        "asks" -> asks.map { a: Array[java.math.BigDecimal] =>
-          Json.obj(
-            "amount" -> a(AmountIndex).toPlainString,
-            "price" -> a(PriceIndex).toPlainString
-          )
-        },
-        "bids" -> bids.map { b: Array[java.math.BigDecimal] =>
-          Json.obj(
-            "amount" -> b(AmountIndex).toPlainString,
-            "price" -> b(PriceIndex).toPlainString
-          )
-        },
-        "total_base" -> total_base.toPlainString,
-        "total_counter" -> total_counter.toPlainString
-      )
+      EngineModel.orderBookFormat(asks, bids, total_base, total_counter)
     }
   }
 
@@ -221,6 +206,29 @@ class EngineModel(val db: String = "default") {
   }
 
 }
+object EngineModel {
+  def orderBookFormat(asks: Array[Array[java.math.BigDecimal]], bids: Array[Array[java.math.BigDecimal]], totalBase: java.math.BigDecimal, totalCounter: java.math.BigDecimal) = {
+    val PriceIndex = 0
+    val AmountIndex = 1
+    Json.obj(
+      "asks" -> asks.map { a: Array[java.math.BigDecimal] =>
+        Json.obj(
+          "amount" -> a(AmountIndex).toPlainString,
+          "price" -> a(PriceIndex).toPlainString
+        )
+      },
+      "bids" -> bids.map { b: Array[java.math.BigDecimal] =>
+        Json.obj(
+          "amount" -> b(AmountIndex).toPlainString,
+          "price" -> b(PriceIndex).toPlainString
+        )
+      },
+      "total_base" -> totalBase.toPlainString,
+      "total_counter" -> totalCounter.toPlainString
+    )
+  }
+}
+
 case class Withdrawal(id: Long, amount: String, fee: String, created: DateTime, info: String, currency: String)
 
 object Withdrawal {
