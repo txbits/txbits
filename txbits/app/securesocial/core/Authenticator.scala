@@ -156,7 +156,7 @@ abstract class AuthenticatorStore(app: Application) extends Plugin {
  * @param app
  */
 class DefaultAuthenticatorStore(app: Application) extends AuthenticatorStore(app) {
-  val IdPrefix = "user."
+  val IdPrefix = "session."
 
   def save(authenticator: Authenticator) {
     Cache.set(IdPrefix + authenticator.id, authenticator, Authenticator.absoluteTimeoutInSeconds)
