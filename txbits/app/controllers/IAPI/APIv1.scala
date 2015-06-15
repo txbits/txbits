@@ -168,11 +168,13 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def depositWithdrawHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.toJson(userModel.depositWithdrawHistory(request.user.id)))
+    val (before, limit) = Util.parse_pagination_params
+    Ok(Json.toJson(userModel.depositWithdrawHistory(request.user.id, before, limit)))
   }
 
   def tradeHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.toJson(userModel.tradeHistory(Some(request.user.id), None)))
+    val (before, limit) = Util.parse_pagination_params
+    Ok(Json.toJson(userModel.tradeHistory(Some(request.user.id), None, before, limit)))
   }
 
   def loginHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>

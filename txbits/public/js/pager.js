@@ -29,47 +29,45 @@ Pager.prototype.scroll_cb = function() {
         if (this.debounce_hold == false && this.done != true) {
             var promise = this.requestContentCb();
             this.spinner.show();
-            promise.done(this.finish_request_cb.bind(this));
+            promise.always(this.finish_request_cb.bind(this));
             promise.success(this.success_cb.bind(this));
             this.debounce_hold = true;
         }
     }
 };
 
-Pager.make_easy_pager = function(api, $parent, table_selector, body_selector, spinner_selector, template, row_template) {
-    function preprocess(data) {
-        var i;
-        for (i = 0; i < data.length; i++){
-            data[i].created = moment(Number(data[i].created)).format("YYYY-MM-DD HH:mm:ss");
-        }
-        return data;
-    }
-
+Pager.make_easy_pager = function(api, $parent, table_selector, body_selector, spinner_selector, template, row_template, preprocess) {
     api().success(function(data){
-        var last_timestamp = data[data.length-1].created;
-        data = preprocess(data);
-        var html = template(data);
-        $parent.html(html);
+        if(data.length > 0) {
+            var last_timestamp = data[data.length-1].created;
+            if(preprocess) {
+                data = preprocess(data);
+            }
+            var html = template(data);
+            $parent.html(html);
 
-        new Pager($(table_selector),
-            $(body_selector),
-            $(spinner_selector),
-            function request_next_page() {
-                var that = this; // Pager
-                var promise = api(this.last_timestamp);
-                promise.success(function(data){
-                    if(data.length > 0) {
-                        that.last_timestamp = data[data.length-1].created;
-                        data =  preprocess(data);
-                        for (var d in data) {
-                            var row = data[d];
-                            $(body_selector).append(row_template(row))
+            new Pager($(table_selector),
+                $(body_selector),
+                $(spinner_selector),
+                function request_next_page() {
+                    var that = this; // Pager
+                    var promise = api(this.last_timestamp);
+                    promise.success(function(data){
+                        if(data.length > 0) {
+                            that.last_timestamp = data[data.length-1].created;
+                            if(preprocess) {
+                                data =  preprocess(data);
+                            }
+                            for (var d in data) {
+                                var row = data[d];
+                                $(body_selector).append(row_template(row))
+                            }
                         }
-                    }
-                });
-                return promise;
-            },
-            last_timestamp
-        );
+                    });
+                    return promise;
+                },
+                last_timestamp
+            );
+        }
     });
 };

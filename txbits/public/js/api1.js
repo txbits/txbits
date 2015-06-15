@@ -98,19 +98,13 @@ var API;
             return $.get(prefix+'ticker', 'json');
         }),
 
-        trade_history: APIWrap(function() {
-            return $.get(prefix+'trade_history', 'json');
-        }),
+        trade_history: APIWrap(paginated('trade_history')),
 
         login_history: APIWrap(paginated('login_history')),
 
-        deposit_withdraw_history: APIWrap(function() {
-            return $.get(prefix+'deposit_withdraw_history', 'json');
-        }),
+        deposit_withdraw_history: APIWrap(paginated('deposit_withdraw_history')),
 
-        pending_trades: APIWrap(function() {
-            return $.get(prefix+'pending_trades', 'json');
-        }),
+        pending_trades: APIWrap(paginated('pending_trades')),
 
         trade_fees: APIWrap(function() {
             return $.get(prefix+'trade_fees', 'json');
