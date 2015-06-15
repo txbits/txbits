@@ -1,6 +1,7 @@
 @(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
 
 @scripts = {
+    <script src="@routes.Assets.at("js/pager.js")"></script>
     <script src="@routes.Assets.at("js/history.js")"></script>
 }
 
@@ -46,15 +47,20 @@
             </thead>
             <tbody>
                 {{#each .}}
-                <tr>
-                    <td>{{created}}</td>
-                    <td>{{typ}}</td>
-                    <td>{{ip}}</td>
-                </tr>
+                    {{> login-history-row}}
                 {{/each}}
             </tbody>
         </table>
+        <div class="spinner" style="display:none"><i class="spin glyphicon glyphicon-refresh"></i></div>
         </div>
+    </script>
+
+    <script id="login-history-row-template" type="text/x-handlebars-template">
+        <tr>
+            <td>{{created}}</td>
+            <td>{{typ}}</td>
+            <td>{{ip}}</td>
+        </tr>
     </script>
 
     <script id="trade-history-template" type="text/x-handlebars-template">

@@ -1,9 +1,15 @@
 var API;
 (function(){
     var prefix = '/iapi/1/';
-    // when you call API wrap on a function it returns a function which
-    // when called acts just like the function you wrapped but also adds
-    // an error handler
+
+    // This creates a simple paginated function that makes calls to `path`
+    function paginated(path) {
+        return function(before, per_page) {
+            return $.get(prefix+path, {before: before, per_page: per_page});
+        };
+    }
+
+    // This adds an error handler to API calls to show the error in the UI
     var APIWrap = function(fn) {
         return function () {
             return fn.apply(this, arguments).error( function (res) {
@@ -96,9 +102,7 @@ var API;
             return $.get(prefix+'trade_history', 'json');
         }),
 
-        login_history: APIWrap(function() {
-            return $.get(prefix+'login_history', 'json');
-        }),
+        login_history: APIWrap(paginated('login_history')),
 
         deposit_withdraw_history: APIWrap(function() {
             return $.get(prefix+'deposit_withdraw_history', 'json');

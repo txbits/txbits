@@ -11,6 +11,7 @@ import service.{ PGP, TOTPUrl }
 import org.postgresql.util.PSQLException
 import org.apache.commons.codec.binary.Base64.encodeBase64
 import java.security.SecureRandom
+import controllers.Util
 
 object APIv1 extends Controller with securesocial.core.SecureSocial {
 
@@ -175,7 +176,8 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def loginHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.toJson(globals.logModel.getLoginEvents(request.user.id)))
+    val (before, limit) = Util.parse_pagination_params
+    Ok(Json.toJson(globals.logModel.getLoginEvents(request.user.id, before, limit)))
   }
 
   def pendingTrades = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>

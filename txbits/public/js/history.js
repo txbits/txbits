@@ -2,6 +2,10 @@ $(function(){
     var dw_template = Handlebars.compile($("#deposit-withdraw-history-template").html());
     var trade_template = Handlebars.compile($("#trade-history-template").html());
     var login_history_template = Handlebars.compile($("#login-history-template").html());
+
+    Handlebars.registerPartial("login-history-row", $("#login-history-row-template").html());
+    var login_history_row_template = Handlebars.compile($("#login-history-row-template").html());
+
     API.deposit_withdraw_history().success(function(data){
         var i;
         for (i = 0; i < data.length; i++){
@@ -41,12 +45,14 @@ $(function(){
         var html = trade_template(data);
         $('#trade-history').html(html);
     });
-    API.login_history().success(function(data){
-        var i;
-        for (i = 0; i < data.length; i++){
-            data[i].created = moment(Number(data[i].created)).format("YYYY-MM-DD HH:mm:ss");
-        }
-        var html = login_history_template(data);
-        $('#login-history').html(html);
-    });
+
+    Pager.make_easy_pager(
+        API.login_history,
+        $('#login-history'),
+        '#login-history>.tablescroller',
+        '#login-history>.tablescroller>.table>tbody',
+        '#login-history>.tablescroller>.spinner',
+        login_history_template,
+        login_history_row_template
+    );
 });
