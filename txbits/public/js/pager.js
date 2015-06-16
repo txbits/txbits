@@ -43,7 +43,12 @@ Pager.make_easy_pager = function(api, $parent, table_selector, body_selector, sp
             if(preprocess) {
                 data = preprocess(data);
             }
+        }
 
+        var html = template(data);
+        $parent.html(html);
+
+        if(data.length > 0) {
             new Pager($(table_selector),
                 $(body_selector),
                 $(spinner_selector),
@@ -67,7 +72,5 @@ Pager.make_easy_pager = function(api, $parent, table_selector, body_selector, sp
                 last_timestamp
             );
         }
-        var html = template(data);
-        $parent.html(html);
     });
 };
