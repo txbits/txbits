@@ -86,8 +86,8 @@ class EngineModel(val db: String = "default") {
     }
   }
 
-  def userPendingTrades(uid: Option[Long], apiKey: Option[String], before: Option[DateTime] = None, limit: Option[Int] = None) = DB.withConnection(db) { implicit c =>
-    frontend.userPendingTrades.on('uid -> uid, 'api_key -> apiKey, 'before -> before, 'limit -> limit)().map(row =>
+  def userPendingTrades(uid: Option[Long], apiKey: Option[String]) = DB.withConnection(db) { implicit c =>
+    frontend.userPendingTrades.on('uid -> uid, 'api_key -> apiKey)().map(row =>
       Trade(row[Long]("id"), if (row[Boolean]("is_bid")) "bid" else "ask", row[BigDecimal]("amount").bigDecimal.toPlainString, row[BigDecimal]("price").bigDecimal.toPlainString, row[String]("base"), row[String]("counter"), row[DateTime]("created"))
     ).toList
   }
@@ -154,7 +154,7 @@ class EngineModel(val db: String = "default") {
 
   def pendingWithdrawals(uid: Long) = DB.withConnection(db) { implicit c =>
     tuplesToGroupedMap(
-      frontend.getAllWithdrawals.on('uid -> uid)().map(row =>
+      frontend.userPendingWithdrawals.on('uid -> uid)().map(row =>
         (
           row[String]("currency"),
           Withdrawal(
@@ -171,7 +171,7 @@ class EngineModel(val db: String = "default") {
 
   def pendingDeposits(uid: Long) = DB.withConnection(db) { implicit c =>
     tuplesToGroupedMap(
-      frontend.getAllDeposits.on('uid -> uid)().map(row =>
+      frontend.userPendingDeposits.on('uid -> uid)().map(row =>
         (
           row[String]("currency"),
           Withdrawal(

@@ -213,8 +213,8 @@ class EngineModelSpec extends Specification with Mockito {
 
       val asker_res = globals.userModel.tradeHistory(Some(asker), None)
       val bidder_res = globals.userModel.tradeHistory(Some(bidder), None)
-      asker_res should be equalTo List(TradeHistory("1.00000000", "0.01000000", asker_res.head.created, "2.00000000", "LTC", "USD", "ask"))
-      bidder_res should be equalTo List(TradeHistory("1.00000000", "0.00500000", bidder_res.head.created, "2.00000000", "LTC", "USD", "bid"))
+      asker_res should be equalTo List(TradeHistory("1.00000000", "0.01000000", asker_res.head.created, "2.00000000", "LTC", "USD", "ask", asker_res.head.id))
+      bidder_res should be equalTo List(TradeHistory("1.00000000", "0.00500000", bidder_res.head.created, "2.00000000", "LTC", "USD", "bid", bidder_res.head.id))
 
       val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
       orders_res should be equalTo orderBookEmpty
@@ -237,8 +237,8 @@ class EngineModelSpec extends Specification with Mockito {
         case c: String => (c, (BigDecimal(0), BigDecimal(0)))
       }.toMap
       trade_res.toSet should be equalTo Set(
-        TradeHistory("1.00000000", "0.01000000", trade_res.head.created, "2.00000000", "LTC", "USD", "ask"),
-        TradeHistory("1.00000000", "0.00500000", trade_res.head.created, "2.00000000", "LTC", "USD", "bid"))
+        TradeHistory("1.00000000", "0.01000000", trade_res.head.created, "2.00000000", "LTC", "USD", "ask", trade_res.head.id),
+        TradeHistory("1.00000000", "0.00500000", trade_res.head.created, "2.00000000", "LTC", "USD", "bid", trade_res.head.id))
 
       val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
       orders_res should be equalTo orderBookEmpty

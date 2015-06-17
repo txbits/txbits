@@ -17,14 +17,14 @@ import service.{ PGP, TOTPSecret }
 import play.api.libs.json.Json
 import java.security.SecureRandom
 
-case class TradeHistory(amount: String, fee: String, created: DateTime, price: String, base: String, counter: String, typ: String)
+case class TradeHistory(amount: String, fee: String, created: DateTime, price: String, base: String, counter: String, typ: String, id: Option[Long] = None)
 
 object TradeHistory {
   implicit val writes = Json.writes[TradeHistory]
   implicit val format = Json.format[TradeHistory]
 }
 
-case class DepositWithdrawHistory(amount: String, fee: String, created: DateTime, currency: String, typ: String, address: String)
+case class DepositWithdrawHistory(id: Long, amount: String, fee: String, created: DateTime, currency: String, typ: String, address: String)
 
 object DepositWithdrawHistory {
   implicit val writes = Json.writes[DepositWithdrawHistory]
@@ -187,12 +187,13 @@ class UserModel(val db: String = "default") {
       ).head
   }
 
-  def tradeHistory(uid: Option[Long], apiKey: Option[String], before: Option[DateTime] = None, limit: Option[Int] = None) = DB.withConnection(db) { implicit c =>
+  def tradeHistory(uid: Option[Long], apiKey: Option[String], before: Option[DateTime] = None, limit: Option[Int] = None, lastId: Option[Long] = None) = DB.withConnection(db) { implicit c =>
     frontend.tradeHistory.on(
       'id -> uid,
       'api_key -> apiKey,
       'before -> before,
-      'limit -> limit
+      'limit -> limit,
+      'last_id -> lastId
     )().map(row =>
         TradeHistory(row[BigDecimal]("amount").bigDecimal.toPlainString,
           row[BigDecimal]("fee").bigDecimal.toPlainString,
@@ -200,17 +201,20 @@ class UserModel(val db: String = "default") {
           row[BigDecimal]("price").bigDecimal.toPlainString,
           row[String]("base"),
           row[String]("counter"),
-          row[String]("type"))
+          if (row[Boolean]("is_bid")) "bid" else "ask",
+          Some(row[Long]("id")))
       ).toList
   }
 
-  def depositWithdrawHistory(uid: Long, before: Option[DateTime] = None, limit: Option[Int] = None) = DB.withConnection(db) { implicit c =>
+  def depositWithdrawHistory(uid: Long, before: Option[DateTime] = None, limit: Option[Int] = None, lastId: Option[Long] = None) = DB.withConnection(db) { implicit c =>
     frontend.depositWithdrawHistory.on(
       'id -> uid,
       'before -> before,
-      'limit -> limit
+      'limit -> limit,
+      'last_id -> lastId
     )().map(row =>
         DepositWithdrawHistory(
+          row[Long]("id"),
           row[BigDecimal]("amount").bigDecimal.toPlainString,
           row[BigDecimal]("fee").bigDecimal.toPlainString,
           row[DateTime]("created"),

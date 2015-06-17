@@ -78,7 +78,8 @@ begin
           oo.price <= new_price
         order by
           oo.price asc,
-          oo.created asc
+          oo.created asc,
+          oo.id asc
       loop
         -- the volume is the minimum of the two volumes
         v := least(o.remains, o2.remains);;
@@ -103,7 +104,8 @@ begin
           oo.price >= new_price
         order by
           oo.price desc,
-          oo.created asc
+          oo.created asc,
+          oo.id asc
       loop
         -- the volume is the minimum of the two volumes
         v := least(o.remains, o2.remains);;
@@ -1316,6 +1318,8 @@ login_log (
   a_uid bigint,
   a_before timestamp default current_timestamp,
   a_limit integer default 20,
+  a_last_id bigint default 0,
+  out id bigint,
   out email varchar(256),
   out ip text,
   out created timestamp,
@@ -1334,11 +1338,12 @@ begin
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
 
-  return query select e.email, host(e.ip), e.created, e.type
+  return query select e.id, e.email, host(e.ip), e.created, e.type
   from event_log e
   where e.type in ('login_success', 'login_failure', 'logout', 'session_expired')
-    and e.user_id = a_uid and e.created < a_before
-  order by e.created desc limit a_limit;;
+    and e.user_id = a_uid
+    and (e.created, e.id) < (a_before, a_last_id)
+  order by e.created desc, e.id desc limit a_limit;;
 end;;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100 rows 100;
 
@@ -1470,7 +1475,7 @@ end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
-get_all_withdrawals (
+user_pending_withdrawals (
   a_uid bigint,
   out id bigint,
   out currency varchar(4),
@@ -1489,10 +1494,10 @@ begin
   where w.user_id = a_uid and withdrawals_crypto_tx_id is null
   order by created desc;;
 end;;
-$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+$$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
-get_all_deposits (
+user_pending_deposits (
   a_uid bigint,
   out id bigint,
   out currency varchar(4),
@@ -1511,14 +1516,12 @@ begin
   where d.user_id = a_uid and dc.confirmed is null
   order by created desc;;
 end;;
-$$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
+$$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 user_pending_trades (
   a_uid bigint,
   a_api_key text,
-  a_before timestamp default current_timestamp,
-  a_limit integer default 20,
   out id bigint,
   out is_bid bool,
   out amount numeric(23,8),
@@ -1530,14 +1533,6 @@ user_pending_trades (
 declare
   a_user_id bigint;;
 begin
-  if a_before is null then
-    a_before := current_timestamp;;
-  end if;;
-
-  if a_limit is null or a_limit < 1 or a_limit > 100 then
-    a_limit := 20;;
-  end if;;
-
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
@@ -1554,10 +1549,10 @@ begin
   end if;;
 
   return query select o.id, o.is_bid, o.remains as amount, o.price, o.base, o.counter, o.created from orders o
-  where user_id = a_user_id and closed = false and o.remains > 0 and o.created < a_before
-  order by created desc limit a_limit;;
+  where user_id = a_user_id and closed = false and o.remains > 0
+  order by created desc, id desc;;
 end;;
-$$ language plpgsql stable security definer set search_path = public, pg_temp cost 100 rows 100;
+$$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 recent_trades (
@@ -1583,12 +1578,14 @@ trade_history (
   a_api_key text,
   a_before timestamp default current_timestamp,
   a_limit integer default 20,
+  a_last_id bigint default 0,
+  out id bigint,
   out amount numeric(23,8),
   out created timestamp,
   out price numeric(23,8),
   out base varchar(4),
   out counter varchar(4),
-  out type text,
+  out is_bid boolean,
   out fee numeric(23,8)
 ) returns setof record as $$
 declare
@@ -1617,19 +1614,21 @@ begin
     return;;
   end if;;
 
-  return query select th.amount, th.created, th.price, th.base, th.counter, th.type, th.fee from (
+  return query select th.id, th.amount, th.created, th.price, th.base, th.counter, th.is_bid, th.fee from (
     (
-      select m.amount, m.created, m.price, m.base, m.counter, 'bid' as type, m.bid_fee as fee
-      from matches m where bid_user_id = a_id and m.created < a_before
-      order by m.created desc limit a_limit
+      select m.id, m.amount, m.created, m.price, m.base, m.counter, true as is_bid, m.bid_fee as fee
+      from matches m where bid_user_id = a_id
+      and (m.created, m.id) < (a_before, a_last_id)
+      order by m.created desc, m.id desc limit a_limit
     )
-    union
+    union all
     (
-      select m.amount, m.created, m.price, m.base, m.counter, 'ask' as type, m.ask_fee as fee
-      from matches m where ask_user_id = a_id and m.created < a_before
-      order by m.created desc limit a_limit
+      select m.id, m.amount, m.created, m.price, m.base, m.counter, false as is_bid, m.ask_fee as fee
+      from matches m where ask_user_id = a_id
+      and (m.created, m.id) < (a_before, a_last_id)
+      order by m.created desc, m.id desc limit a_limit
     )
-  ) as th order by created desc limit a_limit;;
+  ) as th order by created desc, id desc limit a_limit;;
 end;;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100 rows 100;
 
@@ -1638,6 +1637,8 @@ deposit_withdraw_history (
   a_id bigint,
   a_before timestamp default current_timestamp,
   a_limit integer default 20,
+  a_last_id bigint default 0,
+  out id bigint,
   out amount numeric(23,8),
   out created timestamp,
   out currency varchar(4),
@@ -1660,20 +1661,22 @@ begin
   return query select * from
   (
     (
-      select w.amount, w.created, w.currency, w.fee, 'w' as type, wc.address
+      select w.id, w.amount, w.created, w.currency, w.fee, 'w' as type, wc.address
       from withdrawals w left join withdrawals_crypto wc on w.id = wc.id
       where user_id = a_id and (wc.withdrawals_crypto_tx_id is not null or wc.id is null)
-      and w.created < a_before order by w.created desc limit a_limit
+      and (w.created, w.id) < (a_before, a_last_id)
+      order by w.created desc, w.id desc limit a_limit
     )
-    union
+    union all
     (
-      select d.amount, d.created, d.currency, d.fee, 'd' as type, dc.address
+      select d.id, d.amount, d.created, d.currency, d.fee, 'd' as type, dc.address
       from deposits d left join deposits_crypto dc on d.id = dc.id
       where user_id = a_id and (dc.confirmed is not null or dc.id is null)
-      and d.created < a_before order by d.created desc limit a_limit
+      and (d.created, d.id) < (a_before, a_last_id)
+      order by d.created desc, d.id desc limit a_limit
     )
   ) as a
-  order by created desc limit a_limit;;
+  order by created desc, id desc limit a_limit;;
 end;;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100 rows 100;
 
@@ -1912,17 +1915,17 @@ drop function if exists delete_expired_tokens () cascade;
 drop function if exists totp_token_is_blacklisted (bigint, bigint) cascade;
 drop function if exists delete_expired_totp_blacklist_tokens () cascade;
 drop function if exists new_log (bigint, text, varchar(256), text, text, inet, text) cascade;
-drop function if exists login_log (bigint, timestamp, integer) cascade;
+drop function if exists login_log (bigint, timestamp, integer, bigint) cascade;
 drop function if exists balance (bigint, text) cascade;
 drop function if exists get_required_confirmations () cascade;
 drop function if exists get_addresses (bigint, varchar(4)) cascade;
 drop function if exists get_all_addresses (bigint) cascade;
-drop function if exists get_all_withdrawals (bigint) cascade;
-drop function if exists get_all_deposits (bigint) cascade;
-drop function if exists user_pending_trades (bigint, text, timestamp, integer) cascade;
+drop function if exists user_pending_withdrawals (bigint) cascade;
+drop function if exists user_pending_deposits (bigint) cascade;
+drop function if exists user_pending_trades (bigint, text) cascade;
 drop function if exists recent_trades (varchar(4), varchar(4)) cascade;
-drop function if exists trade_history (bigint, text, timestamp, integer) cascade;
-drop function if exists deposit_withdraw_history (bigint, timestamp, integer) cascade;
+drop function if exists trade_history (bigint, text, timestamp, integer, bigint) cascade;
+drop function if exists deposit_withdraw_history (bigint, timestamp, integer, bigint) cascade;
 drop function if exists open_asks (varchar(4), varchar(4)) cascade;
 drop function if exists open_bids (varchar(4), varchar(4)) cascade;
 drop function if exists orders_depth (varchar(4), varchar(4)) cascade;

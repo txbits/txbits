@@ -4,8 +4,8 @@ var API;
 
     // This creates a simple paginated function that makes calls to `path`
     function paginated(path) {
-        return function(before, per_page) {
-            return $.get(prefix+path, {before: before, per_page: per_page});
+        return function(before, per_page, lastId) {
+            return $.get(prefix+path, {before: before, per_page: per_page, lastId: lastId});
         };
     }
 

@@ -168,18 +168,18 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def depositWithdrawHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    val (before, limit) = Util.parse_pagination_params
-    Ok(Json.toJson(userModel.depositWithdrawHistory(request.user.id, before, limit)))
+    val (before, limit, lastId) = Util.parse_pagination_params
+    Ok(Json.toJson(userModel.depositWithdrawHistory(request.user.id, before, limit, lastId)))
   }
 
   def tradeHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    val (before, limit) = Util.parse_pagination_params
-    Ok(Json.toJson(userModel.tradeHistory(Some(request.user.id), None, before, limit)))
+    val (before, limit, lastId) = Util.parse_pagination_params
+    Ok(Json.toJson(userModel.tradeHistory(Some(request.user.id), None, before, limit, lastId)))
   }
 
   def loginHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    val (before, limit) = Util.parse_pagination_params
-    Ok(Json.toJson(globals.logModel.getLoginEvents(request.user.id, before, limit)))
+    val (before, limit, lastId) = Util.parse_pagination_params
+    Ok(Json.toJson(globals.logModel.getLoginEvents(request.user.id, before, limit, lastId)))
   }
 
   def pendingTrades = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>

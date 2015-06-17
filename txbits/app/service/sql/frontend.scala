@@ -177,7 +177,7 @@ object frontend {
 
   val loginLog = SQL(
     """
-    | select * from login_log({user_id}, {before}, {limit})
+    | select * from login_log({user_id}, {before}, {limit}, {last_id})
     |""".stripMargin)
 
   val balance = SQL(
@@ -200,14 +200,14 @@ object frontend {
     | select * from get_all_addresses({uid})
     |""".stripMargin)
 
-  val getAllWithdrawals = SQL(
+  val userPendingWithdrawals = SQL(
     """
-    | select * from get_all_withdrawals({uid})
+    | select * from user_pending_withdrawals({uid})
     |""".stripMargin)
 
-  val getAllDeposits = SQL(
+  val userPendingDeposits = SQL(
     """
-    | select * from get_all_deposits({uid})
+    | select * from user_pending_deposits({uid})
     |""".stripMargin)
 
   val orderNew = SQL(
@@ -222,7 +222,7 @@ object frontend {
 
   val userPendingTrades = SQL(
     """
-    | select * from user_pending_trades({uid}, {api_key}, {before}, {limit})
+    | select * from user_pending_trades({uid}, {api_key})
     |""".stripMargin)
 
   val recentTrades = SQL(
@@ -232,7 +232,7 @@ object frontend {
 
   val tradeHistory = SQL(
     """
-    | select * from trade_history({id}, {api_key}, {before}, {limit})
+    | select * from trade_history({id}, {api_key}, {before}, {limit}, {last_id})
     |""".stripMargin)
 
   val depositWithdrawHistory = SQL(
