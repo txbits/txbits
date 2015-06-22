@@ -20,6 +20,13 @@ object DwFee {
   implicit val format = Json.format[DwFee]
 }
 
+case class TradeFee(linear: String, one_way: Boolean)
+
+object TradeFee {
+  implicit val writes = Json.writes[TradeFee]
+  implicit val format = Json.format[TradeFee]
+}
+
 case class DwLimit(currency: String, limit_min: String, limit_max: String)
 
 object DwLimit {
@@ -59,7 +66,10 @@ class MetaModel(val db: String = "default") {
 
   val tradeFees = DB.withConnection(db)(implicit c => {
     frontend.tradeFees().map(row =>
-      row[BigDecimal]("linear")
+      TradeFee(
+        row[BigDecimal]("linear").bigDecimal.toPlainString,
+        row[Boolean]("one_way")
+      )
     ).head
   })
 

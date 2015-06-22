@@ -25,11 +25,12 @@ import org.specs2.execute.AsResult
 import org.joda.time.DateTime
 import helpers._
 import controllers.IAPI.CryptoAddress
+import service.sql.misc
 
 @RunWith(classOf[JUnitRunner])
 class EngineModelSpec extends Specification with Mockito {
 
-  val fee = globals.metaModel.tradeFees
+  val fee = BigDecimal(globals.metaModel.tradeFees.linear)
 
   "Engine" should {
     // the application is used for its database connection
@@ -139,6 +140,24 @@ class EngineModelSpec extends Specification with Mockito {
       val asker_res = globals.engineModel.balance(asker)
       val bidder_res = globals.engineModel.balance(bidder)
       asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (2 - 2 * fee, 0))
+      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, 0))
+    }
+
+    "be able to make a match and get charged the right fee with one way fees" in new WithCleanTestDbApplication {
+      val asker = globals.userModel.create("test@test.test", "", false).get
+      val bidder = globals.userModel.create("test2@test.test", "", false).get
+
+      globals.engineModel.changeFeesToOneWay()
+
+      globals.userModel.addFakeMoney(asker, "LTC", 1)
+      globals.userModel.addFakeMoney(bidder, "USD", 2)
+
+      globals.engineModel.askBid(asker, "LTC", "USD", 1, 2, false)
+      globals.engineModel.askBid(bidder, "LTC", "USD", 1, 2, true)
+
+      val asker_res = globals.engineModel.balance(asker)
+      val bidder_res = globals.engineModel.balance(bidder)
+      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (2, 0))
       bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, 0))
     }
 

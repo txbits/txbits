@@ -83,7 +83,8 @@ $(function(){
             }
 
             API.trade_fees().success().success(function(data){
-                var fee = data;
+                var one_way = data.one_way;
+                var fee = Number(data.linear);
 
                 API.open_trades(base, counter).success(function(data){
                     var i;
