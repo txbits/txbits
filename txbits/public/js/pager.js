@@ -1,9 +1,10 @@
 
-var Pager = function(parent, child, spinner, requestContentCb, last_timestamp, options) {
+var Pager = function(parent, child, spinner, requestContentCb, last_timestamp, last_id, options) {
     options = options || {};
     options.offset = options.offset || 100;
     this.rows_shown = 20;
     this.last_timestamp = last_timestamp;
+    this.last_id = last_id;
     this.debounce_hold = false;
     this.requestContentCb = requestContentCb;
     this.parent = parent;
@@ -40,6 +41,7 @@ Pager.make_easy_pager = function(api, $parent, table_selector, body_selector, sp
     api().success(function(data){
         if(data.length > 0) {
             var last_timestamp = data[data.length-1].created;
+            var last_id = data[data.length-1].id;
             if(preprocess) {
                 data = preprocess(data);
             }
@@ -54,10 +56,11 @@ Pager.make_easy_pager = function(api, $parent, table_selector, body_selector, sp
                 $(spinner_selector),
                 function request_next_page() {
                     var that = this; // Pager
-                    var promise = api(this.last_timestamp);
+                    var promise = api(this.last_timestamp, this.last_id);
                     promise.success(function(data){
                         if(data.length > 0) {
                             that.last_timestamp = data[data.length-1].created;
+                            that.last_id = data[data.length-1].id;
                             if(preprocess) {
                                 data =  preprocess(data);
                             }
@@ -69,7 +72,8 @@ Pager.make_easy_pager = function(api, $parent, table_selector, body_selector, sp
                     });
                     return promise;
                 },
-                last_timestamp
+                last_timestamp,
+                last_id
             );
         }
     });

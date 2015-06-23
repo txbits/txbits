@@ -104,7 +104,8 @@ create table event_log (
     browser_headers text, -- these can be parsed later to produce country info
     browser_id text, -- result of deanonymization
     ssl_info text, -- what ciphers were offered, what cipher was accepted, etc.
-    type text -- one of: login_partial_success, login_success, login_failure, logout, session_expired
+    type text, -- one of: login_partial_success, login_success, login_failure, logout, session_expired
+    foreign key (user_id) references users(id)
 );
 create index login_log_idx on event_log(user_id, created desc, id desc) where type in ('login_success', 'login_failure', 'logout', 'session_expired');
 

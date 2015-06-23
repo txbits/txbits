@@ -7,6 +7,7 @@ package controllers.API
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
+import org.joda.time.DateTime
 
 object APIv1 extends Controller {
 
@@ -125,9 +126,12 @@ object APIv1 extends Controller {
   def tradeHistory = Action(parse.json) { implicit request =>
     val body = request.body
     (for (
-      apiKey <- (body \ "api_key").validate[String]
+      apiKey <- (body \ "api_key").validate[String];
+      before <- (body \ "before").validate[Option[DateTime]];
+      limit <- (body \ "limit").validate[Option[Int]];
+      lastId <- (body \ "last_id").validate[Option[Long]]
     ) yield {
-      Ok(Json.toJson(globals.userModel.tradeHistory(None, Some(apiKey))))
+      Ok(Json.toJson(globals.userModel.tradeHistory(None, Some(apiKey), before, limit, lastId)))
     }).getOrElse(
       BadRequest(Json.obj("message" -> "Failed to parse input."))
     )

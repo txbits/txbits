@@ -237,7 +237,7 @@ object frontend {
 
   val depositWithdrawHistory = SQL(
     """
-    | select * from deposit_withdraw_history({id}, {before}, {limit})
+    | select * from deposit_withdraw_history({id}, {before}, {limit}, {last_id})
     |""".stripMargin)
 
   val ordersDepth = SQL(

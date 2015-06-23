@@ -1,11 +1,12 @@
 var API;
 (function(){
     var prefix = '/iapi/1/';
+    var limit = 20;
 
     // This creates a simple paginated function that makes calls to `path`
     function paginated(path) {
-        return function(before, per_page, lastId) {
-            return $.get(prefix+path, {before: before, per_page: per_page, lastId: lastId});
+        return function(before, last_id) {
+            return $.get(prefix+path, {before: before, limit: limit, last_id: last_id});
         };
     }
 
@@ -104,7 +105,9 @@ var API;
 
         deposit_withdraw_history: APIWrap(paginated('deposit_withdraw_history')),
 
-        pending_trades: APIWrap(paginated('pending_trades')),
+        pending_trades: APIWrap(function() {
+            return $.get(prefix+'pending_trades', 'json');
+        }),
 
         trade_fees: APIWrap(function() {
             return $.get(prefix+'trade_fees', 'json');
