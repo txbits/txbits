@@ -109,7 +109,10 @@
                 </div>
             </div>
             <div class="form-group">
-                <label for="fee" class="col-sm-4 control-label">@{Messages("terminology.fee")}</label>
+                <label for="fee" class="col-sm-4 control-label">
+                    @{Messages("terminology.fee")}
+                    {{#if one_way}}*{{/if}}
+                </label>
                 <div class="col-sm-8">
                     <div class="input-group">
                         <input class="form-control fee" name="fee" type="text" disabled>
@@ -118,6 +121,7 @@
                 </div>
             </div>
             <button type="submit" id="bid-submit" class="bid btn btn-success btn-block">@{Messages("terminology.bid")} {{base}}</button>
+            {{#if one_way}}* @{Messages("help.one_way")}{{/if}}
         </form>
     </script>
 
@@ -158,7 +162,10 @@
                 </div>
             </div>
             <div class="form-group">
-                <label for="fee" class="col-sm-4 control-label">@{Messages("terminology.fee")}</label>
+                <label for="fee" class="col-sm-4 control-label">
+                    @{Messages("terminology.fee")}
+                    {{#if one_way}}*{{/if}}
+                </label>
                 <div class="col-sm-8">
                     <div class="input-group">
                         <input class="form-control fee" name="fee" type="text" disabled>
@@ -167,6 +174,7 @@
                 </div>
             </div>
             <button type="submit" id="ask-submit" class="ask btn btn-danger btn-block">@{Messages("terminology.ask")} {{base}}</button>
+            {{#if one_way}}* @{Messages("help.one_way")}{{/if}}
         </form>
     </script>
 
