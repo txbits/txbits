@@ -177,17 +177,12 @@ object frontend {
 
   val loginLog = SQL(
     """
-    | select * from login_log({user_id})
-    |""".stripMargin)
-
-  val apiBalance = SQL(
-    """
-    | select * from balance(null, {api_key})
+    | select * from login_log({user_id}, {before}, {limit}, {last_id})
     |""".stripMargin)
 
   val balance = SQL(
     """
-    | select * from balance({uid}, null)
+    | select * from balance({uid}, {api_key})
     |""".stripMargin)
 
   val getRequiredConfirmations = SQL(
@@ -205,44 +200,29 @@ object frontend {
     | select * from get_all_addresses({uid})
     |""".stripMargin)
 
-  val getAllWithdrawals = SQL(
+  val userPendingWithdrawals = SQL(
     """
-    | select * from get_all_withdrawals({uid})
+    | select * from user_pending_withdrawals({uid})
     |""".stripMargin)
 
-  val getAllDeposits = SQL(
+  val userPendingDeposits = SQL(
     """
-    | select * from get_all_deposits({uid})
-    |""".stripMargin)
-
-  val apiOrderNew = SQL(
-    """
-    | select order_new(null, {api_key}, {base}, {counter}, {amount}, {price}, {is_bid})
+    | select * from user_pending_deposits({uid})
     |""".stripMargin)
 
   val orderNew = SQL(
     """
-    | select order_new({uid}, null, {base}, {counter}, {amount}, {price}, {is_bid})
-    |""".stripMargin)
-
-  val apiOrderCancel = SQL(
-    """
-    | select * from order_cancel(null, {api_key}, {id})
+    | select order_new({uid}, {api_key}, {base}, {counter}, {amount}, {price}, {is_bid})
     |""".stripMargin)
 
   val orderCancel = SQL(
     """
-    | select * from order_cancel({uid}, null, {id})
-    |""".stripMargin)
-
-  val apiUserPendingTrades = SQL(
-    """
-    | select * from user_pending_trades(null, {api_key})
+    | select base, counter from order_cancel({uid}, {api_key}, {id})
     |""".stripMargin)
 
   val userPendingTrades = SQL(
     """
-    | select * from user_pending_trades({uid}, null)
+    | select * from user_pending_trades({uid}, {api_key})
     |""".stripMargin)
 
   val recentTrades = SQL(
@@ -250,29 +230,14 @@ object frontend {
     | select * from recent_trades({base}, {counter})
     |""".stripMargin)
 
-  val apiTradeHistory = SQL(
-    """
-    | select * from trade_history(null, {api_key})
-    |""".stripMargin)
-
   val tradeHistory = SQL(
     """
-    | select * from trade_history({id}, null)
+    | select * from trade_history({id}, {api_key}, {before}, {limit}, {last_id})
     |""".stripMargin)
 
   val depositWithdrawHistory = SQL(
     """
-    | select * from deposit_withdraw_history({id})
-    |""".stripMargin)
-
-  val openAsks = SQL(
-    """
-    | select * from open_asks({base}, {counter})
-    |""".stripMargin)
-
-  val openBids = SQL(
-    """
-    | select * from open_bids({base}, {counter})
+    | select * from deposit_withdraw_history({id}, {before}, {limit}, {last_id})
     |""".stripMargin)
 
   val ordersDepth = SQL(

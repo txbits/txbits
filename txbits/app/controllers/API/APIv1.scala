@@ -7,6 +7,7 @@ package controllers.API
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
+import org.joda.time.DateTime
 
 object APIv1 extends Controller {
 
@@ -15,7 +16,7 @@ object APIv1 extends Controller {
     (for (
       apiKey <- (body \ "api_key").validate[String]
     ) yield {
-      val balances = globals.engineModel.apiBalance(apiKey)
+      val balances = globals.engineModel.balance(None, Some(apiKey))
       Ok(Json.toJson(balances.map({ c =>
         Json.obj(
           "currency" -> c._1,
@@ -42,7 +43,7 @@ object APIv1 extends Controller {
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.apiAskBid(apiKey, base, counter, amount, price, isBid = false)
+              val res = globals.engineModel.askBid(None, Some(apiKey), base, counter, amount, price, isBid = false)
               if (res) {
                 Ok(Json.obj())
               } else {
@@ -80,7 +81,7 @@ object APIv1 extends Controller {
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.apiAskBid(apiKey, base, counter, amount, price, isBid = true)
+              val res = globals.engineModel.askBid(None, Some(apiKey), base, counter, amount, price, isBid = true)
               if (res) {
                 Ok(Json.obj())
               } else {
@@ -111,7 +112,7 @@ object APIv1 extends Controller {
       apiKey <- (body \ "api_key").validate[String];
       order <- (body \ "order").validate[Long]
     ) yield {
-      val res = globals.engineModel.apiCancel(apiKey, order)
+      val res = globals.engineModel.cancel(None, Some(apiKey), order)
       if (res) {
         Ok(Json.obj())
       } else {
@@ -125,9 +126,12 @@ object APIv1 extends Controller {
   def tradeHistory = Action(parse.json) { implicit request =>
     val body = request.body
     (for (
-      apiKey <- (body \ "api_key").validate[String]
+      apiKey <- (body \ "api_key").validate[String];
+      before <- (body \ "before").validate[Option[DateTime]];
+      limit <- (body \ "limit").validate[Option[Int]];
+      lastId <- (body \ "last_id").validate[Option[Long]]
     ) yield {
-      Ok(Json.toJson(globals.userModel.apiTradeHistory(apiKey)))
+      Ok(Json.toJson(globals.userModel.tradeHistory(None, Some(apiKey), before, limit, lastId)))
     }).getOrElse(
       BadRequest(Json.obj("message" -> "Failed to parse input."))
     )
@@ -138,7 +142,7 @@ object APIv1 extends Controller {
     (for (
       apiKey <- (body \ "api_key").validate[String]
     ) yield {
-      val orders = globals.engineModel.apiUserPendingTrades(apiKey)
+      val orders = globals.engineModel.userPendingTrades(None, Some(apiKey))
       Ok(Json.toJson(orders))
     }).getOrElse(
       BadRequest(Json.obj("message" -> "Failed to parse input."))

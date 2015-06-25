@@ -16,7 +16,7 @@
  */
 package securesocial.core
 
-import _root_.java.security.SecureRandom
+import java.security.SecureRandom
 import org.joda.time.DateTime
 import play.api.libs.Codecs
 import play.api.{ Play, Application, Plugin }
@@ -24,6 +24,7 @@ import com.typesafe.plugin._
 import Play.current
 import play.api.cache.Cache
 import play.api.mvc.{ DiscardingCookie, Cookie }
+import org.apache.commons.codec.binary.Base64.encodeBase64
 
 /**
  * An authenticator tracks an authenticated user.
@@ -100,8 +101,8 @@ class DefaultIdGenerator(app: Application) extends IdGenerator(app) {
   //todo: this needs improvement, several threads will wait for the synchronized block in SecureRandom.
   // I will probably need a pool of SecureRandom instances.
   val random = new SecureRandom()
-  // memcache can handle only 250 character keys. 128 bytes is 256 characters.
-  val DefaultSizeInBytes = 125
+  // memcache can handle only 250 character keys. 32 bytes (256 bits) is 44 characters in Base64.
+  val DefaultSizeInBytes = 32
   val IdLengthKey = "securesocial.idLengthInBytes"
   val IdSizeInBytes = app.configuration.getInt(IdLengthKey).getOrElse(DefaultSizeInBytes)
 
@@ -111,9 +112,9 @@ class DefaultIdGenerator(app: Application) extends IdGenerator(app) {
    * @return the generated id
    */
   def generate: String = {
-    var randomValue = new Array[Byte](IdSizeInBytes)
-    random.nextBytes(randomValue)
-    Codecs.toHexString(randomValue)
+    val bytes = new Array[Byte](IdSizeInBytes)
+    random.nextBytes(bytes)
+    new String(encodeBase64(bytes))
   }
 }
 
@@ -155,14 +156,16 @@ abstract class AuthenticatorStore(app: Application) extends Plugin {
  * @param app
  */
 class DefaultAuthenticatorStore(app: Application) extends AuthenticatorStore(app) {
+  val IdPrefix = "session."
+
   def save(authenticator: Authenticator) {
-    Cache.set(authenticator.id, authenticator, Authenticator.absoluteTimeoutInSeconds)
+    Cache.set(IdPrefix + authenticator.id, authenticator, Authenticator.absoluteTimeoutInSeconds)
   }
   def find(id: String): Option[Authenticator] = {
-    Cache.getAs[Authenticator](id)
+    Cache.getAs[Authenticator](IdPrefix + id)
   }
   def delete(id: String) {
-    Cache.remove(id)
+    Cache.remove(IdPrefix + id)
   }
 }
 

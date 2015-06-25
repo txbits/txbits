@@ -47,7 +47,7 @@ object LogEvent {
     LogEvent(uid, email, Some(LogModel.ipFromRequest(request)), Some(LogModel.headersFromRequest(request)), None, None, None, typ)
   }
 }
-case class LoginEvent(email: Option[String], ip: Option[String], created: Option[DateTime], typ: LogType)
+case class LoginEvent(id: Long, email: Option[String], ip: Option[String], created: Option[DateTime], typ: LogType)
 
 object LoginEvent {
   implicit val writes = Json.writes[LoginEvent]
@@ -67,10 +67,14 @@ class LogModel(val db: String = "default") {
     ).execute()
   }
 
-  def getLoginEvents(uid: Long) = DB.withConnection(db) { implicit c =>
+  def getLoginEvents(uid: Long, before: Option[DateTime] = None, limit: Option[Int] = None, lastId: Option[Long] = None) = DB.withConnection(db) { implicit c =>
     frontend.loginLog.on(
-      'user_id -> uid
+      'user_id -> uid,
+      'before -> before,
+      'limit -> limit,
+      'last_id -> lastId
     )().map(row => LoginEvent(
+        row[Long]("id"),
         row[Option[String]]("email"),
         row[Option[String]]("ip"),
         Some(row[DateTime]("created")),

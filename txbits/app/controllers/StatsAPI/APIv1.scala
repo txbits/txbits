@@ -89,27 +89,26 @@ object APIv1 extends Controller {
     }
   }
 
-  // TODO: cache this?
-  // TODO: This is very inefficient!!! This needs to be fixed
   def tickerFromDb = DB.withConnection(masterDB) { implicit c =>
     globals.metaModel.validPairs.flatMap {
-      case (base, counter, active, minAmount) => {
-        //TODO: this is a temporary hack that uses the chart query and then extracts the data from it
+      case (base, counter, active, minAmount) =>
         val res: List[Seq[JsNumber]] = chartFromDB(base, counter)
         if (!res.isEmpty) {
-          Some(Ticker(
-            res.head(1).value.toString(),
-            res.map { _(3) }.reduce { (num1, num2) => if (num1.value < num2.value) num1 else num2 }.toString(),
-            res.map { _(2) }.reduce { (num1, num2) => if (num1.value > num2.value) num1 else num2 }.toString(),
-            res.last(4).value.toString(),
-            res.map { _(5) }.reduce { (num1, num2) => JsNumber(num1.value + num2.value) }.toString(),
-            base,
-            counter
-          ))
+          val ticker = play.api.cache.Cache.getOrElse("%s.%s.ticker".format(base, counter)) {
+            Ticker(
+              res.head(1).value.toString(),
+              res.map { _(3) }.reduce { (num1, num2) => if (num1.value < num2.value) num1 else num2 }.toString(),
+              res.map { _(2) }.reduce { (num1, num2) => if (num1.value > num2.value) num1 else num2 }.toString(),
+              res.last(4).value.toString(),
+              res.map { _(5) }.reduce { (num1, num2) => JsNumber(num1.value + num2.value) }.toString(),
+              base,
+              counter
+            )
+          }
+          Some(ticker)
         } else {
           None
         }
-      }
     }
   }
 
@@ -135,28 +134,33 @@ object APIv1 extends Controller {
     (in, out)
   }
 
-  //TODO: move this out of postgres and into something more suited for this kind of data
   def chartFromDB(base: String, counter: String) = DB.withConnection(masterDB) { implicit c =>
-    frontend.chartFromDb.on(
-      'base -> base,
-      'counter -> counter
-    )().filter(row => row[Option[Date]]("start_of_period").isDefined).map(row => {
-        // We want a json array because that's what the graphing api understands
-        // Format: Date,Open,High,Low,Close,Volume
+    play.api.cache.Cache.getOrElse("%s.%s.stats".format(base, counter)) {
+      frontend.chartFromDb.on(
+        'base -> base,
+        'counter -> counter
+      )().filter(row => row[Option[Date]]("start_of_period").isDefined).map(row => {
+          // We want a json array because that's what the graphing api understands
+          // Format: Date,Open,High,Low,Close,Volume
 
-        Seq(
-          JsNumber(row[Option[Date]]("start_of_period").get.getTime),
-          JsNumber(row[Option[BigDecimal]]("open").get),
-          JsNumber(row[Option[BigDecimal]]("high").get),
-          JsNumber(row[Option[BigDecimal]]("low").get),
-          JsNumber(row[Option[BigDecimal]]("close").get),
-          JsNumber(row[Option[BigDecimal]]("volume").get)
-        )
+          Seq(
+            JsNumber(row[Option[Date]]("start_of_period").get.getTime),
+            JsNumber(row[Option[BigDecimal]]("open").get),
+            JsNumber(row[Option[BigDecimal]]("high").get),
+            JsNumber(row[Option[BigDecimal]]("low").get),
+            JsNumber(row[Option[BigDecimal]]("close").get),
+            JsNumber(row[Option[BigDecimal]]("volume").get)
+          )
 
-      }).toList
+        }).toList
+    }
   }
 
   def chart(base: String, counter: String) = Action {
-    Ok(Json.toJson(chartFromDB(base, counter)))
+    if (globals.metaModel.activeMarkets.contains(base, counter)) {
+      Ok(Json.toJson(chartFromDB(base, counter)))
+    } else {
+      BadRequest(Json.obj("message" -> "Invalid pair."))
+    }
   }
 }

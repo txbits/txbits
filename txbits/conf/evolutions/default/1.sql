@@ -53,7 +53,7 @@ create table users_passwords (
 
 create table users_api_keys (
     user_id bigint not null,
-    api_key text not null unique check(length(api_key) = 24), -- 18 bytes in base64
+    api_key text not null unique check(length(api_key) = 24), -- 18 bytes in Base64
     comment text not null default '',
     created timestamp default current_timestamp not null,
     active bool default true not null,
@@ -104,8 +104,10 @@ create table event_log (
     browser_headers text, -- these can be parsed later to produce country info
     browser_id text, -- result of deanonymization
     ssl_info text, -- what ciphers were offered, what cipher was accepted, etc.
-    type text -- one of: login_partial_success, login_success, login_failure, logout, session_expired
+    type text, -- one of: login_partial_success, login_success, login_failure, logout, session_expired
+    foreign key (user_id) references users(id)
 );
+create index login_log_idx on event_log(user_id, created desc, id desc) where type in ('login_success', 'login_failure', 'logout', 'session_expired');
 
 create table balances (
     user_id bigint not null,
@@ -137,6 +139,8 @@ create table markets (
     limit_min numeric(23,8) not null check(limit_min > 0), -- minimum amount of base currency in an order
     active bool default true not null, -- false prevents new orders from being inserted
     position int not null, -- used for displaying
+    total_base numeric(23,8) default 0 not null,
+    total_counter numeric(23,8) default 0 not null,
     foreign key (base) references currencies(currency),
     foreign key (counter) references currencies(currency)
 );
@@ -156,11 +160,13 @@ create table orders (
     foreign key (base, counter) references markets(base, counter),
     foreign key (user_id) references users(id)
 );
-create index bid_idx on orders(base, counter, price desc, created asc) where closed = false and remains > 0 and is_bid = true;
-create index ask_idx on orders(base, counter, price asc, created asc) where closed = false and remains > 0 and is_bid = false;
-create index user_pending_trades_idx on orders(user_id, created desc) where closed = false and remains > 0;
+create index bid_idx on orders(base, counter, price desc, created asc, id asc) where closed = false and remains > 0 and is_bid = true;
+create index ask_idx on orders(base, counter, price asc, created asc, id asc) where closed = false and remains > 0 and is_bid = false;
+create index user_pending_trades_idx on orders(user_id, created desc, id desc) where closed = false and remains > 0;
 
+create sequence match_id_seq;
 create table matches (
+    id bigint default nextval('match_id_seq') primary key,
     ask_user_id bigint not null,
     bid_user_id bigint not null,
     ask_order_id bigint not null,
@@ -178,11 +184,11 @@ create table matches (
     foreign key (bid_order_id) references orders(id),
     foreign key (ask_user_id) references users(id),
     foreign key (bid_user_id) references users(id),
-    primary key (ask_order_id, bid_order_id)
+    unique(ask_order_id, bid_order_id)
 );
-create index matches_bid_user_idx on matches(bid_user_id, created desc);
-create index matches_ask_user_idx on matches(ask_user_id, created desc);
-create index recent_trades_idx on matches(base, counter, created desc);
+create index matches_bid_user_idx on matches(bid_user_id, created desc, id desc);
+create index matches_ask_user_idx on matches(ask_user_id, created desc, id desc);
+create index recent_trades_idx on matches(base, counter, created desc, id desc);
 
 create table currencies_crypto (
     currency varchar(4) primary key,
@@ -220,9 +226,9 @@ create table users_addresses (
 );
 create index users_addresses_idx on users_addresses(user_id, currency, assigned desc);
 
-create sequence deposit_id_seq;
+create sequence deposit_withdraw_id_seq;
 create table deposits (
-    id bigint default nextval('deposit_id_seq') primary key,
+    id bigint default nextval('deposit_withdraw_id_seq') primary key,
     amount numeric(23,8) not null check(amount > 0), -- before the fee
     created timestamp default current_timestamp not null,
     user_id bigint not null,
@@ -232,6 +238,7 @@ create table deposits (
     foreign key (currency) references currencies(currency),
     foreign key (user_id) references users(id)
 );
+create index deposits_idx on deposits(user_id, created desc, id desc);
 
 create table deposits_crypto (
     id bigint not null primary key,
@@ -251,9 +258,8 @@ create table deposits_other (
     foreign key (id) references deposits(id)
 );
 
-create sequence withdrawal_id_seq;
 create table withdrawals (
-    id bigint default nextval('withdrawal_id_seq') primary key,
+    id bigint default nextval('deposit_withdraw_id_seq') primary key,
     amount numeric(23,8) not null check(amount > 0), -- before the fee
     created timestamp default current_timestamp not null,
     user_id bigint not null,
@@ -269,6 +275,7 @@ create table withdrawals (
 );
 create index withdrawals_confirmation_token_idx on withdrawals(confirmation_token);
 create index withdrawals_limit_idx on withdrawals(user_id, currency, created desc);
+create index withdrawals_idx on withdrawals(user_id, created desc, id desc);
 
 create sequence withdrawals_crypto_tx_id_seq;
 create table withdrawals_crypto_tx (
@@ -322,6 +329,20 @@ create table tokens (
 );
 create index tokens_expiration_idx on tokens(expiration desc);
 
+-- aggregate match statistics in 30 minute buckets
+create table stats_30_min (
+    base varchar(4) not null,
+    counter varchar(4) not null,
+    start_of_period timestamp not null check(extract(minute from start_of_period) in (0, 30)),
+    volume numeric(23,8) not null,
+    low numeric(23,8) not null,
+    high numeric(23,8) not null,
+    open numeric(23,8) not null,
+    close numeric(23,8) not null,
+    foreign key (base, counter) references markets(base, counter),
+    primary key (base, counter, start_of_period)
+);
+
 # --- !Downs
 
 drop table if exists balances cascade;
@@ -331,6 +352,7 @@ drop table if exists deposits cascade;
 drop table if exists deposits_crypto cascade;
 drop table if exists deposits_other cascade;
 drop table if exists matches cascade;
+drop table if exists stats_30_min cascade;
 drop table if exists markets cascade;
 drop table if exists tokens cascade;
 drop table if exists users cascade;
@@ -354,8 +376,8 @@ drop table if exists event_log cascade;
 drop table if exists withdrawal_limits cascade;
 drop table if exists trusted_action_requests cascade;
 drop sequence if exists order_id_seq cascade;
-drop sequence if exists deposit_id_seq cascade;
-drop sequence if exists withdrawal_id_seq cascade;
+drop sequence if exists match_id_seq cascade;
+drop sequence if exists deposit_withdraw_id_seq cascade;
 drop sequence if exists market_id_seq cascade;
 drop sequence if exists event_log_id_seq cascade;
 drop sequence if exists withdrawals_crypto_tx_id_seq cascade;

@@ -11,6 +11,7 @@ import service.{ PGP, TOTPUrl }
 import org.postgresql.util.PSQLException
 import org.apache.commons.codec.binary.Base64.encodeBase64
 import java.security.SecureRandom
+import controllers.Util
 
 object APIv1 extends Controller with securesocial.core.SecureSocial {
 
@@ -49,7 +50,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def balance = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    val balances = globals.engineModel.balance(request.user.id)
+    val balances = globals.engineModel.balance(Some(request.user.id), None)
     Ok(Json.toJson(balances.map({ c =>
       Json.obj(
         "currency" -> c._1,
@@ -72,7 +73,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.askBid(request.user.id, base, counter, amount, price, isBid = false)
+              val res = globals.engineModel.askBid(Some(request.user.id), None, base, counter, amount, price, isBid = false)
               if (res) {
                 Ok(Json.obj())
               } else {
@@ -109,7 +110,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.askBid(request.user.id, base, counter, amount, price, isBid = true)
+              val res = globals.engineModel.askBid(Some(request.user.id), None, base, counter, amount, price, isBid = true)
               if (res) {
                 Ok(Json.obj())
               } else {
@@ -137,7 +138,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   def cancel = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
     request.request.body.validate(rds_cancel).map {
       case (order) =>
-        val res = globals.engineModel.cancel(request.user.id, order)
+        val res = globals.engineModel.cancel(Some(request.user.id), None, order)
         if (res) {
           Ok(Json.obj())
         } else {
@@ -149,47 +150,40 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def openTrades(base: String, counter: String) = Action { implicit request =>
-    val PriceIndex = 0
-    val AmountIndex = 1
     // a specific pair will be given as an argument
-    val (asks, bids) = globals.engineModel.ordersDepth(base, counter)
-
-    Ok(Json.obj(
-      "asks" -> asks.map { a: Array[java.math.BigDecimal] =>
-        Json.obj(
-          "amount" -> a(AmountIndex).toPlainString,
-          "price" -> a(PriceIndex).toPlainString
-        )
-      },
-      "bids" -> bids.map { b: Array[java.math.BigDecimal] =>
-        Json.obj(
-          "amount" -> b(AmountIndex).toPlainString,
-          "price" -> b(PriceIndex).toPlainString
-        )
-      }
-    )
-    )
+    if (globals.metaModel.activeMarkets.contains(base, counter)) {
+      Ok(globals.engineModel.ordersDepth(base, counter))
+    } else {
+      BadRequest(Json.obj("message" -> "Invalid pair."))
+    }
   }
 
   def recentTrades(base: String, counter: String) = Action { implicit request =>
     // a specific pair will be given as an argument
-    Ok(Json.toJson(engineModel.recentTrades(base, counter)))
+    if (globals.metaModel.activeMarkets.contains(base, counter)) {
+      Ok(engineModel.recentTrades(base, counter))
+    } else {
+      BadRequest(Json.obj("message" -> "Invalid pair."))
+    }
   }
 
   def depositWithdrawHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.toJson(userModel.depositWithdrawHistory(request.user.id)))
+    val (before, limit, lastId) = Util.parse_pagination_params
+    Ok(Json.toJson(userModel.depositWithdrawHistory(request.user.id, before, limit, lastId)))
   }
 
   def tradeHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.toJson(userModel.tradeHistory(request.user.id)))
+    val (before, limit, lastId) = Util.parse_pagination_params
+    Ok(Json.toJson(userModel.tradeHistory(Some(request.user.id), None, before, limit, lastId)))
   }
 
   def loginHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    Ok(Json.toJson(globals.logModel.getLoginEvents(request.user.id)))
+    val (before, limit, lastId) = Util.parse_pagination_params
+    Ok(Json.toJson(globals.logModel.getLoginEvents(request.user.id, before, limit, lastId)))
   }
 
   def pendingTrades = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
-    val orders = globals.engineModel.userPendingTrades(request.user.id)
+    val orders = globals.engineModel.userPendingTrades(Some(request.user.id), None)
     Ok(Json.toJson(orders))
   }
 

@@ -108,7 +108,7 @@ class WalletSpec extends Specification with Mockito {
 
     "be able to receive a deposit in the db" in new WithCleanTestDbApplication {
       val uid = globals.userModel.create("test@test.test", "", false).get
-      val result1 = globals.engineModel.balance(uid)
+      val result1 = globals.engineModel.balance(Some(uid), None)
       // start with empty account
       result1 should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
 
@@ -156,13 +156,13 @@ class WalletSpec extends Specification with Mockito {
       wallet.update()
 
       // make sure the correct deposit was made
-      val result = globals.engineModel.balance(uid)
+      val result = globals.engineModel.balance(Some(uid), None)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (BigDecimal(12.34), BigDecimal(0)))
     }
 
     "be able to see pending deposit in the db" in new WithCleanTestDbApplication {
       val uid = globals.userModel.create("test@test.test", "", false).get
-      val result1 = globals.engineModel.balance(uid)
+      val result1 = globals.engineModel.balance(Some(uid), None)
       // start with empty account
       result1 should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
 
@@ -213,7 +213,7 @@ class WalletSpec extends Specification with Mockito {
       result2.size should be equalTo 1
 
       // make sure the correct deposit was made
-      val result = globals.engineModel.balance(uid)
+      val result = globals.engineModel.balance(Some(uid), None)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
     }
 
@@ -268,7 +268,7 @@ class WalletSpec extends Specification with Mockito {
       wallet.update()
 
       // make sure the correct deposit was made
-      val result = globals.engineModel.balance(uid)
+      val result = globals.engineModel.balance(Some(uid), None)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (BigDecimal(12.34 - feeAmt - 12.34 * feePct), BigDecimal(0)))
     }
 
@@ -351,7 +351,7 @@ class WalletSpec extends Specification with Mockito {
       result3.size should be equalTo 0
 
       // make sure the correct deposit was made
-      val result = globals.engineModel.balance(uid)
+      val result = globals.engineModel.balance(Some(uid), None)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (BigDecimal(12.34 - feeAmt - 12.34 * feePct), BigDecimal(0)))
     }
 
@@ -435,7 +435,7 @@ class WalletSpec extends Specification with Mockito {
       val withdrawalTx = globals.walletModel.getWithdrawalTx(resultId)
       withdrawalTx should be equalTo Map("masdfasdfasdf" -> BigDecimal(0.98))
 
-      val result = globals.engineModel.balance(uid)
+      val result = globals.engineModel.balance(Some(uid), None)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
     }
 
@@ -530,7 +530,7 @@ class WalletSpec extends Specification with Mockito {
       val withdrawalTx = globals.walletModel.getWithdrawalTx(resultId)
       withdrawalTx should be equalTo Map("masdfasdfasdf" -> BigDecimal(0.98))
 
-      val result = globals.engineModel.balance(uid)
+      val result = globals.engineModel.balance(Some(uid), None)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
 
       import globals._
@@ -634,7 +634,7 @@ class WalletSpec extends Specification with Mockito {
       wallet.update()
 
       // make sure the correct deposit was made
-      val result = globals.engineModel.balance(uid)
+      val result = globals.engineModel.balance(Some(uid), None)
       // balance should equal the user's 12.34 + 1.23 deposit, the duplicate 1.23 deposit is intentionally not credited
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (BigDecimal((12.34 - feeAmt - 12.34 * feePct) + (1.23 - feeAmt - 1.23 * feePct)), BigDecimal(0)))
     }

@@ -1,6 +1,7 @@
 @(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
 
 @scripts = {
+    <script src="@routes.Assets.at("js/pager.js")"></script>
     <script src="@routes.Assets.at("js/history.js")"></script>
 }
 
@@ -46,15 +47,20 @@
             </thead>
             <tbody>
                 {{#each .}}
-                <tr>
-                    <td>{{created}}</td>
-                    <td>{{typ}}</td>
-                    <td>{{ip}}</td>
-                </tr>
+                    {{> login-history-row}}
                 {{/each}}
             </tbody>
         </table>
+        <div class="spinner" style="display:none"><i class="spin glyphicon glyphicon-refresh"></i></div>
         </div>
+    </script>
+
+    <script id="login-history-row-template" type="text/x-handlebars-template">
+        <tr>
+            <td>{{created}}</td>
+            <td>{{typ}}</td>
+            <td>{{ip}}</td>
+        </tr>
     </script>
 
     <script id="trade-history-template" type="text/x-handlebars-template">
@@ -76,22 +82,28 @@
             </thead>
             <tbody>
                 {{#each .}}
-                <tr class="{{klass}}">
-                    <td>{{created}}</td>
-                    <td>{{base}}/{{counter}}</td>
-                    <td>{{order_type}}</td>
-                    <td class="money">{{amount}}</td>
-                    <td>{{base}}</td>
-                    <td class="money">{{value}}</td>
-                    <td>{{counter}}</td>
-                    <td class="money">{{price}}</td>
-                    <td class="money">{{fee}}</td>
-                    <td>{{fee_currency}}</td>
-                </tr>
+                    {{> trade-history-row}}
                 {{/each}}
             </tbody>
         </table>
+        <div class="spinner" style="display:none"><i class="spin glyphicon glyphicon-refresh"></i></div>
         </div>
+    </script>
+
+
+    <script id="trade-history-row-template" type="text/x-handlebars-template">
+        <tr class="{{klass}}">
+            <td>{{created}}</td>
+            <td>{{base}}/{{counter}}</td>
+            <td>{{order_type}}</td>
+            <td class="money">{{amount}}</td>
+            <td>{{base}}</td>
+            <td class="money">{{value}}</td>
+            <td>{{counter}}</td>
+            <td class="money">{{price}}</td>
+            <td class="money">{{fee}}</td>
+            <td>{{fee_currency}}</td>
+        </tr>
     </script>
 
     <script id="deposit-withdraw-history-template" type="text/x-handlebars-template">
@@ -109,17 +121,22 @@
             </thead>
             <tbody>
                 {{#each .}}
-                <tr class="{{klass}}">
-                    <td>{{created}}</td>
-                    <td>{{typ}}</td>
-                    <td>{{currency}}</td>
-                    <td class="money">{{amount}}</td>
-                    <td class="money">{{fee}}</td>
-                    <td>{{address}}</td>
-                </tr>
+                    {{> dw-history-row}}
                 {{/each}}
             </tbody>
         </table>
+        <div class="spinner" style="display:none"><i class="spin glyphicon glyphicon-refresh"></i></div>
         </div>
+    </script>
+
+    <script id="deposit-withdraw-history-row-template" type="text/x-handlebars-template">
+        <tr class="{{klass}}">
+            <td>{{created}}</td>
+            <td>{{typ}}</td>
+            <td>{{currency}}</td>
+            <td class="money">{{amount}}</td>
+            <td class="money">{{fee}}</td>
+            <td>{{address}}</td>
+        </tr>
     </script>
 }
