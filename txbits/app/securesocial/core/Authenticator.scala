@@ -84,27 +84,16 @@ case class Authenticator(id: String, uid: Option[Long], creationDate: DateTime,
 }
 
 /**
- * A plugin that generates an authenticator id
- *
- * @param app A reference to the current app
- */
-abstract class IdGenerator(app: Application) extends Plugin {
-  def generate: String
-}
-
-/**
  * The default id generator
- *
- * @param app A reference to the current app
  */
-class DefaultIdGenerator(app: Application) extends IdGenerator(app) {
+object IdGenerator {
   //todo: this needs improvement, several threads will wait for the synchronized block in SecureRandom.
   // I will probably need a pool of SecureRandom instances.
   val random = new SecureRandom()
   // memcache can handle only 250 character keys. 32 bytes (256 bits) is 44 characters in Base64.
   val DefaultSizeInBytes = 32
   val IdLengthKey = "securesocial.idLengthInBytes"
-  val IdSizeInBytes = app.configuration.getInt(IdLengthKey).getOrElse(DefaultSizeInBytes)
+  val IdSizeInBytes = current.configuration.getInt(IdLengthKey).getOrElse(DefaultSizeInBytes)
 
   /**
    * Generates a new id using SecureRandom
@@ -119,43 +108,10 @@ class DefaultIdGenerator(app: Application) extends IdGenerator(app) {
 }
 
 /**
- * The authenticator store is in charge of persisting authenticators
- *
- * @param app
- */
-abstract class AuthenticatorStore(app: Application) extends Plugin {
-  /**
-   * Saves or updates the authenticator in the store
-   *
-   * @param authenticator the authenticator
-   * @return Error if there was a problem saving the authenticator or Unit if all went ok
-   */
-  def save(authenticator: Authenticator): Unit
-
-  /**
-   * Finds an authenticator by id in the store
-   *
-   * @param id the authenticator id
-   * @return Error if there was a problem finding the authenticator or an optional authenticator if all went ok
-   */
-  def find(id: String): Option[Authenticator]
-
-  /**
-   * Deletes an authenticator from the store
-   *
-   * @param id the authenticator id
-   * @return Error if there was a problem deleting the authenticator or Unit if all went ok
-   */
-  def delete(id: String): Unit
-}
-
-/**
  * A default implementation of the AuthenticationStore that uses the Play cache.
  * Note: if deploying to multiple nodes the caches will need to synchronize.
- *
- * @param app
  */
-class DefaultAuthenticatorStore(app: Application) extends AuthenticatorStore(app) {
+object AuthenticatorStore {
   val IdPrefix = "session."
 
   def save(authenticator: Authenticator) {
@@ -212,11 +168,11 @@ object Authenticator {
    * @return an authenticator or error if there was a problem creating it
    */
   def create(uid: Option[Long], totpSecret: Option[String], email: String): Authenticator = {
-    val id = use[IdGenerator].generate
+    val id = IdGenerator.generate
     val now = DateTime.now()
     val expirationDate = now.plusMinutes(absoluteTimeout)
     val authenticator = Authenticator(id, uid, now, now, expirationDate, totpSecret, email)
-    use[AuthenticatorStore].save(authenticator)
+    AuthenticatorStore.save(authenticator)
     authenticator
   }
 
@@ -227,7 +183,7 @@ object Authenticator {
    * @return Error if there was a problem saving the authenticator or Unit if all went ok
    */
   def save(authenticator: Authenticator) {
-    use[AuthenticatorStore].save(authenticator)
+    AuthenticatorStore.save(authenticator)
   }
   /**
    * Finds an authenticator by id
@@ -236,7 +192,7 @@ object Authenticator {
    * @return Error if there was a problem finding the authenticator or an optional authenticator if all went ok
    */
   def find(id: String): Option[Authenticator] = {
-    use[AuthenticatorStore].find(id)
+    AuthenticatorStore.find(id)
   }
 
   /**
@@ -246,6 +202,6 @@ object Authenticator {
    * @return Error if there was a problem deleting the authenticator or Unit if all went ok
    */
   def delete(id: String) {
-    use[AuthenticatorStore].delete(id)
+    AuthenticatorStore.delete(id)
   }
 }
