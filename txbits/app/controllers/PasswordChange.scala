@@ -30,12 +30,12 @@ import service.txbitsUserService
  */
 object PasswordChange extends Controller with SecureSocial {
   val CurrentPassword = "currentPassword"
-  val InvalidPasswordMessage = "securesocial.passwordChange.invalidPassword"
+  val InvalidPasswordMessage = "auth.passwordChange.invalidPassword"
   val Password = "password"
   val Password1 = "password1"
   val Password2 = "password2"
   val Success = "success"
-  val OkMessage = "securesocial.passwordChange.ok"
+  val OkMessage = "auth.passwordChange.ok"
 
   /**
    * The property that specifies the page the user is redirected to after changing the password.

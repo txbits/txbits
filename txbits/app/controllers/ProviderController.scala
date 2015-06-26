@@ -47,7 +47,7 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
    */
   val ApplicationContext = "application.context"
 
-  val InvalidCredentials = "securesocial.login.invalidCredentials"
+  val InvalidCredentials = "auth.login.invalidCredentials"
 
   /**
    * Returns the url that the user should be redirected to after login
@@ -153,12 +153,12 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
         )
       } catch {
         case ex: AccessDeniedException => {
-          Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("securesocial.login.accessDenied"))
+          Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("auth.login.accessDenied"))
         }
 
         case other: Throwable => {
           Logger.error("Unable to log user in. An exception was thrown", other)
-          Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("securesocial.login.errorLoggingIn"))
+          Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("auth.login.errorLoggingIn"))
         }
       }
     }

@@ -26,18 +26,18 @@
                         @CSRF.formField
                         <div class="form-group sign-up-text">Sign up for our beta:</div>
                         <div class="form-group" id="email_field">
-                            <label class="sr-only" for="email">@Messages("securesocial.signup.email1")</label>
+                            <label class="sr-only" for="email">@Messages("auth.signup.email1")</label>
                             <div class="controls">
-                                <input id="email" name="email" value="" class="form-control" type="text" placeholder="@Messages("securesocial.signup.email1")">
+                                <input id="email" name="email" value="" class="form-control" type="text" placeholder="@Messages("auth.signup.email1")">
                             </div>
                         </div>
                         <div class="form-group" id="email2_field">
-                            <label class="sr-only" for="email2">@Messages("securesocial.signup.email2")</label>
+                            <label class="sr-only" for="email2">@Messages("auth.signup.email2")</label>
                             <div class="controls">
-                                <input id="email2" name="email2" value="" class="form-control" type="text" placeholder="@Messages("securesocial.signup.email2")">
+                                <input id="email2" name="email2" value="" class="form-control" type="text" placeholder="@Messages("auth.signup.email2")">
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-default" title="@Messages("securesocial.signup.createAccount")"><i class="glyphicon glyphicon-chevron-right"></i></button>
+                        <button type="submit" class="btn btn-default" title="@Messages("auth.signup.createAccount")"><i class="glyphicon glyphicon-chevron-right"></i></button>
                     </form>
                 </div>
             </div>
@@ -74,10 +74,10 @@
                     <div class="form-inline">
                         <form action = "@routes.ProviderController.loginPost().url" autocomplete="off" method="POST">
                             @views.html.helper.CSRF.formField
-                            <div class="form-group sign-up-text">@Messages("securesocial.login.title"):</div>
+                            <div class="form-group sign-up-text">@Messages("auth.login.title"):</div>
                             <div class="form-group" id="username_field">
                                 <div class="controls">
-                                    <input type="text" id="username" name="username" value="" placeholder="@Messages("securesocial.signup.email1")" class="form-control" autocomplete="off"/>
+                                    <input type="text" id="username" name="username" value="" placeholder="@Messages("auth.signup.email1")" class="form-control" autocomplete="off"/>
                                 </div>
                             </div>
                             <div class="form-group" id="password_field">

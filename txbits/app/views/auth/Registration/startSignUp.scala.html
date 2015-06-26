@@ -7,7 +7,7 @@
     <script src="@routes.Assets.at("js/signup.js")"></script>
 }
 
-@auth._chrome( Messages("securesocial.signup.title"), scripts ) {
+@auth._chrome( Messages("auth.signup.title"), scripts ) {
 
     @request.flash.get("error").map { msg =>
     <div class="alert alert-danger">
@@ -21,19 +21,19 @@
         @CSRF.formField
         @helper.inputText(
         startForm("email"),
-        '_label -> Messages("securesocial.signup.email1"),
+        '_label -> Messages("auth.signup.email1"),
         'class -> "form-control"
         )
 
         <div class="form-group" id="email2_field">
-            <label class="control-label" for="email2">@Messages("securesocial.signup.email2")</label>
+            <label class="control-label" for="email2">@Messages("auth.signup.email2")</label>
             <div class="controls">
                 <input type="text" id="email2" name="email2" value="" class="form-control"/>
                 <span id="email2_error" class="help-block" style="display:none">Emails do not match</span>
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">@Messages("securesocial.signup.createAccount")</button>
+        <button type="submit" class="btn btn-primary">@Messages("auth.signup.createAccount")</button>
 
     </form>
 }
