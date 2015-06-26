@@ -53,7 +53,7 @@ class EngineModelSpec extends Specification with Mockito {
       globals.userModel.addFakeMoney(uid, "LTC", 1)
 
       val result = globals.engineModel.balance(Some(uid), None)
-      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1, 0))
+      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (BigDecimal(1), BigDecimal(0)))
     }
 
     "not be able to add fake balance on real exchange" in new WithCleanTestDbApplicationReal {
@@ -88,7 +88,7 @@ class EngineModelSpec extends Specification with Mockito {
       globals.engineModel.askBid(Some(uid), None, "LTC", "USD", 1, 1, true)
 
       val result = globals.engineModel.balance(Some(uid), None)
-      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (1, 1))
+      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (BigDecimal(1), BigDecimal(1)))
 
       val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
       orders_res should be equalTo EngineModel.orderBookFormat(
@@ -105,7 +105,7 @@ class EngineModelSpec extends Specification with Mockito {
       globals.engineModel.askBid(Some(uid), None, "LTC", "USD", 1, 1, false)
 
       val result = globals.engineModel.balance(Some(uid), None)
-      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1, 1))
+      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (BigDecimal(1), BigDecimal(1)))
 
       val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
       orders_res should be equalTo EngineModel.orderBookFormat(
@@ -128,8 +128,8 @@ class EngineModelSpec extends Specification with Mockito {
 
       val asker_res = globals.engineModel.balance(Some(asker), None)
       val bidder_res = globals.engineModel.balance(Some(bidder), None)
-      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (1 - fee, 0))
-      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, 0))
+      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (1 - fee, BigDecimal(0)))
+      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, BigDecimal(0)))
 
       val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
       orders_res should be equalTo orderBookEmpty
@@ -176,8 +176,8 @@ class EngineModelSpec extends Specification with Mockito {
 
       val asker_res = globals.engineModel.balance(Some(asker), None)
       val bidder_res = globals.engineModel.balance(Some(bidder), None)
-      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (2 - 2 * fee, 0))
-      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, 0))
+      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (2 - 2 * fee, BigDecimal(0)))
+      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, BigDecimal(0)))
 
       val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
       orders_res should be equalTo orderBookEmpty
@@ -197,8 +197,8 @@ class EngineModelSpec extends Specification with Mockito {
 
       val asker_res = globals.engineModel.balance(Some(asker), None)
       val bidder_res = globals.engineModel.balance(Some(bidder), None)
-      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (2, 0))
-      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, 0))
+      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (BigDecimal(2), BigDecimal(0)))
+      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, BigDecimal(0)))
     }
 
     "be able to make a match and get charged the right fee if we swap the bid and the ask" in new WithCleanTestDbApplication {
@@ -213,8 +213,8 @@ class EngineModelSpec extends Specification with Mockito {
 
       val asker_res = globals.engineModel.balance(Some(asker), None)
       val bidder_res = globals.engineModel.balance(Some(bidder), None)
-      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (2 - 2 * fee, 0))
-      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, 0))
+      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (2 - 2 * fee, BigDecimal(0)))
+      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, BigDecimal(0)))
 
       val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
       orders_res should be equalTo orderBookEmpty
@@ -278,8 +278,8 @@ class EngineModelSpec extends Specification with Mockito {
       val asker_res = globals.engineModel.balance(Some(asker), None)
       val bidder_res = globals.engineModel.balance(Some(bidder), None)
       cancel_res should beTrue
-      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1, 1))
-      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (2, 0))
+      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (BigDecimal(1), BigDecimal(1)))
+      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (BigDecimal(2), BigDecimal(0)))
 
       val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
       orders_res should be equalTo EngineModel.orderBookFormat(
