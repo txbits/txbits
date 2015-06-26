@@ -192,11 +192,11 @@ class EngineModelSpec extends Specification with Mockito {
       globals.userModel.addFakeMoney(asker, "LTC", 1)
       globals.userModel.addFakeMoney(bidder, "USD", 2)
 
-      globals.engineModel.askBid(asker, "LTC", "USD", 1, 2, false)
-      globals.engineModel.askBid(bidder, "LTC", "USD", 1, 2, true)
+      globals.engineModel.askBid(Some(asker), None, "LTC", "USD", 1, 2, false)
+      globals.engineModel.askBid(Some(bidder), None, "LTC", "USD", 1, 2, true)
 
-      val asker_res = globals.engineModel.balance(asker)
-      val bidder_res = globals.engineModel.balance(bidder)
+      val asker_res = globals.engineModel.balance(Some(asker), None)
+      val bidder_res = globals.engineModel.balance(Some(bidder), None)
       asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("USD", (2, 0))
       bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (1 - fee, 0))
     }
