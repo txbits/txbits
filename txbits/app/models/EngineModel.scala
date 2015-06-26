@@ -30,6 +30,10 @@ class EngineModel(val db: String = "default") {
     misc.setupForTest.execute()
   )
 
+  def changeFeesToOneWay() = DB.withConnection(db)(implicit c =>
+    misc.changeFeesToOneWay.execute()
+  )
+
   def setFees(currency: String, method: String, depositConstant: BigDecimal, depositLinear: BigDecimal, withdrawConstant: BigDecimal, withdrawLinear: BigDecimal) = DB.withConnection(db)(implicit c =>
     misc.setFees.on(
       'currency -> currency,

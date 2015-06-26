@@ -83,7 +83,8 @@ $(function(){
             }
 
             API.trade_fees().success().success(function(data){
-                var fee = data;
+                var one_way = data.one_way;
+                var fee = Number(data.linear);
 
                 API.open_trades(base, counter).success(function(data){
                     var i;
@@ -115,7 +116,7 @@ $(function(){
                     var bid_price = asks.orders.length > 0 ? asks.orders[0].price.trim() : "";
                     var ask_price = bids.orders.length > 0 ? bids.orders[0].price.trim() : "";
 
-                    $('#bid').html(bid_template({balance: balance_counter, price: bid_price, base: base, counter: counter})).off("submit").submit(function(e){
+                    $('#bid').html(bid_template({balance: balance_counter, price: bid_price, base: base, counter: counter, one_way: one_way})).off("submit").submit(function(e){
                         $('#bid-submit').addClass('disabled');
                         var $form = $('#bid');
                         var amount = Number($form.find(".amount").val());
@@ -136,7 +137,7 @@ $(function(){
                         e.preventDefault();
                     });
 
-                    $('#ask').html(ask_template({balance: balance_base, price: ask_price, base: base, counter: counter})).off("submit").submit(function(e){
+                    $('#ask').html(ask_template({balance: balance_base, price: ask_price, base: base, counter: counter, one_way: one_way})).off("submit").submit(function(e){
                         $('#ask-submit').addClass('disabled');
                         var $form = $('#ask');
                         var amount = Number($form.find(".amount").val());

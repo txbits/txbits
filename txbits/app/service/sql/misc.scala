@@ -54,7 +54,7 @@ object misc {
       |insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('USD', 'wire', 0.000, 0.000, 0.000, 0.000);
       |insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('CAD', 'wire', 0.000, 0.000, 0.000, 0.000);
       |
-      |insert into trade_fees(linear) values (0.005);
+      |insert into trade_fees(linear, one_way) values (0.005, true);
       |
       |insert into withdrawal_limits(currency, limit_min, limit_max) values ('BTC', 0.010, 10);
       |insert into withdrawal_limits(currency, limit_min, limit_max) values ('LTC', 0.100, 100);
@@ -137,7 +137,7 @@ object misc {
       |insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('USD', 'wire', 0.000, 0.000, 0.000, 0.000);
       |insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('CAD', 'wire', 0.000, 0.000, 0.000, 0.000);
       |
-      |insert into trade_fees(linear) values (0.005);
+      |insert into trade_fees(linear, one_way) values (0.005, false);
       |
       |insert into withdrawal_limits(currency, limit_min, limit_max) values ('LTC', 0.001, 100);
       |insert into withdrawal_limits(currency, limit_min, limit_max) values ('BTC', 0.001, 100);
@@ -153,6 +153,12 @@ object misc {
       |insert into users(id, email) values (0, '');
       |insert into balances (user_id, currency) select 0, currency from currencies;
     """.stripMargin
+  )
+
+  val changeFeesToOneWay = SQL(
+    """
+    |update trade_fees set one_way=true;
+  """.stripMargin
   )
 
   val setFees = SQL(
