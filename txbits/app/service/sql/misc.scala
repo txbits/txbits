@@ -155,8 +155,7 @@ object misc {
 
   val changeFeesToOneWay = SQL(
     """
-    |delete from trade_fees;
-    |insert into trade_fees(linear, one_way) values (0.005, true);
+    |update trade_fees set one_way=true;
   """.stripMargin
   )
 
