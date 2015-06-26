@@ -37,6 +37,7 @@ object misc {
       |delete from markets;
       |delete from withdrawal_limits;
       |delete from currencies;
+      |delete from event_log;
       |delete from users;
       |
       |select currency_insert('BTC',10);
@@ -85,6 +86,7 @@ object misc {
       |delete from users_tfa_secrets;
       |delete from users_backup_otps;
       |delete from users_passwords;
+      |delete from event_log;
       |delete from users;
       |commit;
     """.stripMargin)
@@ -116,6 +118,7 @@ object misc {
       |delete from markets;
       |delete from withdrawal_limits;
       |delete from currencies;
+      |delete from event_log;
       |delete from users;
       |""".stripMargin)
 
