@@ -9,7 +9,7 @@
 
 @implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
 
-@auth._chrome(Messages("securesocial.login.title"), scripts) {
+@auth._chrome(Messages("auth.login.title"), scripts) {
 
     @errorMsg.map { msg =>
         <div class="alert alert-danger">
@@ -45,10 +45,10 @@
                 'class -> "form-control"
             )
 
-            <button type="submit" class="btn btn-primary">@Messages("securesocial.login.title")</button>
+            <button type="submit" class="btn btn-primary">@Messages("auth.login.title")</button>
 
             <div class="pull-right">
-                <a href="@controllers.routes.Registration.startResetPassword()" class="btn">@Messages("securesocial.login.forgotPassword") </a>
+                <a href="@controllers.routes.Registration.startResetPassword()" class="btn">@Messages("auth.login.forgotPassword") </a>
             </div>
         </form>
     </div>

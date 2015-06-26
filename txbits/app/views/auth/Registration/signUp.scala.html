@@ -9,7 +9,7 @@
     <script src="@routes.Assets.at("js/zxcvbn-indicator.js")"></script>
 }
 
-@auth._chrome( Messages("securesocial.signup.title"), scripts ) {
+@auth._chrome( Messages("auth.signup.title"), scripts ) {
 
     @request.flash.get("error").map { msg =>
         <div class="alert alert-danger">
@@ -32,20 +32,20 @@
 
         @helper.inputPassword(
             signUpForm("password.password1"),
-            '_label -> Messages("securesocial.signup.password1"),
+            '_label -> Messages("auth.signup.password1"),
             'class -> "form-control"
         )
 
         @helper.inputPassword(
             signUpForm("password.password2"),
-            '_label -> Messages("securesocial.signup.password2"),
+            '_label -> Messages("auth.signup.password2"),
             '_error -> signUpForm.error("password"),
             'class -> "form-control"
         )
 
         @textarea(
             signUpForm("pgp"),
-            '_label -> Messages("securesocial.signup.pgp"),
+            '_label -> Messages("auth.signup.pgp"),
             '_error -> signUpForm.error("pgp"),
             'class -> "form-control"
         )
@@ -54,10 +54,10 @@
 
         <div class="checkbox">
             <label>
-                <input type="checkbox" value="true" name="mailinglist"> @Messages("securesocial.signup.mailinglist")
+                <input type="checkbox" value="true" name="mailinglist"> @Messages("auth.signup.mailinglist")
             </label>
         </div>
 
-        <button type="submit" class="btn btn-primary">@Messages("securesocial.signup.createAccount")</button>
+        <button type="submit" class="btn btn-primary">@Messages("auth.signup.createAccount")</button>
     </form>
 }

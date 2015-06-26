@@ -42,13 +42,13 @@ import java.security.SecureRandom
  */
 object Registration extends Controller {
 
-  val PasswordsDoNotMatch = "securesocial.signup.passwordsDoNotMatch"
-  val PgpKeyInvalid = "securesocial.signup.pgpKeyInvalid"
-  val ThankYouCheckEmail = "securesocial.signup.thankYouCheckEmail"
-  val InvalidLink = "securesocial.signup.invalidLink"
-  val SignUpDone = "securesocial.signup.signUpDone"
-  val PasswordUpdated = "securesocial.password.passwordUpdated"
-  val ErrorUpdatingPassword = "securesocial.password.error"
+  val PasswordsDoNotMatch = "auth.signup.passwordsDoNotMatch"
+  val PgpKeyInvalid = "auth.signup.pgpKeyInvalid"
+  val ThankYouCheckEmail = "auth.signup.thankYouCheckEmail"
+  val InvalidLink = "auth.signup.invalidLink"
+  val SignUpDone = "auth.signup.signUpDone"
+  val PasswordUpdated = "auth.password.passwordUpdated"
+  val ErrorUpdatingPassword = "auth.password.error"
 
   val MailingList = "mailinglist"
   val Password = "password"

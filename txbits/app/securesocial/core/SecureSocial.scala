@@ -120,7 +120,7 @@ trait SecureSocial extends Controller {
             ajaxCallNotAuthenticated(request)
           } else {
             Redirect(controllers.routes.LoginPage.login().absoluteURL(UsernamePasswordProvider.sslEnabled))
-              .flashing("error" -> Messages("securesocial.loginRequired"))
+              .flashing("error" -> Messages("auth.loginRequired"))
               .withSession(request2session + (SecureSocial.OriginalUrlKey -> request.uri)
               )
           }

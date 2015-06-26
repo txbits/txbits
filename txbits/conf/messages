@@ -69,7 +69,7 @@ terminology.verificationLevel=Verification Level
 
 tfa.off.explanation=Type your current two factor authentication code below to confirm this is you and you really want to turn off two factor authentication. This will make your account easier to steal.
 
-securesocial.login.forgotPassword=Reset Password
+auth.login.forgotPassword=Reset Password
 
 exchange.account.id=ID
 exchange.account.info.title=Account Info
@@ -78,7 +78,7 @@ exchange.account.tfa_login=Two-Factor Authentication on Log In
 exchange.account.tfa_withdrawal=Two-Factor Authentication on Withdrawals
 exchange.account.tfa_type=Two-Factor Authentication Type
 exchange.account.mailinglist=Receive updates about new features and changes to TxBits
-securesocial.signup.mailinglist=Receive updates about new features and changes to TxBits
+auth.signup.mailinglist=Receive updates about new features and changes to TxBits
 
 exchange.account.api_keys.title=API Keys
 exchange.account.api_keys.api_key=API Key
@@ -96,7 +96,7 @@ tfa.on.title=Enable 2FA
 tfa.off.title=Disable 2FA
 tfa.submit.title=Submit
 
-securesocial.login.signup=Sign Up
+auth.login.signup=Sign Up
 
 chrome.language=Language
 chrome.language.en=English
@@ -162,58 +162,51 @@ account.fakemoney.subtract=Subtract Funds
 
 ### SecureSocial stuff
 
-# App name
-securesocial.appName=SecureSocial 2
-
 # Login page
-securesocial.login.title=Log In
-securesocial.login.instructions=Use your existing account on one of the following networks to log in.
-securesocial.login.accessDenied=You denied access to your account. Please grant it to log in.
-securesocial.login.errorLoggingIn=An error occurred while logging you in. Please try again.
-securesocial.login.useEmailAndPassword=Or login using a username and password.
-securesocial.login.useEmailAndPasswordOnly=Login using a username and password.
-securesocial.login.signUp=If you don''t have an account with us yet you can sign up
-securesocial.login.here=here
-securesocial.login.invalidCredentials=The credentials you entered are not valid
+auth.login.title=Log In
+auth.login.accessDenied=You denied access to your account. Please grant it to log in.
+auth.login.errorLoggingIn=An error occurred while logging you in. Please try again.
+auth.login.here=here
+auth.login.invalidCredentials=The credentials you entered are not valid
 
 # Sign up page
-securesocial.signup.title=Sign Up
-securesocial.signup.email1=Email
-securesocial.signup.email2=Re-enter email
-securesocial.signup.password1=Password (12 characters minimum)
-securesocial.signup.password2=Password confirmation
-securesocial.signup.createAccount=Create Account
-securesocial.signup.cancel=Cancel
-securesocial.signup.passwordsDoNotMatch=Passwords do not match
-securesocial.signup.pgpKeyInvalid=Failed to parse PGP key
-securesocial.signup.thankYouCheckEmail=Thank you. Please check your email for further instructions
-securesocial.signup.invalidLink=The link you followed is invalid
-securesocial.signup.signUpDone=Thank you for signing up. You can log in now
-securesocial.signup.invalidPassword=Enter at least {0} characters
-securesocial.signup.pgp=PGP key (if you have one)
+auth.signup.title=Sign Up
+auth.signup.email1=Email
+auth.signup.email2=Re-enter email
+auth.signup.password1=Password (12 characters minimum)
+auth.signup.password2=Password confirmation
+auth.signup.createAccount=Create Account
+auth.signup.cancel=Cancel
+auth.signup.passwordsDoNotMatch=Passwords do not match
+auth.signup.pgpKeyInvalid=Failed to parse PGP key
+auth.signup.thankYouCheckEmail=Thank you. Please check your email for further instructions
+auth.signup.invalidLink=The link you followed is invalid
+auth.signup.signUpDone=Thank you for signing up. You can log in now
+auth.signup.invalidPassword=Enter at least {0} characters
+auth.signup.pgp=PGP key (if you have one)
 
 # Password reset
-securesocial.password.title=Reset Password
-securesocial.password.passwordUpdated=Your password was updated successfully
-securesocial.password.reset=Reset Password
-securesocial.password.error=There was a problem changing your password. Please try again
+auth.password.title=Reset Password
+auth.password.passwordUpdated=Your password was updated successfully
+auth.password.reset=Reset Password
+auth.password.error=There was a problem changing your password. Please try again
 
 # Password change
-securesocial.passwordChange.title=Change Password
-securesocial.passwordChange.currentPassword=Current Password
-securesocial.passwordChange.newPassword1=New Password (12 characters minimum)
-securesocial.passwordChange.newPassword2=New Password Confirmation
-securesocial.passwordChange.changeButton=Change
-securesocial.passwordChange.invalidPassword=Invalid password
-securesocial.passwordChange.ok=Your password was changed successfully
-securesocial.passwordChange.okButton=Ok
+auth.passwordChange.title=Change Password
+auth.passwordChange.currentPassword=Current Password
+auth.passwordChange.newPassword1=New Password (12 characters minimum)
+auth.passwordChange.newPassword2=New Password Confirmation
+auth.passwordChange.changeButton=Change
+auth.passwordChange.invalidPassword=Invalid password
+auth.passwordChange.ok=Your password was changed successfully
+auth.passwordChange.okButton=Ok
 
 # Not authorized page
-securesocial.notAuthorized.title=Not Authorized
-securesocial.notAuthorized.message=You are not authorized to access that page
+auth.notAuthorized.title=Not Authorized
+auth.notAuthorized.message=You are not authorized to access that page
 
 #
-securesocial.loginRequired=You need to log in to access that page.
+auth.loginRequired=You need to log in to access that page.
 
 # Mails
 #
