@@ -1451,9 +1451,9 @@ begin
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
 
-  update users_addresses
+  update users_addresses ua
     set user_id = a_uid, assigned = current_timestamp
-    where assigned is NULL and user_id = 0 and address = any (
+    from (    
       select distinct on (currency) address
       from users_addresses
       where assigned is NULL and user_id = 0 and currency not in (
@@ -1467,7 +1467,7 @@ begin
              ) a
         left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
       )
-    );;
+    ) ua2 where ua.address = ua2.address;;
 
   return query
     select currency, address, assigned from users_addresses
