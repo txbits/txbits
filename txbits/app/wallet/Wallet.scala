@@ -31,6 +31,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
   private var firstUpdate = true
   private var changeAddressCount = 0
   private var balance = walletModel.getBalance(currency, nodeId)
+  private var refillRequested = false
 
   // Cache of pending deposits, initialized from DB
   private val pendingDeposits: mutable.Map[Deposit, Long] = mutable.Map(walletModel.getPendingDeposits(currency, nodeId): _*)
@@ -180,8 +181,14 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
 
     balance = walletModel.getBalance(currency, nodeId)
 
-    if (balance <= balanceWarn) {
-      //TODO: Notify that the wallet needs refilling
+    // Notify that the wallet needs refilling
+    if (balance <= balanceWarn && params.refillEmail.isDefined) {
+      if (!refillRequested) {
+        refillRequested = true
+        securesocial.core.providers.utils.Mailer.sendRefillWalletEmail(params.refillEmail.get, currency.toString, nodeId)
+      }
+    } else {
+      refillRequested = false
     }
 
     // Subtract minConfirmations as it could be decreased when actor is restarted
@@ -263,6 +270,7 @@ object Wallet {
     addressInterval: FiniteDuration,
     addressPool: Int,
     backupPath: Option[String],
-    coldAddress: Option[String])
+    coldAddress: Option[String],
+    refillEmail: Option[String])
 }
 
