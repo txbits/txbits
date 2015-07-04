@@ -185,7 +185,12 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
     if (balance <= balanceWarn && params.refillEmail.isDefined) {
       if (!refillRequested) {
         refillRequested = true
-        securesocial.core.providers.utils.Mailer.sendRefillWalletEmail(params.refillEmail.get, currency.toString, nodeId)
+        try {
+          securesocial.core.providers.utils.Mailer.sendRefillWalletEmail(params.refillEmail.get, currency.toString, nodeId, balance, balanceTarget)
+        } catch {
+          case ex: Throwable =>
+          // If email cannot be sent, do nothing
+        }
       }
     } else {
       refillRequested = false
