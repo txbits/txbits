@@ -25,6 +25,7 @@ import Play.current
 import play.api.cache.Cache
 import play.api.mvc.{ DiscardingCookie, Cookie }
 import org.apache.commons.codec.binary.Base64.encodeBase64
+import org.apache.commons.codec.binary.Base32
 
 /**
  * An authenticator tracks an authenticated user.
@@ -94,6 +95,7 @@ object IdGenerator {
   val DefaultSizeInBytes = 32
   val IdLengthKey = "securesocial.idLengthInBytes"
   val IdSizeInBytes = current.configuration.getInt(IdLengthKey).getOrElse(DefaultSizeInBytes)
+  val base32 = new Base32
 
   /**
    * Generates a new id using SecureRandom
@@ -104,6 +106,12 @@ object IdGenerator {
     val bytes = new Array[Byte](IdSizeInBytes)
     random.nextBytes(bytes)
     new String(encodeBase64(bytes))
+  }
+
+  def generateEmailToken: String = {
+    val bytes = new Array[Byte](30)
+    random.nextBytes(bytes)
+    base32.encodeAsString(bytes)
   }
 }
 

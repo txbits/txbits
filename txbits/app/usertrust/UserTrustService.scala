@@ -58,7 +58,7 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
   }
 
   private def createToken(email: String, isSignUp: Boolean) = {
-    val tokenId = IdGenerator.generate
+    val tokenId = IdGenerator.generateEmailToken
     val now = DateTime.now
 
     val token = Token(
@@ -74,7 +74,7 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
   }
 
   private def createWithdrawalToken(id: Long) = {
-    val token = IdGenerator.generate
+    val token = IdGenerator.generateEmailToken
     val expiration = DateTime.now.plusMinutes(TokenDuration)
     model.saveWithdrawalToken(id, token, expiration)
 
