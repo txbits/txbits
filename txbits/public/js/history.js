@@ -69,7 +69,7 @@ $(function(){
                 data[i].created = moment(Number(data[i].created)).format("YYYY-MM-DD HH:mm:ss");
                 data[i].amount = zerosToSpaces(data[i].amount);
                 data[i].fee = zerosToSpaces(data[i].fee);
-                data[i].address = data[i].address ? data[i].address : "N/A";
+                data[i].note = data[i].rejected ? "Cancelled" : "";
                 if (data[i].typ == 'd') {
                     data[i].typ = "Deposit";
                     data[i].klass = "success";

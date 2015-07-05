@@ -52,6 +52,7 @@ $(function(){
                                     pending_w[currency][i].created = moment(Number(pending_w[currency][i].created)).format("YYYY-MM-DD HH:mm:ss");
                                     pending_w[currency][i].amount = zerosToSpaces(pending_w[currency][i].amount);
                                     pending_w[currency][i].fee = zerosToSpaces(pending_w[currency][i].fee);
+                                    pending_w[currency][i].status = pending_w[currency][i].confirmed ? "Pending" : "Check email";
                                 }
                             }
                             API.deposit_crypto_all().success(function(addresses) {

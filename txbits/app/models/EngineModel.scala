@@ -165,8 +165,10 @@ class EngineModel(val db: String = "default") {
             row[Long]("id"),
             row[BigDecimal]("amount").bigDecimal.toPlainString,
             row[BigDecimal]("fee").bigDecimal.toPlainString,
-            row[DateTime]("created"), row[String]("info"),
-            row[String]("currency")
+            row[DateTime]("created"),
+            row[String]("info"),
+            row[String]("currency"),
+            Some(row[Boolean]("user_confirmed"))
           )
         )
       ).toList
@@ -233,7 +235,7 @@ object EngineModel {
   }
 }
 
-case class Withdrawal(id: Long, amount: String, fee: String, created: DateTime, info: String, currency: String)
+case class Withdrawal(id: Long, amount: String, fee: String, created: DateTime, info: String, currency: String, confirmed: Option[Boolean] = None)
 
 object Withdrawal {
   implicit val writes = Json.writes[Withdrawal]
