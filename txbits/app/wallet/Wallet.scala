@@ -189,7 +189,8 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
           securesocial.core.providers.utils.Mailer.sendRefillWalletEmail(params.refillEmail.get, currency.toString, nodeId, balance, balanceTarget)
         } catch {
           case ex: Throwable =>
-          // If email cannot be sent, do nothing
+          // If email cannot be sent, log an error
+          Logger.error("[wallet] [%s, %s] Error sending wallet refill email".format(currency, nodeId))
         }
       }
     } else {
@@ -214,7 +215,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       // back up the wallet only after we've generated new keys
       if (params.backupPath.isDefined) {
         backupWallet(params.backupPath.get)
-        Logger.info("Backed up wallet to %s".format(params.backupPath.get))
+        Logger.info("[wallet] [%s, %s] Backed up wallet to %s".format(currency, nodeId, params.backupPath.get))
       }
     }
   }
