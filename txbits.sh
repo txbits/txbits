@@ -1,4 +1,4 @@
 #!/bin/bash
 pushd $(dirname $0)/txbits
-../activator-1.2.10-minimal/activator $@
+../activator-1.3.5-minimal/activator $@
 popd
