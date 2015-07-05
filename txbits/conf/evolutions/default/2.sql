@@ -1466,7 +1466,7 @@ begin
                 ) order by users_addresses.currency, assigned desc
              ) a
         left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
-      )
+      ) for update
     ) ua2 where ua.address = ua2.address;;
 
   return query
