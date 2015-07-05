@@ -1466,7 +1466,7 @@ begin
                 ) order by users_addresses.currency, assigned desc
              ) a
         left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
-      ) for update
+      )
     ) ua2 where ua.address = ua2.address;;
 
   return query
@@ -1490,16 +1490,17 @@ user_pending_withdrawals (
   out amount numeric(23,8),
   out fee numeric(23,8),
   out created timestamp,
-  out info varchar(34)
+  out info varchar(34),
+  out user_confirmed boolean
 ) returns setof record as $$
 begin
   if a_uid = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  return query select w.id, w.currency, w.amount, w.fee, w.created, wc.address as info
+  return query select w.id, w.currency, w.amount, w.fee, w.created, wc.address as info, w.user_confirmed
   from withdrawals_crypto wc
   inner join withdrawals w on w.id = wc.id
-  where w.user_id = a_uid and withdrawals_crypto_tx_id is null
+  where w.user_id = a_uid and withdrawals_crypto_tx_id is null and user_rejected = false
   order by created desc;;
 end;;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
@@ -1652,7 +1653,8 @@ deposit_withdraw_history (
   out currency varchar(4),
   out fee numeric(23,8),
   out type text,
-  out address varchar(34)
+  out address varchar(34),
+  out user_rejected boolean
 ) returns setof record as $$
 begin
   if a_before is null then
@@ -1669,15 +1671,15 @@ begin
   return query select * from
   (
     (
-      select w.id, w.amount, w.created, w.currency, w.fee, 'w' as type, wc.address
+      select w.id, w.amount, w.created, w.currency, w.fee, 'w' as type, wc.address, w.user_rejected
       from withdrawals w left join withdrawals_crypto wc on w.id = wc.id
-      where user_id = a_id and (wc.withdrawals_crypto_tx_id is not null or wc.id is null)
+      where user_id = a_id and (wc.withdrawals_crypto_tx_id is not null or wc.id is null or w.user_rejected = true)
       and (w.created, w.id) < (a_before, a_last_id)
       order by w.created desc, w.id desc limit a_limit
     )
     union all
     (
-      select d.id, d.amount, d.created, d.currency, d.fee, 'd' as type, dc.address
+      select d.id, d.amount, d.created, d.currency, d.fee, 'd' as type, dc.address, false as user_rejected
       from deposits d left join deposits_crypto dc on d.id = dc.id
       where user_id = a_id and (dc.confirmed is not null or dc.id is null)
       and (d.created, d.id) < (a_before, a_last_id)

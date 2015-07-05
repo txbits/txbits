@@ -24,7 +24,7 @@ object TradeHistory {
   implicit val format = Json.format[TradeHistory]
 }
 
-case class DepositWithdrawHistory(id: Long, amount: String, fee: String, created: DateTime, currency: String, typ: String, address: String)
+case class DepositWithdrawHistory(id: Long, amount: String, fee: String, created: DateTime, currency: String, typ: String, address: String, rejected: Boolean)
 
 object DepositWithdrawHistory {
   implicit val writes = Json.writes[DepositWithdrawHistory]
@@ -220,7 +220,8 @@ class UserModel(val db: String = "default") {
           row[DateTime]("created"),
           row[String]("currency"),
           row[String]("type"),
-          row[Option[String]]("address").getOrElse(""))
+          row[Option[String]]("address").getOrElse("N/A"),
+          row[Boolean]("user_rejected"))
       ).toList
   }
 
