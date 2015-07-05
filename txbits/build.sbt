@@ -4,7 +4,7 @@ name := "txbits"
 
 version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
   ws,
@@ -14,13 +14,13 @@ libraryDependencies ++= Seq(
   play.PlayImport.cache,
   "com.typesafe.play.plugins" %% "play-plugins-util" % "2.3.0",
   "org.mindrot" % "jbcrypt" % "0.3m",
-  "org.mockito" % "mockito-all" % "1.9.5",
+  "org.mockito" % "mockito-all" % "1.10.19",
   "com.typesafe.akka" %% "akka-testkit" % "2.3.9" % "test",
   "com.github.briandilley.jsonrpc4j" % "jsonrpc4j" % "1.1",
-  "org.postgresql" % "postgresql" % "9.3-1103-jdbc4",
+  "org.postgresql" % "postgresql" % "9.3-1103-jdbc41",
   "com.google" % "bitcoinj" % "0.11",
   "org.apache.commons" % "commons-email" % "1.3.3",
-  "com.github.mumoshu" %% "play2-memcached" % "0.6.0",
+  "com.github.mumoshu" %% "play2-memcached-play23" % "0.7.0",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
   "org.bouncycastle" % "bcpg-jdk15on" % "1.51",
   "org.bouncycastle" % "bcprov-ext-jdk15on" % "1.51",
