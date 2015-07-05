@@ -49,6 +49,11 @@ object Mailer {
     sendEmail(Messages(WithdrawalConfirmSubject), email, txtAndHtml, pgp)
   }
 
+  def sendRefillWalletEmail(email: String, currency: String, nodeId: Int, balance: BigDecimal, balanceTarget: BigDecimal) {
+    val txtAndHtml = (Some(views.txt.auth.mails.refillWalletEmail(email, currency, nodeId, balance, balanceTarget)), None)
+    sendEmail(s"Refill $currency wallet $nodeId", email, txtAndHtml)
+  }
+
   def sendAlreadyRegisteredEmail(email: String, pgp: Option[String]) {
     val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/")
     val txtAndHtml = SecureSocialTemplates.getAlreadyRegisteredEmail(email, url)

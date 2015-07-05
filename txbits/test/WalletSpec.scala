@@ -44,7 +44,8 @@ class WalletSpec extends Specification with Mockito {
     addressInterval = Duration(9999, SECONDS),
     addressPool = 60,
     backupPath = None,
-    coldAddress = None)
+    coldAddress = None,
+    refillEmail = None)
 
   "Wallet" should {
     // the application is used for its actor system and database connection

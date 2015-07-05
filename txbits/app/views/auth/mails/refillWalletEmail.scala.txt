@@ -1,0 +1,8 @@
+@(email: String, currency: String, nodeId: Int, balance: BigDecimal, balanceTarget: BigDecimal)
+
+The wallet for currency @currency node @nodeId is low on funds.
+
+Balance: @balance @currency
+Target: @balanceTarget @currency
+
+@_footer()

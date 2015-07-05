@@ -91,10 +91,16 @@ package object globals {
           Logger.warn("Invalid cold storage address for %s wallet. Cold storage disabled.".format(currency)); None
         case None => None
       }
+      val refillEmail = Play.current.configuration.getString("wallet.%s.node.%s.refillEmail".format(currencyName, nodeId)) match {
+        case Some(email) if email.contains("@") => Some(email)
+        case Some(_) =>
+          Logger.warn("Invalid email address for %s wallet. Refill notifications disabled.".format(currency)); None
+        case None => None
+      }
 
       val rpcUrl = new URL(rpcUrlString)
       rpcAuth.register(rpcUrl, new PasswordAuthentication(rpcUser, rpcPassword.toCharArray))
-      val params = Wallet.WalletParams(checkDelay.seconds, checkInterval.seconds, addressDelay.seconds, addressInterval.seconds, addressPool, backupPath, coldAddress)
+      val params = Wallet.WalletParams(checkDelay.seconds, checkInterval.seconds, addressDelay.seconds, addressInterval.seconds, addressPool, backupPath, coldAddress, refillEmail)
       Akka.system.actorOf(Wallet.props(new JsonRpcHttpClient(rpcUrl), currency, nodeId, params, walletModel))
     }
 
