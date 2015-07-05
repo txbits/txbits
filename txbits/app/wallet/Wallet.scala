@@ -189,8 +189,8 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
           securesocial.core.providers.utils.Mailer.sendRefillWalletEmail(params.refillEmail.get, currency.toString, nodeId, balance, balanceTarget)
         } catch {
           case ex: Throwable =>
-          // If email cannot be sent, log an error
-          Logger.error("[wallet] [%s, %s] Error sending wallet refill email".format(currency, nodeId))
+            // If email cannot be sent, log an error
+            Logger.error("[wallet] [%s, %s] Error sending wallet refill email".format(currency, nodeId))
         }
       }
     } else {

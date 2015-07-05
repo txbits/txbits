@@ -223,12 +223,16 @@ begin
   insert into withdrawals_crypto_tx (currency, node_id)
     values (a_currency, a_node_id) returning id into strict w_id;;
 
-  update withdrawals_crypto set withdrawals_crypto_tx_id = w_id
-    where withdrawals_crypto_tx_id is NULL and
-      id = any (select w.id
-                from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
-                where currency = a_currency and w.user_confirmed = true and withdrawals_crypto_tx_id is NULL
-               );;
+  -- Enforce a low limit of 300 withdrawals per batch
+  -- Size limit of a standard Bitcoin transaction is 100 KB
+  -- Size in bytes = inputs * 180 + outputs * 34 + 10 +/- inputs
+  update withdrawals_crypto ww set withdrawals_crypto_tx_id = w_id
+    from (
+      select w.id
+      from withdrawals w inner join withdrawals_crypto wc on w.id = wc.id
+      where currency = a_currency and w.user_confirmed = true and withdrawals_crypto_tx_id is NULL
+      limit 300
+    ) w2 where ww.id = w2.id;;
 
   if not found then
     delete from withdrawals_crypto_tx where id = w_id;;
