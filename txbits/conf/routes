@@ -20,7 +20,6 @@ GET         /withdrawal_reject/:id/:token              controllers.WithdrawalCon
 
 # This is our ticker API which should be completely separable from our main one
 # This api uses no authentication
-GET         /iapi/1/ws/ticker                           controllers.StatsAPI.APIv1.websocketTicker
 GET         /iapi/1/ticker                              controllers.StatsAPI.APIv1.ticker
 GET         /iapi/1/chart/:base/:counter                controllers.StatsAPI.APIv1.chart(base, counter)
 

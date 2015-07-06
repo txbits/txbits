@@ -17,13 +17,15 @@
 package controllers.API
 
 import play.api._
+import play.api.i18n.I18nSupport
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.libs.json.Writes._
 import org.joda.time.DateTime
+import play.i18n.MessagesApi
 
-object APIv1 extends Controller {
+class APIv1(val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
   def balance = Action(parse.json) { implicit request =>
     val body = request.body

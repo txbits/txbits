@@ -20,14 +20,16 @@ import models.{ LogEvent, LogType }
 import play.Logger
 import play.api.Play
 import play.api.Play.current
+import play.api.i18n.I18nSupport
 import play.api.mvc.{ Action, Controller }
+import play.i18n.MessagesApi
 import securesocial.core._
 import service.txbitsUserService
 
 /**
  * The Login page controller
  */
-object LoginPage extends Controller {
+class LoginPage(val messagesApi: MessagesApi) extends Controller with I18nSupport {
   /**
    * The property that specifies the page the user is redirected to after logging out.
    */

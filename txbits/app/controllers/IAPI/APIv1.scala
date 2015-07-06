@@ -17,18 +17,19 @@
 package controllers.IAPI
 
 import play.api._
+import play.api.i18n.I18nSupport
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.libs.json.Writes._
+import play.i18n.MessagesApi
 import service.{ PGP, TOTPUrl }
 import org.postgresql.util.PSQLException
 import org.apache.commons.codec.binary.Base64.encodeBase64
 import java.security.SecureRandom
 import controllers.Util
 
-object APIv1 extends Controller with securesocial.core.SecureSocial {
-
+class APIv1(val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
   // Json serializable case classes have implicit definitions in their companion objects
 
   import globals._
