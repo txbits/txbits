@@ -48,7 +48,10 @@ object Application extends Controller with securesocial.core.SecureSocial {
   }
 
   def chlang(lang: String) = UserAwareAction { implicit request =>
-    Redirect("/").withLang(Lang.get(lang).getOrElse(Lang.defaultLang))
+    Redirect("/")
+    // XXX: broken because of play 2.4 upgrade
+    // TODO: fix this
+    //.withLang(Lang.get(lang).getOrElse(Lang.defaultLang))
   }
 
 }

@@ -280,7 +280,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def addPgp() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
-    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
+    val tfa_code = (request.request.body \ "tfa_code").validate[String].asOpt
     val password = (request.request.body \ "password").validate[String].get
     val pgp = (request.request.body \ "pgp").validate[String].get
     val parsedKey = PGP.parsePublicKey(pgp)
@@ -296,7 +296,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def removePgp() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
-    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
+    val tfa_code = (request.request.body \ "tfa_code").validate[String].asOpt
     val password = (request.request.body \ "password").validate[String].get
     if (globals.userModel.removePGP(request.user.id, password, tfa_code)) {
       Ok(Json.obj())
@@ -315,7 +315,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def updateApiKey() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
-    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
+    val tfa_code = (request.request.body \ "tfa_code").validate[String].asOpt
     val apiKey = (request.request.body \ "api_key").validate[String].get
     val trading = (request.request.body \ "trading").validate[Boolean].get
     val tradeHistory = (request.request.body \ "trade_history").validate[Boolean].get
@@ -329,7 +329,7 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def disableApiKey() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
-    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
+    val tfa_code = (request.request.body \ "tfa_code").validate[String].asOpt
     val apiKey = (request.request.body \ "api_key").validate[String].get
     if (globals.userModel.disableApiKey(request.user.id, tfa_code, apiKey)) {
       Ok(Json.obj())
