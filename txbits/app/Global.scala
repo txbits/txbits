@@ -164,13 +164,11 @@ object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with Gl
       System.exit(0)
     }
     txbitsUserService.onStart()
-    controllers.StatsAPI.APIv1.onStart()
   }
 
   override def onStop(app: Application) {
     Logger.info("Application shutdown...")
     txbitsUserService.onStop()
-    controllers.StatsAPI.APIv1.onStop()
   }
 
 }

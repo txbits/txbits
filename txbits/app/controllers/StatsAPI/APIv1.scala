@@ -21,7 +21,7 @@ import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.libs.json.Writes._
-import play.api.mvc.{ Action, Controller, WebSocket }
+import play.api.mvc.{ Action, Controller }
 import play.api.libs.iteratee.{ Iteratee, Concurrent }
 import play.i18n.MessagesApi
 import scala.collection.mutable
@@ -66,43 +66,10 @@ class APIv1(val messagesApi: MessagesApi) extends Controller with I18nSupport {
   def onStart() {
     val i = current.configuration.getInt(tickerInterval).getOrElse(DefaultInterval)
 
-    //DISABLED FOR NOW UNTIL WE DO WEBSOCKET PUSH TICKER STUFF
-    /*
-    cancellable = Some(
-      Akka.system.scheduler.schedule(i.seconds, i.seconds) {
-        checkMatchesAndNotifySockets()
-      }
-    )*/
   }
 
   def onStop() {
     cancellable.map(_.cancel())
-  }
-
-  def checkMatchesAndNotifySockets(): Unit = DB.withConnection(masterDB) { implicit c =>
-    try {
-      val matches = frontend.getRecentMatches.on(
-        'last_match -> new Timestamp(lastMatchDatetime.getMillis)
-      )().map(row =>
-          Match(
-            row[BigDecimal]("amount"),
-            row[BigDecimal]("price"),
-            row[DateTime]("created"),
-            row[String]("base"),
-            row[String]("counter")
-          )
-        )
-      if (!matches.isEmpty) {
-        // mathc is match with ch flipped because match is a keyword
-        val mathc = matches.head
-        val json = Match.toJson(mathc)
-        channels.foreach(_ push json.toString())
-        lastMatchDatetime = new DateTime(mathc.created)
-        lastMatchForPair.put("%s/%s".format(mathc.base, mathc.counter), Json.obj("last" -> mathc.price, "base" -> mathc.base, "counter" -> mathc.counter))
-      }
-    } catch {
-      case e: PSQLException => // Ignore failures (they can be caused by a connection that just closed and hopefully next time we'll get a valid connection
-    }
   }
 
   def tickerFromDb = DB.withConnection(masterDB) { implicit c =>
@@ -130,24 +97,6 @@ class APIv1(val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
   def ticker = Action {
     Ok(Json.toJson(tickerFromDb))
-  }
-
-  //TODO: display a ticker instead of the last trade
-  // It looks like any website can connect as the currently logged in user over a websocket
-  def websocketTicker = WebSocket.using[String] { request =>
-    val (out, channel) = Concurrent.broadcast[String]
-
-    channels += channel
-
-    //log the message to stdout and send response back to client
-    val in = Iteratee.foreach[String] {
-      msg =>
-        // reply to any request with the full list of currencies
-        channels.foreach(_ push Json.toJson(lastMatchForPair.map(m => m._2)).toString())
-    }.map { _ =>
-      channels -= channel
-    }
-    (in, out)
   }
 
   def chartFromDB(base: String, counter: String) = DB.withConnection(masterDB) { implicit c =>
