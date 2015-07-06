@@ -16,11 +16,15 @@
 
 package usertrust
 
+import java.io.File
+
+import play.Environment
+import play.api.i18n._
 import securesocial.core.providers.utils.Mailer
 import securesocial.core.{ IdGenerator, Token }
 import org.joda.time.DateTime
 import com.typesafe.plugin.use
-import play.api.Play
+import play.api.{ Mode, Play }
 import akka.actor.{ Actor, Props }
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -39,6 +43,13 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
 
   // Warning: It is not safe to have two user trust services running at the same time
   def processTrustedActionRequests() {
+
+    // XXX: temporary hack to make Messages work in emails (only english for now)
+    implicit val messges = new Messages(new Lang("en", "US"), new DefaultMessagesApi(play.api.Environment.simple(new File("."), Mode.Prod),
+      play.api.Play.current.configuration,
+      new DefaultLangs(play.api.Play.current.configuration))
+    )
+
     for ((email, is_signup) <- model.getTrustedActionRequests) {
       // create and save token
       val token = createToken(email, isSignUp = is_signup)
