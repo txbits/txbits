@@ -16,6 +16,9 @@
 
 package wallet
 
+import java.io.File
+import play.api.i18n.{ DefaultLangs, DefaultMessagesApi, Lang, Messages }
+import play.api.{ Mode, Play }
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.googlecode.jsonrpc4j.JsonRpcHttpClient
 import play.Logger
@@ -198,6 +201,12 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       if (!refillRequested) {
         refillRequested = true
         try {
+          // XXX: temporary hack to make Messages work in emails (only english for now)
+          implicit val messges = new Messages(new Lang("en", "US"), new DefaultMessagesApi(play.api.Environment.simple(new File("."), Mode.Prod),
+            play.api.Play.current.configuration,
+            new DefaultLangs(play.api.Play.current.configuration))
+          )
+
           securesocial.core.providers.utils.Mailer.sendRefillWalletEmail(params.refillEmail.get, currency.toString, nodeId, balance, balanceTarget)
         } catch {
           case ex: Throwable =>

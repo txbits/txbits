@@ -17,11 +17,12 @@
 package controllers
 
 import play.api.mvc._
-import play.api.i18n.Lang
+import play.api.i18n.{ I18nSupport, Lang }
 import play.api.Play.current
+import play.i18n.MessagesApi
 import scala.language.postfixOps
 
-object Application extends Controller with securesocial.core.SecureSocial {
+class Application(val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
 
   def index = UserAwareAction { implicit request =>
     Ok(views.html.content.index(request.user.isDefined))
@@ -53,5 +54,4 @@ object Application extends Controller with securesocial.core.SecureSocial {
     // TODO: fix this
     //.withLang(Lang.get(lang).getOrElse(Lang.defaultLang))
   }
-
 }

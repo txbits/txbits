@@ -17,11 +17,13 @@
 package controllers.StatsAPI
 
 import globals._
+import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.libs.json.Writes._
 import play.api.mvc.{ Action, Controller, WebSocket }
 import play.api.libs.iteratee.{ Iteratee, Concurrent }
+import play.i18n.MessagesApi
 import scala.collection.mutable
 import play.api.libs.iteratee.Concurrent.Channel
 import org.joda.time.DateTime
@@ -51,7 +53,7 @@ object TickerHistory {
 
 // DON'T DO AUTHENTICATED ACTIONS OVER WEBSOCKETS UNTIL SOMEONE CAN VERIFY THAT THIS IS A SAFE THING TO DO
 
-object APIv1 extends Controller {
+class APIv1(val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
   val channels = mutable.Set[Channel[String]]()
   var lastMatchDatetime: DateTime = new DateTime(0)
