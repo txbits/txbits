@@ -4,9 +4,10 @@ import play.api.mvc.Action
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
-import play.api.i18n.Messages
+import play.api.i18n.{ I18nSupport, Messages }
+import play.i18n.MessagesApi
 
-object WithdrawalConfirmation extends Controller with securesocial.core.SecureSocial {
+class WithdrawalConfirmation(val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
 
   def confirm(idStr: String, token: String) = Action { implicit request =>
     val id = idStr.toLong

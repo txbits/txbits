@@ -20,9 +20,10 @@ import models.{ LogEvent, LogType }
 import play.api.Play.current
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.i18n.Messages
+import play.api.i18n.{ I18nSupport, Messages }
 import play.api.mvc.{ Result, _ }
 import play.api.{ Logger, Play }
+import play.i18n.MessagesApi
 import securesocial.core.{ AccessDeniedException, SocialUser, _ }
 import service.{ TOTPAuthenticator, TOTPSecret }
 import play.filters.csrf._
@@ -30,41 +31,8 @@ import play.filters.csrf._
 /**
  * A controller to provide the authentication entry point
  */
-object ProviderController extends Controller with securesocial.core.SecureSocial {
-  /**
-   * The property that specifies the page the user is redirected to if there is no original URL saved in
-   * the session.
-   */
-  val onLoginGoTo = "securesocial.onLoginGoTo"
-
-  /**
-   * The root path
-   */
-  val Root = "/"
-
-  /**
-   * The application context
-   */
-  val ApplicationContext = "application.context"
-
-  val InvalidCredentials = "auth.login.invalidCredentials"
-
-  /**
-   * Returns the url that the user should be redirected to after login
-   *
-   * @param session
-   * @return
-   */
-  def toUrl(session: Session) = session.get(SecureSocial.OriginalUrlKey).getOrElse(landingUrl)
-
-  /**
-   * The url where the user needs to be redirected after succesful authentication.
-   *
-   * @return
-   */
-  def landingUrl = Play.configuration.getString(onLoginGoTo).getOrElse(
-    Play.configuration.getString(ApplicationContext).getOrElse(Root)
-  )
+class ProviderController(val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
+  import controllers.ProviderController._
 
   /**
    * Renders a not authorized page if the Authorization object passed to the action does not allow
@@ -75,10 +43,6 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
   def notAuthorized() = Action { implicit request =>
     Forbidden(SecureSocialTemplates.getNotAuthorizedPage)
   }
-
-  val tfaForm = Form(
-    single("token" -> text)
-  )
 
   private def badRequestTOTP[A](f: Form[String], request: Request[A], msg: Option[String] = None): Result = {
     BadRequest(SecureSocialTemplates.getTFATOTPPage(request, f, msg))
@@ -118,7 +82,6 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
   }
 
   def completePasswordAuth[A](id: Long, email: String)(implicit request: Request[A]) = {
-    // TODO: move log to db
     val authenticator = Authenticator.create(Some(id), None, email)
     Redirect(toUrl(request2session)).withSession(request2session - SecureSocial.OriginalUrlKey).withCookies(authenticator.toCookie)
   }
@@ -147,7 +110,7 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
               // create session
               completePasswordAuth(user.get.id, email)
             } else {
-              badRequest(UsernamePasswordProvider.loginForm, request, Some(InvalidCredentials))
+              badRequest(UsernamePasswordProvider.loginForm, request, Some(ProviderController.InvalidCredentials))
             }
           }
         )
@@ -163,4 +126,45 @@ object ProviderController extends Controller with securesocial.core.SecureSocial
       }
     }
   }
+}
+
+object ProviderController {
+  /**
+   * The property that specifies the page the user is redirected to if there is no original URL saved in
+   * the session.
+   */
+  val onLoginGoTo = "securesocial.onLoginGoTo"
+
+  /**
+   * The root path
+   */
+  val Root = "/"
+
+  /**
+   * The application context
+   */
+  val ApplicationContext = "application.context"
+
+  val InvalidCredentials = "auth.login.invalidCredentials"
+
+  /**
+   * Returns the url that the user should be redirected to after login
+   *
+   * @param session
+   * @return
+   */
+  def toUrl(session: Session) = session.get(SecureSocial.OriginalUrlKey).getOrElse(landingUrl)
+
+  /**
+   * The url where the user needs to be redirected after succesful authentication.
+   *
+   * @return
+   */
+  def landingUrl = Play.configuration.getString(onLoginGoTo).getOrElse(
+    Play.configuration.getString(ApplicationContext).getOrElse(Root)
+  )
+
+  val tfaForm = Form(
+    single("token" -> text)
+  )
 }

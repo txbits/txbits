@@ -22,12 +22,13 @@ import play.api.data._
 import play.api.data.Forms._
 import play.api.data.validation.Constraints._
 import play.api.{ Play, Logger }
+import play.i18n.MessagesApi
 import securesocial.core._
 import com.typesafe.plugin._
 import Play.current
 import securesocial.core.providers.utils._
 import org.joda.time.DateTime
-import play.api.i18n.Messages
+import play.api.i18n.{ I18nSupport, Messages }
 import scala.language.reflectiveCalls
 import securesocial.core.Token
 import scala.Some
@@ -40,50 +41,18 @@ import java.security.SecureRandom
  * A controller to handle user registration.
  *
  */
-object Registration extends Controller {
-
-  val PasswordsDoNotMatch = "auth.signup.passwordsDoNotMatch"
-  val PgpKeyInvalid = "auth.signup.pgpKeyInvalid"
-  val ThankYouCheckEmail = "auth.signup.thankYouCheckEmail"
-  val InvalidLink = "auth.signup.invalidLink"
-  val SignUpDone = "auth.signup.signUpDone"
-  val PasswordUpdated = "auth.password.passwordUpdated"
-  val ErrorUpdatingPassword = "auth.password.error"
-
-  val MailingList = "mailinglist"
-  val Password = "password"
-  val Password1 = "password1"
-  val Password2 = "password2"
-  val Email = "email"
-  val Success = "success"
-  val Error = "error"
-  val Pgp = "pgp"
-
-  val RegistrationEnabled = "securesocial.registrationEnabled"
-
-  /** The redirect target of the handleStartSignUp action. */
-  val onHandleStartSignUpGoTo = stringConfig("securesocial.onStartSignUpGoTo", controllers.routes.LoginPage.login().url)
-  /** The redirect target of the handleSignUp action. */
-  val onHandleSignUpGoTo = stringConfig("securesocial.onSignUpGoTo", controllers.routes.LoginPage.login().url)
-  /** The redirect target of the handleStartResetPassword action. */
-  val onHandleStartResetPasswordGoTo = stringConfig("securesocial.onStartResetPasswordGoTo", controllers.routes.LoginPage.login().url)
-  /** The redirect target of the handleResetPassword action. */
-  val onHandleResetPasswordGoTo = stringConfig("securesocial.onResetPasswordGoTo", controllers.routes.LoginPage.login().url)
+class Registration(val messagesApi: MessagesApi) extends Controller with I18nSupport {
+  import controllers.Registration._
+  import PasswordChange._
 
   lazy val registrationEnabled = current.configuration.getBoolean(RegistrationEnabled).getOrElse(true)
-
-  private def stringConfig(key: String, default: => String) = {
-    Play.current.configuration.getString(key).getOrElse(default)
-  }
-
-  case class RegistrationInfo(mailingList: Boolean, password: String, pgp: String)
 
   val form = Form[RegistrationInfo](
     mapping(
       MailingList -> boolean,
       Password ->
         tuple(
-          Password1 -> nonEmptyText.verifying(PasswordValidator.validator),
+          Password1 -> nonEmptyText.verifying(Messages(passwordErrorStr, passwordMinLen), passwordErrorFunc _),
           Password2 -> nonEmptyText
         ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
       Pgp -> text.verifying(Messages(PgpKeyInvalid), pgp => pgp == "" || PGP.parsePublicKey(pgp).isDefined)
@@ -99,7 +68,7 @@ object Registration extends Controller {
   val changePasswordForm = Form(
     Password ->
       tuple(
-        Password1 -> nonEmptyText.verifying(PasswordValidator.validator),
+        Password1 -> nonEmptyText.verifying(Messages(passwordErrorStr, passwordMinLen), passwordErrorFunc _),
         Password2 -> nonEmptyText
       ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2)
   )
@@ -114,7 +83,7 @@ object Registration extends Controller {
       } else {
         Ok(SecureSocialTemplates.getStartSignUpPage(request, startForm))
       }
-    } else NotFound(views.html.defaultpages.notFound.render(request, None))
+    } else NotFound
   }
 
   val random = new SecureRandom()
@@ -130,7 +99,7 @@ object Registration extends Controller {
           Redirect(onHandleStartSignUpGoTo).flashing(Success -> Messages(ThankYouCheckEmail), Email -> email)
         }
       )
-    } else NotFound(views.html.defaultpages.notFound.render(request, None))
+    } else NotFound
   }
 
   /**
@@ -145,7 +114,7 @@ object Registration extends Controller {
       executeForToken(token, true, { _ =>
         Ok(SecureSocialTemplates.getSignUpPage(request, form, token))
       })
-    } else NotFound(views.html.defaultpages.notFound.render(request, None))
+    } else NotFound
   }
 
   private def executeForToken(token: String, isSignUp: Boolean, f: Token => Result): Result = {
@@ -158,6 +127,13 @@ object Registration extends Controller {
         Redirect(to).flashing(Error -> Messages(InvalidLink))
       }
     }
+  }
+
+  // XXX: copied from ProviderController TODO: fix duplication
+  def completePasswordAuth[A](id: Long, email: String)(implicit request: play.api.mvc.Request[A]) = {
+    import controllers.ProviderController._
+    val authenticator = Authenticator.create(Some(id), None, email)
+    Redirect(toUrl(request2session)).withSession(request2session - SecureSocial.OriginalUrlKey).withCookies(authenticator.toCookie)
   }
 
   /**
@@ -186,14 +162,14 @@ object Registration extends Controller {
             }
             globals.logModel.logEvent(LogEvent.fromRequest(Some(user.id), Some(user.email), request, LogType.SignupSuccess))
             if (UsernamePasswordProvider.signupSkipLogin) {
-              ProviderController.completePasswordAuth(user.id, user.email)
+              completePasswordAuth(user.id, user.email)
             } else {
               Redirect(onHandleSignUpGoTo).flashing(Success -> Messages(SignUpDone)).withSession(request2session)
             }
           }
         )
       })
-    } else NotFound(views.html.defaultpages.notFound.render(request, None))
+    } else NotFound
   }
 
   def startResetPassword = Action { implicit request =>
@@ -248,4 +224,41 @@ object Registration extends Controller {
         })
     })
   }
+}
+
+object Registration {
+
+  val PasswordsDoNotMatch = "auth.signup.passwordsDoNotMatch"
+  val PgpKeyInvalid = "auth.signup.pgpKeyInvalid"
+  val ThankYouCheckEmail = "auth.signup.thankYouCheckEmail"
+  val InvalidLink = "auth.signup.invalidLink"
+  val SignUpDone = "auth.signup.signUpDone"
+  val PasswordUpdated = "auth.password.passwordUpdated"
+  val ErrorUpdatingPassword = "auth.password.error"
+
+  val MailingList = "mailinglist"
+  val Password = "password"
+  val Password1 = "password1"
+  val Password2 = "password2"
+  val Email = "email"
+  val Success = "success"
+  val Error = "error"
+  val Pgp = "pgp"
+
+  val RegistrationEnabled = "securesocial.registrationEnabled"
+
+  /** The redirect target of the handleStartSignUp action. */
+  val onHandleStartSignUpGoTo = stringConfig("securesocial.onStartSignUpGoTo", controllers.routes.LoginPage.login().url)
+  /** The redirect target of the handleSignUp action. */
+  val onHandleSignUpGoTo = stringConfig("securesocial.onSignUpGoTo", controllers.routes.LoginPage.login().url)
+  /** The redirect target of the handleStartResetPassword action. */
+  val onHandleStartResetPasswordGoTo = stringConfig("securesocial.onStartResetPasswordGoTo", controllers.routes.LoginPage.login().url)
+  /** The redirect target of the handleResetPassword action. */
+  val onHandleResetPasswordGoTo = stringConfig("securesocial.onResetPasswordGoTo", controllers.routes.LoginPage.login().url)
+
+  private def stringConfig(key: String, default: => String) = {
+    Play.current.configuration.getString(key).getOrElse(default)
+  }
+
+  case class RegistrationInfo(mailingList: Boolean, password: String, pgp: String)
 }

@@ -19,16 +19,20 @@ package controllers
 import play.api.Play
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.data.validation.{ Invalid, Valid, Constraint }
 import play.api.i18n.Messages
 import play.api.mvc.{ AnyContent, Controller, Result }
+import play.i18n.MessagesApi
 import securesocial.core.{ SecuredRequest, _ }
-import securesocial.core.providers.utils.{ Mailer, PasswordValidator }
+import securesocial.core.providers.utils.Mailer
 import service.txbitsUserService
+import play.api.i18n.I18nSupport
 
 /**
  * A controller to provide password change functionality
  */
-object PasswordChange extends Controller with SecureSocial {
+class PasswordChange(val messagesApi: MessagesApi) extends Controller with SecureSocial with I18nSupport {
+  import PasswordChange._
   val CurrentPassword = "currentPassword"
   val InvalidPasswordMessage = "auth.passwordChange.invalidPassword"
   val Password = "password"
@@ -47,15 +51,13 @@ object PasswordChange extends Controller with SecureSocial {
     controllers.routes.PasswordChange.page().url
   )
 
-  case class ChangeInfo(currentPassword: String, password: String)
-
   private def execute[A](f: (SecuredRequest[A], Form[ChangeInfo]) => Result)(implicit request: SecuredRequest[A]): Result = {
     val form = Form[ChangeInfo](
       mapping(
         CurrentPassword -> nonEmptyText.verifying(),
         Password ->
           tuple(
-            Password1 -> nonEmptyText.verifying(PasswordValidator.validator),
+            Password1 -> nonEmptyText.verifying(Messages(passwordErrorStr, passwordMinLen), passwordErrorFunc _),
             Password2 -> nonEmptyText
           ).verifying(Messages(Registration.PasswordsDoNotMatch), passwords => passwords._1 == passwords._2)
 
@@ -72,6 +74,7 @@ object PasswordChange extends Controller with SecureSocial {
   }
 
   def handlePasswordChange = SecuredAction { implicit request =>
+    implicit val r = request.request
     execute { (request: SecuredRequest[AnyContent], form: Form[ChangeInfo]) =>
       form.bindFromRequest()(request).fold(
         errors => BadRequest(SecureSocialTemplates.getPasswordChangePage(request, errors)),
@@ -79,7 +82,7 @@ object PasswordChange extends Controller with SecureSocial {
           import scala.language.reflectiveCalls
           // This never actually fails because we already checked that the password is valid in the validators
           if (globals.userModel.userChangePass(request.user.id, info.currentPassword, info.password)) {
-            Mailer.sendPasswordChangedNotice(request.user.email, globals.userModel.userPgpByEmail(request.user.email))(request)
+            Mailer.sendPasswordChangedNotice(request.user.email, globals.userModel.userPgpByEmail(request.user.email))
             Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
           } else {
             //TODO: Show an error with Messages(InvalidPasswordMessage)
@@ -89,4 +92,12 @@ object PasswordChange extends Controller with SecureSocial {
       )
     }
   }
+}
+
+object PasswordChange {
+  val passwordMinLen = 12
+
+  val passwordErrorStr = "auth.signup.invalidPassword"
+  def passwordErrorFunc(passwords: String) = { passwords.length >= passwordMinLen }
+  case class ChangeInfo(currentPassword: String, password: String)
 }

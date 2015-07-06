@@ -42,42 +42,42 @@ object Mailer {
   val UnknownEmailNoticeSubject = "mails.unknownEmail.subject"
   val PasswordResetOkSubject = "mails.passwordResetOk.subject"
 
-  def sendWithdrawalConfirmEmail(email: String, amount: String, currency: String, destination: String, id: Long, token: String, pgp: Option[String]) {
+  def sendWithdrawalConfirmEmail(email: String, amount: String, currency: String, destination: String, id: Long, token: String, pgp: Option[String])(implicit messages: Messages) {
     val url_confirm = "%s%s/%s".format(current.configuration.getString("url.withdrawal_confirm").getOrElse("http://localhost:9000/withdrawal_confirm/"), id, token)
     val url_reject = "%s%s/%s".format(current.configuration.getString("url.withdrawal_reject").getOrElse("http://localhost:9000/withdrawal_reject/"), id, token)
     val txtAndHtml = (Some(views.txt.auth.mails.withdrawalConfirmEmail(email, amount, currency, destination, id, token, url_confirm, url_reject)), None)
     sendEmail(Messages(WithdrawalConfirmSubject), email, txtAndHtml, pgp)
   }
 
-  def sendRefillWalletEmail(email: String, currency: String, nodeId: Int, balance: BigDecimal, balanceTarget: BigDecimal) {
+  def sendRefillWalletEmail(email: String, currency: String, nodeId: Int, balance: BigDecimal, balanceTarget: BigDecimal)(implicit messages: Messages) {
     val txtAndHtml = (Some(views.txt.auth.mails.refillWalletEmail(email, currency, nodeId, balance, balanceTarget)), None)
     sendEmail(s"Refill $currency wallet $nodeId", email, txtAndHtml)
   }
 
-  def sendAlreadyRegisteredEmail(email: String, pgp: Option[String]) {
+  def sendAlreadyRegisteredEmail(email: String, pgp: Option[String])(implicit messages: Messages) {
     val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/")
     val txtAndHtml = SecureSocialTemplates.getAlreadyRegisteredEmail(email, url)
     sendEmail(Messages(AlreadyRegisteredSubject), email, txtAndHtml, pgp)
   }
 
-  def sendSignUpEmail(to: String, token: String) {
+  def sendSignUpEmail(to: String, token: String)(implicit messages: Messages) {
     val url = current.configuration.getString("url.signup").getOrElse("http://localhost:9000/signup/") + token
     val txtAndHtml = SecureSocialTemplates.getSignUpEmail(token, url)
     sendEmail(Messages(SignUpEmailSubject), to, txtAndHtml)
   }
 
-  def sendWelcomeEmail(user: SocialUser)(implicit request: RequestHeader) {
+  def sendWelcomeEmail(user: SocialUser)(implicit request: RequestHeader, messages: Messages) {
     val txtAndHtml = SecureSocialTemplates.getWelcomeEmail(user)
     sendEmail(Messages(WelcomeEmailSubject), user.email, txtAndHtml, user.pgp)
   }
 
-  def sendPasswordResetEmail(email: String, token: String, pgp: Option[String]) {
+  def sendPasswordResetEmail(email: String, token: String, pgp: Option[String])(implicit messages: Messages) {
     val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/") + token
     val txtAndHtml = SecureSocialTemplates.getSendPasswordResetEmail(email, url)
     sendEmail(Messages(PasswordResetSubject), email, txtAndHtml, pgp)
   }
 
-  def sendPasswordChangedNotice(email: String, pgp: Option[String])(implicit request: RequestHeader) {
+  def sendPasswordChangedNotice(email: String, pgp: Option[String])(implicit request: RequestHeader, messages: Messages) {
     val txtAndHtml = SecureSocialTemplates.getPasswordChangedNoticeEmail(email)
     sendEmail(Messages(PasswordResetOkSubject), email, txtAndHtml, pgp)
   }
