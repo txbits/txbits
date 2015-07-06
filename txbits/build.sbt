@@ -1,5 +1,3 @@
-import play.PlayScala
-
 name := "txbits"
 
 version := "1.0-SNAPSHOT"
@@ -9,16 +7,18 @@ scalaVersion := "2.11.7"
 libraryDependencies ++= Seq(
   ws,
   jdbc,
-  anorm,
+  "com.typesafe.play" %% "anorm" % "2.3.9",
   filters,
   play.PlayImport.cache,
+  specs2 % Test,
+  evolutions,
   "com.typesafe.play.plugins" %% "play-plugins-util" % "2.3.0",
   "org.mindrot" % "jbcrypt" % "0.3m",
   "org.mockito" % "mockito-all" % "1.10.19",
   "com.typesafe.akka" %% "akka-testkit" % "2.3.9" % "test",
   "com.github.briandilley.jsonrpc4j" % "jsonrpc4j" % "1.1",
   "org.postgresql" % "postgresql" % "9.3-1103-jdbc41",
-  "com.google" % "bitcoinj" % "0.11",
+  "org.bitcoinj" % "bitcoinj-core" % "0.12",
   "org.apache.commons" % "commons-email" % "1.3.3",
   "com.github.mumoshu" %% "play2-memcached-play23" % "0.7.0",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
@@ -29,8 +29,8 @@ libraryDependencies ++= Seq(
 
 resolvers ++= Seq(
   "Spy Repository" at "http://files.couchbase.com/maven2",
-  "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/releases",
-  Resolver.url("sbt-plugin-releases", new URL("http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
+  Resolver.url("sbt-plugin-releases", new URL("http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),
+  "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)

@@ -19,6 +19,8 @@ package controllers.IAPI
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
+import play.api.libs.json.Reads._
+import play.api.libs.json.Writes._
 import service.{ PGP, TOTPUrl }
 import org.postgresql.util.PSQLException
 import org.apache.commons.codec.binary.Base64.encodeBase64

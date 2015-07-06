@@ -16,9 +16,9 @@
 
 package controllers.IAPI
 
-import com.google.bitcoin.core.Address
-import com.google.bitcoin.core.NetworkParameters
-import com.google.bitcoin.core.NetworkParameters._
+import org.bitcoinj.core.Address
+import org.bitcoinj.core.NetworkParameters
+import org.bitcoinj.core.NetworkParameters._
 
 object CryptoAddress {
   private val BitcoinTestnet = new NetworkParameters {

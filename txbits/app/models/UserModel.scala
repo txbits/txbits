@@ -203,7 +203,7 @@ class UserModel(val db: String = "default") {
     frontend.tradeHistory.on(
       'id -> uid,
       'api_key -> apiKey,
-      'before -> before,
+      NamedParameter.symbol('before, before),
       'limit -> limit,
       'last_id -> lastId
     )().map(row =>

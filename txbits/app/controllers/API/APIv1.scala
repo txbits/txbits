@@ -19,6 +19,8 @@ package controllers.API
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
+import play.api.libs.json.Reads._
+import play.api.libs.json.Writes._
 import org.joda.time.DateTime
 
 object APIv1 extends Controller {
@@ -139,7 +141,7 @@ object APIv1 extends Controller {
     val body = request.body
     (for (
       apiKey <- (body \ "api_key").validate[String];
-      before <- (body \ "before").validate[Option[DateTime]];
+      before <- (body \ "before").validate[Option[DateTime]](DefaultJodaDateReads.compose(OptionReads));
       limit <- (body \ "limit").validate[Option[Int]];
       lastId <- (body \ "last_id").validate[Option[Long]]
     ) yield {
