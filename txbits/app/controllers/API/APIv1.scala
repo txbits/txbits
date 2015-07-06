@@ -140,11 +140,11 @@ object APIv1 extends Controller {
   def tradeHistory = Action(parse.json) { implicit request =>
     val body = request.body
     (for (
-      apiKey <- (body \ "api_key").validate[String];
-      before <- (body \ "before").validate[Option[DateTime]](DefaultJodaDateReads.compose(OptionReads));
-      limit <- (body \ "limit").validate[Option[Int]];
-      lastId <- (body \ "last_id").validate[Option[Long]]
+      apiKey <- (body \ "api_key").validate[String]
     ) yield {
+      val before = (body \ "before").validate[DateTime].asOpt
+      val limit = (body \ "limit").validate[Int].asOpt
+      val lastId = (body \ "last_id").validate[Long].asOpt
       Ok(Json.toJson(globals.userModel.tradeHistory(None, Some(apiKey), before, limit, lastId)))
     }).getOrElse(
       BadRequest(Json.obj("message" -> "Failed to parse input."))
