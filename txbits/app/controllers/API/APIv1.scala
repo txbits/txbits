@@ -141,9 +141,9 @@ object APIv1 extends Controller {
     val body = request.body
     (for (
       apiKey <- (body \ "api_key").validate[String];
-      before = (body \ "before").validate[DateTime].asOpt;
-      limit = (body \ "limit").validate[Int].asOpt;
-      lastId = (body \ "last_id").validate[Long].asOpt
+      before = (body \ "before").asOpt[DateTime];
+      limit = (body \ "limit").asOpt[Int];
+      lastId = (body \ "last_id").asOpt[Long]
     ) yield {
       Ok(Json.toJson(globals.userModel.tradeHistory(None, Some(apiKey), before, limit, lastId)))
     }).getOrElse(
