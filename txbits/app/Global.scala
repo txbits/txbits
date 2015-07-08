@@ -22,8 +22,6 @@ import play.api.db.DB
 import play.api.i18n.{ MessagesApi, I18nSupport }
 import play.api.mvc.Result
 import play.api.Play.current
-import play.filters.csrf.CSRFFilter
-import play.filters.headers.SecurityHeadersFilter
 import scala.concurrent.duration._
 import models._
 import play.api._
@@ -125,7 +123,7 @@ package object globals {
 
 }
 
-class Global(val messagesApi: MessagesApi) extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with GlobalSettings with I18nSupport {
+class Global(val messagesApi: MessagesApi) extends GlobalSettings with I18nSupport {
 
   override def onError(request: RequestHeader, ex: Throwable): Future[Result] = {
     implicit val r = request
