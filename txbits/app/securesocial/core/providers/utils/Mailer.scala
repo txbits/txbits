@@ -82,7 +82,6 @@ object Mailer {
   }
 
   private def sendEmail(subject: String, recipient: String, body: (Option[Txt], Option[Html]), pgp: Option[String] = None) {
-    import com.typesafe.plugin._
     import scala.concurrent.duration._
     import play.api.libs.concurrent.Execution.Implicits._
 
@@ -153,7 +152,6 @@ object Mailer {
 
   // XXX: currently not used
   def sendEmailWithFile(subject: String, recipient: String, body: String, attachment: EmailAttachment) {
-    import com.typesafe.plugin._
     import scala.concurrent.duration._
     import play.api.libs.concurrent.Execution.Implicits._
 
