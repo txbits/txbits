@@ -22,7 +22,6 @@ import securesocial.core._
 import play.api.mvc.{ Result, Results, Request }
 import play.api.{ Logger, Play, Application }
 import Play.current
-import com.typesafe.plugin._
 import org.joda.time.DateTime
 import scala.concurrent.{ Await, Future }
 import play.api.libs.ws.WSResponse
