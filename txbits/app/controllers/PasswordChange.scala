@@ -22,7 +22,7 @@ import play.api.data.Forms._
 import play.api.data.validation.{ Invalid, Valid, Constraint }
 import play.api.i18n.Messages
 import play.api.mvc.{ AnyContent, Controller, Result }
-import play.i18n.MessagesApi
+import play.api.i18n.MessagesApi
 import securesocial.core.{ SecuredRequest, _ }
 import securesocial.core.providers.utils.Mailer
 import service.txbitsUserService
@@ -68,8 +68,9 @@ class PasswordChange(val messagesApi: MessagesApi) extends Controller with Secur
   }
 
   def page = SecuredAction { implicit request =>
+    implicit val r = request.request
     execute { (request: SecuredRequest[AnyContent], form: Form[ChangeInfo]) =>
-      Ok(SecureSocialTemplates.getPasswordChangePage(request, form))
+      Ok(views.html.auth.passwordChange(form))
     }
   }
 
@@ -77,7 +78,7 @@ class PasswordChange(val messagesApi: MessagesApi) extends Controller with Secur
     implicit val r = request.request
     execute { (request: SecuredRequest[AnyContent], form: Form[ChangeInfo]) =>
       form.bindFromRequest()(request).fold(
-        errors => BadRequest(SecureSocialTemplates.getPasswordChangePage(request, errors)),
+        errors => BadRequest(views.html.auth.passwordChange(errors)),
         info => {
           import scala.language.reflectiveCalls
           // This never actually fails because we already checked that the password is valid in the validators
@@ -86,7 +87,7 @@ class PasswordChange(val messagesApi: MessagesApi) extends Controller with Secur
             Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
           } else {
             //TODO: Show an error with Messages(InvalidPasswordMessage)
-            BadRequest(SecureSocialTemplates.getPasswordChangePage(request, form))
+            BadRequest(views.html.auth.passwordChange(form))
           }
         }
       )

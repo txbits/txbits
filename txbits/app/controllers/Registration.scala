@@ -22,7 +22,7 @@ import play.api.data._
 import play.api.data.Forms._
 import play.api.data.validation.Constraints._
 import play.api.{ Play, Logger }
-import play.i18n.MessagesApi
+import play.api.i18n.MessagesApi
 import securesocial.core._
 import com.typesafe.plugin._
 import Play.current
@@ -79,9 +79,9 @@ class Registration(val messagesApi: MessagesApi) extends Controller with I18nSup
   def startSignUp = Action { implicit request =>
     if (registrationEnabled) {
       if (SecureSocial.enableRefererAsOriginalUrl) {
-        SecureSocial.withRefererAsOriginalUrl(Ok(SecureSocialTemplates.getStartSignUpPage(request, startForm)))
+        SecureSocial.withRefererAsOriginalUrl(Ok(views.html.auth.Registration.startSignUp(startForm)))
       } else {
-        Ok(SecureSocialTemplates.getStartSignUpPage(request, startForm))
+        Ok(views.html.auth.Registration.startSignUp(startForm))
       }
     } else NotFound
   }
@@ -92,7 +92,7 @@ class Registration(val messagesApi: MessagesApi) extends Controller with I18nSup
     if (registrationEnabled) {
       startForm.bindFromRequest.fold(
         errors => {
-          BadRequest(SecureSocialTemplates.getStartSignUpPage(request, errors))
+          BadRequest(views.html.auth.Registration.startSignUp(errors))
         },
         email => {
           txbitsUserService.signupStart(email)
@@ -112,7 +112,7 @@ class Registration(val messagesApi: MessagesApi) extends Controller with I18nSup
         Logger.debug("[securesocial] trying sign up with token %s".format(token))
       }
       executeForToken(token, true, { _ =>
-        Ok(SecureSocialTemplates.getSignUpPage(request, form, token))
+        Ok(views.html.auth.Registration.signUp(form, token))
       })
     } else NotFound
   }
@@ -147,7 +147,7 @@ class Registration(val messagesApi: MessagesApi) extends Controller with I18nSup
             if (Logger.isDebugEnabled) {
               Logger.debug("[securesocial] errors " + errors)
             }
-            BadRequest(SecureSocialTemplates.getSignUpPage(request, errors, t.uuid))
+            BadRequest(views.html.auth.Registration.signUp(errors, t.uuid))
           },
           info => {
             val user = txbitsUserService.create(SocialUser(
@@ -173,13 +173,13 @@ class Registration(val messagesApi: MessagesApi) extends Controller with I18nSup
   }
 
   def startResetPassword = Action { implicit request =>
-    Ok(SecureSocialTemplates.getStartResetPasswordPage(request, startForm))
+    Ok(views.html.auth.Registration.startResetPassword(startForm))
   }
 
   def handleStartResetPassword = Action { implicit request =>
     startForm.bindFromRequest.fold(
       errors => {
-        BadRequest(SecureSocialTemplates.getStartResetPasswordPage(request, errors))
+        BadRequest(views.html.auth.Registration.startResetPassword(errors))
       },
       email => {
         txbitsUserService.userExists(email) match {
@@ -197,14 +197,14 @@ class Registration(val messagesApi: MessagesApi) extends Controller with I18nSup
 
   def resetPassword(token: String) = Action { implicit request =>
     executeForToken(token, false, { t =>
-      Ok(SecureSocialTemplates.getResetPasswordPage(request, changePasswordForm, token))
+      Ok(views.html.auth.Registration.resetPasswordPage(changePasswordForm, token))
     })
   }
 
   def handleResetPassword(token: String) = Action { implicit request =>
     executeForToken(token, false, { t =>
       changePasswordForm.bindFromRequest.fold(errors => {
-        BadRequest(SecureSocialTemplates.getResetPasswordPage(request, errors, token))
+        BadRequest(views.html.auth.Registration.resetPasswordPage(errors, token))
       },
         p => {
           val toFlash = txbitsUserService.userExists(t.email) match {

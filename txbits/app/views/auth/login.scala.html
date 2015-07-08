@@ -1,4 +1,4 @@
-@(loginForm: Form[(String,String)], errorMsg: Option[String] = None)(implicit request: RequestHeader, lang: Lang)
+@(loginForm: Form[(String,String)], errorMsg: Option[String] = None)(implicit request: RequestHeader, messages: Messages)
 @import securesocial.core.UsernamePasswordProvider
 
 @import helper._
@@ -7,7 +7,7 @@
     <script src="@routes.Assets.at("js/login.js")"></script>
 }
 
-@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
+@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(messages)) }
 
 @auth._chrome(Messages("auth.login.title"), scripts) {
 

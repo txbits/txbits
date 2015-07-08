@@ -23,7 +23,7 @@ import play.api.data.Forms._
 import play.api.i18n.{ I18nSupport, Messages }
 import play.api.mvc.{ Result, _ }
 import play.api.{ Logger, Play }
-import play.i18n.MessagesApi
+import play.api.i18n.MessagesApi
 import securesocial.core.{ AccessDeniedException, SocialUser, _ }
 import service.{ TOTPAuthenticator, TOTPSecret }
 import play.filters.csrf._
@@ -41,11 +41,12 @@ class ProviderController(val messagesApi: MessagesApi) extends Controller with s
    * @see Authorization
    */
   def notAuthorized() = Action { implicit request =>
-    Forbidden(SecureSocialTemplates.getNotAuthorizedPage)
+    Forbidden(views.html.auth.notAuthorized())
   }
 
   private def badRequestTOTP[A](f: Form[String], request: Request[A], msg: Option[String] = None): Result = {
-    BadRequest(SecureSocialTemplates.getTFATOTPPage(request, f, msg))
+    implicit val r = request
+    BadRequest(views.html.auth.TFAGoogle(f, msg))
   }
 
   //TODO: turn into ajax call
@@ -78,7 +79,8 @@ class ProviderController(val messagesApi: MessagesApi) extends Controller with s
   }
 
   private def badRequest[A](f: Form[(String, String)], request: Request[A], msg: Option[String] = None): Result = {
-    Results.BadRequest(SecureSocialTemplates.getLoginPage(request, f, msg))
+    implicit val r = request
+    Results.BadRequest(views.html.auth.login(f, msg))
   }
 
   def completePasswordAuth[A](id: Long, email: String)(implicit request: Request[A]) = {

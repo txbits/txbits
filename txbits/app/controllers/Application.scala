@@ -19,7 +19,7 @@ package controllers
 import play.api.mvc._
 import play.api.i18n.{ I18nSupport, Lang }
 import play.api.Play.current
-import play.i18n.MessagesApi
+import play.api.i18n.MessagesApi
 import scala.language.postfixOps
 
 class Application(val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {

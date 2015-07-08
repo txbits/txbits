@@ -19,6 +19,7 @@ import controllers.IAPI.CryptoAddress
 import java.net.{ PasswordAuthentication, URL }
 import java.net.{ PasswordAuthentication, Authenticator, URL }
 import play.api.db.DB
+import play.api.i18n.{ MessagesApi, I18nSupport }
 import play.api.mvc.Result
 import play.api.Play.current
 import play.filters.csrf.CSRFFilter
@@ -124,7 +125,7 @@ package object globals {
 
 }
 
-object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with GlobalSettings {
+class Global(val messagesApi: MessagesApi) extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with GlobalSettings with I18nSupport {
 
   override def onError(request: RequestHeader, ex: Throwable): Future[Result] = {
     implicit val r = request
@@ -132,6 +133,7 @@ object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with Gl
       case "application/json" =>
         Future.successful(InternalServerError(Json.toJson(Map("error" -> ("Internal Error: " + ex.getMessage)))))
       case _ =>
+
         Future.successful(InternalServerError(views.html.meta.error(ex)))
     }.getOrElse(Future.successful(InternalServerError(views.html.meta.error(ex))))
   }
@@ -170,5 +172,4 @@ object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with Gl
     Logger.info("Application shutdown...")
     txbitsUserService.onStop()
   }
-
 }

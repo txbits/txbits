@@ -23,7 +23,7 @@ import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.libs.json.Writes._
 import org.joda.time.DateTime
-import play.i18n.MessagesApi
+import play.api.i18n.MessagesApi
 
 class APIv1(val messagesApi: MessagesApi) extends Controller with I18nSupport {
 

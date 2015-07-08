@@ -27,7 +27,6 @@ import org.joda.time.DateTime
 import scala.concurrent.{ Await, Future }
 import play.api.libs.ws.WSResponse
 import play.Plugin
-import controllers.SecureSocialTemplates
 import service.txbitsUserService
 import models.{ LogEvent, LogType, LogModel }
 

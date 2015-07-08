@@ -22,7 +22,7 @@ import play.api.Play
 import play.api.Play.current
 import play.api.i18n.I18nSupport
 import play.api.mvc.{ Action, Controller }
-import play.i18n.MessagesApi
+import play.api.i18n.MessagesApi
 import securesocial.core._
 import service.txbitsUserService
 
@@ -49,16 +49,16 @@ class LoginPage(val messagesApi: MessagesApi) extends Controller with I18nSuppor
       Redirect(to)
     } else {
       if (SecureSocial.enableRefererAsOriginalUrl) {
-        SecureSocial.withRefererAsOriginalUrl(Ok(SecureSocialTemplates.getLoginPage(request, UsernamePasswordProvider.loginForm)))
+        SecureSocial.withRefererAsOriginalUrl(Ok(views.html.auth.login(UsernamePasswordProvider.loginForm)))
       } else {
-        Ok(SecureSocialTemplates.getLoginPage(request, UsernamePasswordProvider.loginForm))
+        Ok(views.html.auth.login(UsernamePasswordProvider.loginForm))
 
       }
     }
   }
 
   def tfaTOTP = Action { implicit request =>
-    Ok(SecureSocialTemplates.getTFATOTPPage(request, ProviderController.tfaForm))
+    Ok(views.html.auth.TFAGoogle(ProviderController.tfaForm))
   }
 
   /**

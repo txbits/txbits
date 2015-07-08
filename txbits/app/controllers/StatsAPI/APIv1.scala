@@ -23,7 +23,7 @@ import play.api.libs.json.Reads._
 import play.api.libs.json.Writes._
 import play.api.mvc.{ Action, Controller }
 import play.api.libs.iteratee.{ Iteratee, Concurrent }
-import play.i18n.MessagesApi
+import play.api.i18n.MessagesApi
 import scala.collection.mutable
 import play.api.libs.iteratee.Concurrent.Channel
 import org.joda.time.DateTime
