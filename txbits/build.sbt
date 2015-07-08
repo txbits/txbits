@@ -21,8 +21,7 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "9.3-1103-jdbc41",
   "org.bitcoinj" % "bitcoinj-core" % "0.12",
   "org.apache.commons" % "commons-email" % "1.3.3",
-//XXX: TEMPORARILY DISABLED
-  //"com.github.mumoshu" %% "play2-memcached-play24" % "0.7.0",
+  "com.github.mumoshu" %% "play2-memcached-play24" % "0.7.0",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
   "org.bouncycastle" % "bcpg-jdk15on" % "1.51",
   "org.bouncycastle" % "bcprov-ext-jdk15on" % "1.51",
