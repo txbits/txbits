@@ -16,6 +16,8 @@
 
 package controllers.StatsAPI
 
+import javax.inject.Inject
+
 import globals._
 import play.api.i18n.I18nSupport
 import play.api.libs.json._
@@ -53,7 +55,7 @@ object TickerHistory {
 
 // DON'T DO AUTHENTICATED ACTIONS OVER WEBSOCKETS UNTIL SOMEONE CAN VERIFY THAT THIS IS A SAFE THING TO DO
 
-class APIv1(val messagesApi: MessagesApi) extends Controller with I18nSupport {
+class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
   val channels = mutable.Set[Channel[String]]()
   var lastMatchDatetime: DateTime = new DateTime(0)

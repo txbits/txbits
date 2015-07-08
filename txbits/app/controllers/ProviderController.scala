@@ -16,6 +16,8 @@
  */
 package controllers
 
+import javax.inject.Inject
+
 import models.{ LogEvent, LogType }
 import play.api.Play.current
 import play.api.data.Form
@@ -31,7 +33,7 @@ import play.filters.csrf._
 /**
  * A controller to provide the authentication entry point
  */
-class ProviderController(val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
+class ProviderController @Inject() (val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
   import controllers.ProviderController._
 
   /**

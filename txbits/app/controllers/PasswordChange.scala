@@ -16,6 +16,8 @@
  */
 package controllers
 
+import javax.inject.Inject
+
 import play.api.Play
 import play.api.data.Form
 import play.api.data.Forms._
@@ -31,7 +33,7 @@ import play.api.i18n.I18nSupport
 /**
  * A controller to provide password change functionality
  */
-class PasswordChange(val messagesApi: MessagesApi) extends Controller with SecureSocial with I18nSupport {
+class PasswordChange @Inject() (val messagesApi: MessagesApi) extends Controller with SecureSocial with I18nSupport {
   import PasswordChange._
   val CurrentPassword = "currentPassword"
   val InvalidPasswordMessage = "auth.passwordChange.invalidPassword"

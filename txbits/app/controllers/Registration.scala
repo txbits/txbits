@@ -17,6 +17,7 @@
 package controllers
 
 import _root_.java.util.UUID
+import javax.inject.Inject
 import play.api.mvc.{ Result, Action, Controller }
 import play.api.data._
 import play.api.data.Forms._
@@ -24,7 +25,6 @@ import play.api.data.validation.Constraints._
 import play.api.{ Play, Logger }
 import play.api.i18n.MessagesApi
 import securesocial.core._
-import com.typesafe.plugin._
 import Play.current
 import securesocial.core.providers.utils._
 import org.joda.time.DateTime
@@ -41,7 +41,7 @@ import java.security.SecureRandom
  * A controller to handle user registration.
  *
  */
-class Registration(val messagesApi: MessagesApi) extends Controller with I18nSupport {
+class Registration @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
   import controllers.Registration._
   import PasswordChange._
 

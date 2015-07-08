@@ -16,13 +16,15 @@
 
 package controllers
 
+import javax.inject.Inject
+
 import play.api.mvc._
 import play.api.i18n.{ I18nSupport, Lang }
 import play.api.Play.current
 import play.api.i18n.MessagesApi
 import scala.language.postfixOps
 
-class Application(val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
+class Application @Inject() (val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
 
   def index = UserAwareAction { implicit request =>
     Ok(views.html.content.index(request.user.isDefined))

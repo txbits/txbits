@@ -16,6 +16,8 @@
 
 package controllers.API
 
+import javax.inject.Inject
+
 import play.api._
 import play.api.i18n.I18nSupport
 import play.api.mvc._
@@ -25,7 +27,7 @@ import play.api.libs.json.Writes._
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 
-class APIv1(val messagesApi: MessagesApi) extends Controller with I18nSupport {
+class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
   def balance = Action(parse.json) { implicit request =>
     val body = request.body

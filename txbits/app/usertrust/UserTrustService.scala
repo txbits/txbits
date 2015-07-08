@@ -23,7 +23,6 @@ import play.api.i18n._
 import securesocial.core.providers.utils.Mailer
 import securesocial.core.{ IdGenerator, Token }
 import org.joda.time.DateTime
-import com.typesafe.plugin.use
 import play.api.{ Mode, Play }
 import akka.actor.{ Actor, Props }
 import scala.concurrent.ExecutionContext

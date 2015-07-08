@@ -16,6 +16,8 @@
  */
 package controllers
 
+import javax.inject.Inject
+
 import models.{ LogEvent, LogType }
 import play.Logger
 import play.api.Play
@@ -29,7 +31,7 @@ import service.txbitsUserService
 /**
  * The Login page controller
  */
-class LoginPage(val messagesApi: MessagesApi) extends Controller with I18nSupport {
+class LoginPage @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
   /**
    * The property that specifies the page the user is redirected to after logging out.
    */

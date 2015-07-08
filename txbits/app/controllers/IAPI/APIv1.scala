@@ -16,6 +16,8 @@
 
 package controllers.IAPI
 
+import javax.inject.Inject
+
 import play.api._
 import play.api.i18n.I18nSupport
 import play.api.mvc._
@@ -29,7 +31,7 @@ import org.apache.commons.codec.binary.Base64.encodeBase64
 import java.security.SecureRandom
 import controllers.Util
 
-class APIv1(val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
+class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
   // Json serializable case classes have implicit definitions in their companion objects
 
   import globals._

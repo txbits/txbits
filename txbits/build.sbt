@@ -14,7 +14,6 @@ libraryDependencies ++= Seq(
   play.PlayImport.cache,
   specs2 % Test,
   evolutions,
-  "com.typesafe.play.plugins" %% "play-plugins-util" % "2.3.0",
   "org.mindrot" % "jbcrypt" % "0.3m",
   "org.mockito" % "mockito-all" % "1.10.19",
   "com.typesafe.akka" %% "akka-testkit" % "2.3.9" % "test",
@@ -22,7 +21,8 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "9.3-1103-jdbc41",
   "org.bitcoinj" % "bitcoinj-core" % "0.12",
   "org.apache.commons" % "commons-email" % "1.3.3",
-  "com.github.mumoshu" %% "play2-memcached-play24" % "0.7.0",
+//XXX: TEMPORARILY DISABLED
+  //"com.github.mumoshu" %% "play2-memcached-play24" % "0.7.0",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
   "org.bouncycastle" % "bcpg-jdk15on" % "1.51",
   "org.bouncycastle" % "bcprov-ext-jdk15on" % "1.51",
