@@ -56,6 +56,7 @@ object TickerHistory {
 // DON'T DO AUTHENTICATED ACTIONS OVER WEBSOCKETS UNTIL SOMEONE CAN VERIFY THAT THIS IS A SAFE THING TO DO
 
 class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
+  import APIv1._
 
   val channels = mutable.Set[Channel[String]]()
   var lastMatchDatetime: DateTime = new DateTime(0)
@@ -74,6 +75,20 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
     cancellable.map(_.cancel())
   }
 
+  def ticker = Action {
+    Ok(Json.toJson(tickerFromDb))
+  }
+
+  def chart(base: String, counter: String) = Action {
+    if (globals.metaModel.activeMarkets.contains(base, counter)) {
+      Ok(Json.toJson(chartFromDB(base, counter)))
+    } else {
+      BadRequest(Json.obj("message" -> "Invalid pair."))
+    }
+  }
+}
+
+object APIv1 {
   def tickerFromDb = DB.withConnection(masterDB) { implicit c =>
     globals.metaModel.validPairs.flatMap {
       case (base, counter, active, minAmount) =>
@@ -97,10 +112,6 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
     }
   }
 
-  def ticker = Action {
-    Ok(Json.toJson(tickerFromDb))
-  }
-
   def chartFromDB(base: String, counter: String) = DB.withConnection(masterDB) { implicit c =>
     play.api.cache.Cache.getOrElse("%s.%s.stats".format(base, counter)) {
       frontend.chartFromDb.on(
@@ -120,14 +131,6 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
           )
 
         }).toList
-    }
-  }
-
-  def chart(base: String, counter: String) = Action {
-    if (globals.metaModel.activeMarkets.contains(base, counter)) {
-      Ok(Json.toJson(chartFromDB(base, counter)))
-    } else {
-      BadRequest(Json.obj("message" -> "Invalid pair."))
     }
   }
 }
