@@ -28,6 +28,7 @@ import service.sql.frontend
 import service.{ PGP, TOTPSecret }
 import play.api.libs.json.Json
 import java.security.SecureRandom
+import anorm.JodaParameterMetaData._
 
 case class TradeHistory(amount: String, fee: String, created: DateTime, price: String, base: String, counter: String, typ: String, id: Option[Long] = None)
 

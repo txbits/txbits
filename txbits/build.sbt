@@ -9,7 +9,7 @@ routesGenerator := InjectedRoutesGenerator
 libraryDependencies ++= Seq(
   ws,
   jdbc,
-  "com.typesafe.play" %% "anorm" % "2.3.9",
+  "com.typesafe.play" %% "anorm" % "2.4.0",
   filters,
   play.PlayImport.cache,
   specs2 % Test,

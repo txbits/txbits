@@ -27,6 +27,7 @@ import models.LogType.LogType
 import play.api.libs.json.{ JsString, JsValue, Writes, Json }
 import play.api.mvc.{ RequestHeader, AnyContent, Request }
 import service.sql.frontend
+import anorm.JodaParameterMetaData._
 
 object LogType extends Enumeration {
   type LogType = Value
