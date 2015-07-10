@@ -28,8 +28,8 @@ libraryDependencies ++= Seq(
 )
 
 resolvers ++= Seq(
-  "Spy Repository" at "http://files.couchbase.com/maven2",
-  Resolver.url("sbt-plugin-releases", new URL("http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),
+  "Spy Repository" at "https://files.couchbase.com/maven2",
+  Resolver.url("sbt-plugin-releases", new URL("https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),
   "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
 )
 
