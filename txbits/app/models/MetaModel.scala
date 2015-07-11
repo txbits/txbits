@@ -21,8 +21,6 @@ import play.api.Play.current
 import anorm._
 import anorm.SqlParser._
 import anorm.~
-import service.sql.frontend
-import service.sql.misc
 import play.api.libs.json.Json
 
 case class DwFee(currency: String, method: String, depositConstant: String, depositLinear: String, withdrawConstant: String, withdrawLinear: String)
@@ -49,11 +47,11 @@ object DwLimit {
 class MetaModel(val db: String = "default") {
 
   val currencies = DB.withConnection(db)(implicit c => {
-    frontend.getCurrencies().map(_[String]("currency")).toList
+    SQL""" select * from get_currencies() """().map(_[String]("currency")).toList
   })
 
   val validPairs = DB.withConnection(db)(implicit c => {
-    frontend.getPairs().map(row => (row[String]("base"), row[String]("counter"), row[Boolean]("active"), row[BigDecimal]("limit_min"))).toList
+    SQL""" select * from get_pairs() """().map(row => (row[String]("base"), row[String]("counter"), row[Boolean]("active"), row[BigDecimal]("limit_min"))).toList
   })
 
   val allPairsJson = validPairs.map(pair => Json.obj("base" -> pair._1, "counter" -> pair._2))
@@ -64,7 +62,7 @@ class MetaModel(val db: String = "default") {
   }.toMap
 
   val dwFees = DB.withConnection(db)(implicit c => {
-    frontend.dwFees().map(row =>
+    SQL""" select * from dw_fees() """().map(row =>
       DwFee(
         row[String]("currency"),
         row[String]("method"),
@@ -77,7 +75,7 @@ class MetaModel(val db: String = "default") {
   })
 
   val tradeFees = DB.withConnection(db)(implicit c => {
-    frontend.tradeFees().map(row =>
+    SQL""" select * from trade_fees() """().map(row =>
       TradeFee(
         row[BigDecimal]("linear").bigDecimal.toPlainString,
         row[Boolean]("one_way")
@@ -86,7 +84,7 @@ class MetaModel(val db: String = "default") {
   })
 
   val dwLimits = DB.withConnection(db)(implicit c => {
-    frontend.dwLimits().map(row =>
+    SQL""" select * from dw_limits() """().map(row =>
       row[String]("currency") ->
         DwLimit(
           row[String]("currency"),
@@ -97,7 +95,7 @@ class MetaModel(val db: String = "default") {
   })
 
   val getRequiredConfirmations = DB.withConnection(db)(implicit c => {
-    frontend.getRequiredConfirmations().map(row =>
+    SQL"""select * from get_required_confirmations()"""().map(row =>
       row[String]("currency") -> row[Int]("min_deposit_confirmations").toString
     ).toMap
   })
@@ -105,7 +103,10 @@ class MetaModel(val db: String = "default") {
   // privileged api
 
   def clean() = DB.withConnection(db)(implicit c =>
-    misc.metaClean.execute()
+    SQL"""delete from constants;
+      delete from currencies;
+      delete from markets;
+      """.execute()
   )
 
 }

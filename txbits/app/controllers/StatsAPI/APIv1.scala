@@ -30,7 +30,6 @@ import scala.collection.mutable
 import play.api.libs.iteratee.Concurrent.Channel
 import org.joda.time.DateTime
 import play.api.db.DB
-import service.sql.frontend
 import java.sql.Timestamp
 import models.Match
 import akka.actor.Cancellable
@@ -114,23 +113,21 @@ object APIv1 {
 
   def chartFromDB(base: String, counter: String) = DB.withConnection(masterDB) { implicit c =>
     play.api.cache.Cache.getOrElse("%s.%s.stats".format(base, counter)) {
-      frontend.chartFromDb.on(
-        'base -> base,
-        'counter -> counter
-      )().filter(row => row[Option[Date]]("start_of_period").isDefined).map(row => {
-          // We want a json array because that's what the graphing api understands
-          // Format: Date,Open,High,Low,Close,Volume
+      SQL""" select * from chart_from_db($base, $counter)"""().filter(row =>
+        row[Option[Date]]("start_of_period").isDefined).map(row => {
+        // We want a json array because that's what the graphing api understands
+        // Format: Date,Open,High,Low,Close,Volume
 
-          Seq(
-            JsNumber(row[Option[Date]]("start_of_period").get.getTime),
-            JsNumber(row[Option[BigDecimal]]("open").get),
-            JsNumber(row[Option[BigDecimal]]("high").get),
-            JsNumber(row[Option[BigDecimal]]("low").get),
-            JsNumber(row[Option[BigDecimal]]("close").get),
-            JsNumber(row[Option[BigDecimal]]("volume").get)
-          )
+        Seq(
+          JsNumber(row[Option[Date]]("start_of_period").get.getTime),
+          JsNumber(row[Option[BigDecimal]]("open").get),
+          JsNumber(row[Option[BigDecimal]]("high").get),
+          JsNumber(row[Option[BigDecimal]]("low").get),
+          JsNumber(row[Option[BigDecimal]]("close").get),
+          JsNumber(row[Option[BigDecimal]]("volume").get)
+        )
 
-        }).toList
+      }).toList
     }
   }
 }

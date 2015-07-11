@@ -37,7 +37,6 @@ import org.specs2.execute.AsResult
 import org.joda.time.DateTime
 import helpers._
 import controllers.IAPI.CryptoAddress
-import service.sql.misc
 
 @RunWith(classOf[JUnitRunner])
 class EngineModelSpec extends Specification with Mockito {

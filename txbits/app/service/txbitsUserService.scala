@@ -61,7 +61,7 @@ object txbitsUserService {
 
   // this function requires higher database privileges
   def resetPass(email: String, token: String, password: String) {
-    globals.userModel.userResetPass(email, token, password)
+    globals.userModel.userResetPassComplete(email, token, password)
   }
 
   def signupStart(email: String) {

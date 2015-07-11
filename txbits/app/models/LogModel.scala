@@ -26,7 +26,6 @@ import org.joda.time.DateTime
 import models.LogType.LogType
 import play.api.libs.json.{ JsString, JsValue, Writes, Json }
 import play.api.mvc.{ RequestHeader, AnyContent, Request }
-import service.sql.frontend
 import anorm.JodaParameterMetaData._
 
 object LogType extends Enumeration {
@@ -69,30 +68,21 @@ object LoginEvent {
 class LogModel(val db: String = "default") {
 
   def logEvent(logEvent: LogEvent) = DB.withConnection(db) { implicit c =>
-    frontend.newLog.on(
-      'user_id -> logEvent.uid,
-      'email -> logEvent.email,
-      'ip -> logEvent.ip,
-      'browser_headers -> logEvent.browser_headers,
-      'browser_id -> logEvent.browser_id,
-      'ssl_info -> logEvent.ssl_info,
-      'type -> logEvent.typ.toString
-    ).execute()
+    SQL"""
+    select * from new_log(${logEvent.uid}, ${logEvent.browser_headers}, ${logEvent.email}, ${logEvent.ssl_info}, ${logEvent.browser_id}, inet(${logEvent.ip}), ${logEvent.typ.toString})
+    """.execute()
   }
 
   def getLoginEvents(uid: Long, before: Option[DateTime] = None, limit: Option[Int] = None, lastId: Option[Long] = None) = DB.withConnection(db) { implicit c =>
-    frontend.loginLog.on(
-      'user_id -> uid,
-      'before -> before,
-      'limit -> limit,
-      'last_id -> lastId
-    )().map(row => LoginEvent(
-        row[Long]("id"),
-        row[Option[String]]("email"),
-        row[Option[String]]("ip"),
-        Some(row[DateTime]("created")),
-        LogType.withName(row[Option[String]]("type").getOrElse("other")))
-      ).toList
+    SQL"""
+    select * from login_log($uid, $before, $limit, $lastId)
+    """().map(row => LoginEvent(
+      row[Long]("id"),
+      row[Option[String]]("email"),
+      row[Option[String]]("ip"),
+      Some(row[DateTime]("created")),
+      LogType.withName(row[Option[String]]("type").getOrElse("other")))
+    ).toList
   }
 
 }

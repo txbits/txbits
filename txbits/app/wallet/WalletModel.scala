@@ -25,25 +25,31 @@ import wallet.Wallet.CryptoCurrency.CryptoCurrency
 class WalletModel(val db: String = "default") {
 
   def obtainSessionLock(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.obtainSessionLock.on('currency -> currency.id, 'node_id -> nodeId)().map(row => row[Boolean]("pg_try_advisory_lock")).head
+    SQL""" select pg_try_advisory_lock(${currency.id}, $nodeId) """().map(row => row[Boolean]("pg_try_advisory_lock")).head
   }
 
   def addNewAddress(currency: CryptoCurrency, nodeId: Int, address: String) = DB.withConnection(db) { implicit c =>
-    SQLText.addNewAddress.on('currency -> currency.toString, 'node_id -> nodeId, 'address -> address).execute()
+    SQL"""
+    insert into users_addresses (address, currency, node_id)
+    values($address, ${currency.toString}, $nodeId)
+    """.execute()
   }
 
   def addNewAddressBatch(currency: CryptoCurrency, nodeId: Int, addresses: List[String]) = DB.withConnection(db) { implicit c =>
-    (SQLText.addNewAddress.asBatch /: addresses)(
+    (SQL("""
+      insert into users_addresses (address, currency, node_id)
+      values({address}, {currency}, {node_id})"""
+    ).asBatch /: addresses)(
       (sql, address) => sql.addBatchParams(address, currency.toString, nodeId)
     ).execute()
   }
 
   def getFreeAddressCount(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.getFreeAddressCount.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[Long]("free_address_count")).head
+    SQL""" select free_address_count(${currency.toString}, $nodeId) """().map(row => row[Long]("free_address_count")).head
   }
 
   def getMinConfirmations(currency: CryptoCurrency) = DB.withConnection(db) { implicit c =>
-    SQLText.getMinConfirmations.on('currency -> currency.toString)().map(row => (
+    SQL""" select * from get_min_confirmations(${currency.toString}) """().map(row => (
       row[Boolean]("active"),
       row[Int]("min_deposit_confirmations"),
       row[Int]("min_withdrawal_confirmations")
@@ -51,7 +57,7 @@ class WalletModel(val db: String = "default") {
   }
 
   def getNodeInfo(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.getNodeInfo.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => (
+    SQL""" select * from get_node_info(${currency.toString}, $nodeId) """().map(row => (
       row[Boolean]("retired"),
       row[BigDecimal]("balance_min"),
       row[BigDecimal]("balance_warn"),
@@ -61,92 +67,95 @@ class WalletModel(val db: String = "default") {
   }
 
   def getBalance(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.getBalance.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[BigDecimal]("get_balance")).head
+    SQL""" select get_balance(${currency.toString}, $nodeId) """().map(row => row[BigDecimal]("get_balance")).head
   }
 
   def getLastBlockRead(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.getLastBlockRead.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => (
+    SQL""" select * from get_last_block_read(${currency.toString}, $nodeId) """().map(row => (
       row[Option[Int]]("last_block_read").getOrElse(0),
       row[Option[Int]]("last_withdrawal_time_received").getOrElse(0)
     )).head
   }
 
   def setLastBlockRead(currency: CryptoCurrency, nodeId: Int, blockCount: Int, lastWithdrawalTimeReceived: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.setLastBlockRead.on(
-      'currency -> currency.toString,
-      'node_id -> nodeId,
-      'block_count -> blockCount,
-      'last_withdrawal_time_received -> lastWithdrawalTimeReceived
-    ).execute()
+    SQL"""
+      select set_last_block_read(${currency.toString}, $nodeId,
+      $blockCount, $lastWithdrawalTimeReceived)
+    """.execute()
   }
 
   def createDeposit(currency: CryptoCurrency, nodeId: Int, deposit: Deposit) = DB.withConnection(db) { implicit c =>
-    SQLText.createDeposit.on(
-      'currency -> currency.toString,
-      'node_id -> nodeId,
-      'address -> deposit.address,
-      'amount -> deposit.amount.bigDecimal,
-      'tx_hash -> deposit.txHash
-    )().map(row => row[Long]("create_deposit")).head
+    SQL""" select create_deposit(
+      ${currency.toString},
+      $nodeId,
+      ${deposit.address},
+      ${deposit.amount.bigDecimal},
+      ${deposit.txHash})
+      """().map(row => row[Long]("create_deposit")).head
   }
 
   def createConfirmedDeposit(currency: CryptoCurrency, nodeId: Int, deposit: Deposit) = DB.withConnection(db) { implicit c =>
-    SQLText.createConfirmedDeposit.on(
-      'currency -> currency.toString,
-      'node_id -> nodeId,
-      'address -> deposit.address,
-      'amount -> deposit.amount.bigDecimal,
-      'tx_hash -> deposit.txHash
-    ).execute()
+    SQL"""
+      select create_confirmed_deposit(
+      ${currency.toString},
+      $nodeId,
+      ${deposit.address},
+      ${deposit.amount.bigDecimal},
+      ${deposit.txHash})
+    """.execute()
   }
 
   def isConfirmedDeposit(deposit: Deposit) = DB.withConnection(db) { implicit c =>
-    SQLText.isConfirmedDeposit.on(
-      'address -> deposit.address,
-      'amount -> deposit.amount,
-      'tx_hash -> deposit.txHash
-    )().map(row => row[Boolean]("is_confirmed_deposit")).head
+    SQL""" select is_confirmed_deposit(
+      ${deposit.address},
+      ${deposit.amount.bigDecimal},
+      ${deposit.txHash})
+      """().map(row => row[Boolean]("is_confirmed_deposit")).head
   }
 
   def getPendingDeposits(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.getPendingDeposits.on('currency -> currency.toString, 'node_id -> nodeId)().map(row =>
+    SQL""" select * from get_pending_deposits(${currency.toString}, $nodeId) """().map(row =>
       Deposit(row[String]("address"), row[BigDecimal]("amount"), row[String]("tx_hash")) -> row[Long]("id")
     ).toList
   }
 
   def confirmedDeposit(deposit: Deposit, id: Long, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.confirmedDeposit.on('id -> id, 'address -> deposit.address, 'tx_hash -> deposit.txHash, 'node_id -> nodeId).execute()
+    SQL""" select confirmed_deposit(
+      $id,
+      ${deposit.address},
+      ${deposit.txHash},
+      $nodeId) """.execute()
   }
 
   def getUnconfirmedWithdrawalTx(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.getUnconfirmedWithdrawalTx.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[Option[Long]]("id") -> row[Option[String]]("tx_hash")).head match {
+    SQL""" select * from get_unconfirmed_withdrawal_tx(${currency.toString}, $nodeId) """().map(row => row[Option[Long]]("id") -> row[Option[String]]("tx_hash")).head match {
       case (Some(id: Long), Some(txHash: String)) => Some(id, txHash)
       case _ => None
     }
   }
 
   def createWithdrawalTx(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQLText.createWithdrawalTx.on('currency -> currency.toString, 'node_id -> nodeId)().map(row => row[Option[Long]]("create_withdrawal_tx")).head
+    SQL""" select create_withdrawal_tx(${currency.toString}, $nodeId) """().map(row => row[Option[Long]]("create_withdrawal_tx")).head
   }
 
   def getWithdrawalTx(txId: Long) = DB.withConnection(db) { implicit c =>
-    SQLText.getWithdrawalTx.on('tx_id -> txId)().map(row => row[String]("address") -> row[BigDecimal]("value")).toMap
+    SQL""" select * from get_withdrawal_tx($txId) """().map(row => row[String]("address") -> row[BigDecimal]("value")).toMap
   }
 
   def sentWithdrawalTx(txId: Long, txHash: String, txAmount: BigDecimal) = DB.withConnection(db) { implicit c =>
-    SQLText.sentWithdrawalTx.on('tx_id -> txId, 'tx_hash -> txHash, 'tx_amount -> txAmount).execute()
+    SQL""" select sent_withdrawal_tx($txId, $txHash, $txAmount) """.execute()
   }
 
   def confirmedWithdrawalTx(txId: Long, txFee: BigDecimal) = DB.withConnection(db) { implicit c =>
-    SQLText.confirmedWithdrawalTx.on('tx_id -> txId, 'tx_fee -> txFee.bigDecimal).execute()
+    SQL""" select confirmed_withdrawal_tx($txId, ${txFee.bigDecimal}) """.execute()
   }
 
   def createColdStorageTransfer(txId: Long, address: String, value: BigDecimal) = DB.withConnection(db) { implicit c =>
-    SQLText.createColdStorageTransfer.on('tx_id -> txId, 'address -> address, 'value -> value.bigDecimal).execute()
+    SQL""" select create_cold_storage_transfer($txId, $address, ${value.bigDecimal}) """.execute()
   }
 
   def setWithdrawalTxHashMutated(txId: Long, txHash: String) = DB.withConnection(db) { implicit c =>
-    SQLText.setWithdrawalTxHashMutated.on('tx_id -> txId, 'tx_hash -> txHash).execute()
+    SQL""" select set_withdrawal_tx_hash_mutated($txId, $txHash) """.execute()
   }
 
 }
