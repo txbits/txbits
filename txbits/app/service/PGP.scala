@@ -54,28 +54,33 @@ object PGP {
   }
 
   def parsePublicKey(pubStr: String): Option[(PGPPublicKey, String)] = {
-    val pubIn: InputStream = new ByteArrayInputStream(pubStr.getBytes("UTF-8"))
-    val pgpPub: PGPPublicKeyRingCollection = new PGPPublicKeyRingCollection(PGPUtil.getDecoderStream(pubIn), new BcKeyFingerprintCalculator)
+    try {
+      val pubIn: InputStream = new ByteArrayInputStream(pubStr.getBytes("UTF-8"))
+      val pgpPub: PGPPublicKeyRingCollection = new PGPPublicKeyRingCollection(PGPUtil.getDecoderStream(pubIn), new BcKeyFingerprintCalculator)
 
-    val keyRingIter = pgpPub.getKeyRings
-    while (keyRingIter.hasNext) {
-      val keyRing = keyRingIter.next().asInstanceOf[PGPPublicKeyRing]
+      val keyRingIter = pgpPub.getKeyRings
+      while (keyRingIter.hasNext) {
+        val keyRing = keyRingIter.next().asInstanceOf[PGPPublicKeyRing]
 
-      val keyIter = keyRing.getPublicKeys
-      while (keyIter.hasNext) {
-        val key = keyIter.next().asInstanceOf[PGPPublicKey]
-        val out = new ByteArrayOutputStream()
-        val armored = new ArmoredOutputStream(out)
-        key.encode(armored)
-        out.close()
-        armored.close()
-        val keyString = out.toString("UTF-8")
+        val keyIter = keyRing.getPublicKeys
+        while (keyIter.hasNext) {
+          val key = keyIter.next().asInstanceOf[PGPPublicKey]
+          val out = new ByteArrayOutputStream()
+          val armored = new ArmoredOutputStream(out)
+          key.encode(armored)
+          out.close()
+          armored.close()
+          val keyString = out.toString("UTF-8")
 
-        if (key.isEncryptionKey) {
-          return Some(key, keyString)
+          if (key.isEncryptionKey) {
+            return Some(key, keyString)
+          }
         }
       }
+      None
+    } catch {
+      case ex: Throwable =>
+        None
     }
-    None
   }
 }

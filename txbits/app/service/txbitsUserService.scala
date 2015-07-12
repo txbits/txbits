@@ -48,7 +48,7 @@ object txbitsUserService {
           globals.userModel.addFakeMoney(id, "USD", freeMoney)
           globals.userModel.addFakeMoney(id, "CAD", freeMoney)
         }
-        user.copy(id = id)
+        user.copy(id = id, pgp = pgp_key)
       }
       case None => throw new Exception(" Duplicate Email ")
     }
