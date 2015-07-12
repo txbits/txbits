@@ -44,7 +44,7 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
   def processTrustedActionRequests() {
 
     // XXX: temporary hack to make Messages work in emails (only english for now)
-    implicit val messges = new Messages(new Lang("en", "US"), new DefaultMessagesApi(play.api.Environment.simple(new File("."), Mode.Prod),
+    implicit val messages = new Messages(new Lang("en", "US"), new DefaultMessagesApi(play.api.Environment.simple(new File("."), Mode.Prod),
       play.api.Play.current.configuration,
       new DefaultLangs(play.api.Play.current.configuration))
     )
