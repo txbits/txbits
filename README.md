@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ## Dev environment setup TL;DR
 
-1. `jdk-7`
+1. `jdk-8`
 1. postgres 9.3+ on `localhost` with database name `txbits_testnet`, superuser `user` and password `password`
 1. `./txbits.sh run`
 1. Log in at `http://localhost:9000` as `a@a.com` with password `qwerty123`
