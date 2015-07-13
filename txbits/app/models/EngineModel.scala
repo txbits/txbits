@@ -174,7 +174,12 @@ class EngineModel(val db: String = "default") {
   def withdraw(uid: Long, currency: String, amount: BigDecimal, address: String, tfa_code: Option[String]) = DB.withConnection(db) { implicit c =>
     val code = tfa_code.getOrElse("0") match {
       case "" => 0
-      case c: String => c.toInt
+      case c: String =>
+        try {
+          c.toInt
+        } catch {
+          case _: Throwable => 0
+        }
     }
     SQL"""
     select withdraw_crypto as id from withdraw_crypto($uid, ${amount.bigDecimal}, $address, $currency, $code)
