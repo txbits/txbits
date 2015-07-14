@@ -28,7 +28,6 @@ import play.api.{ Logger, Play }
 import play.api.i18n.MessagesApi
 import securesocial.core.{ AccessDeniedException, SocialUser, _ }
 import service.{ TOTPAuthenticator, TOTPSecret }
-import play.filters.csrf._
 
 /**
  * A controller to provide the authentication entry point
@@ -90,43 +89,41 @@ class ProviderController @Inject() (val messagesApi: MessagesApi) extends Contro
     Redirect(toUrl(request2session)).withSession(request2session - SecureSocial.OriginalUrlKey).withCookies(authenticator.toCookie)
   }
 
-  def loginPost() = CSRFCheck {
-    Action { implicit request =>
-      try {
-        val form = UsernamePasswordProvider.loginForm.bindFromRequest()
-        form.fold(
-          errors => badRequest(errors, request),
-          credentials => {
-            val email = credentials._1.trim
-            var user: Option[SocialUser] = None
-            var totp_hash: Option[String] = None
-            // check for 2FA
-            if (globals.userModel.userHasTotp(email)) {
-              totp_hash = globals.userModel.totpLoginStep1(email, credentials._2, models.LogModel.headersFromRequest(request), models.LogModel.ipFromRequest(request))
-            } else {
-              user = globals.userModel.findUserByEmailAndPassword(email, credentials._2, models.LogModel.headersFromRequest(request), models.LogModel.ipFromRequest(request))
-            }
-            if (totp_hash.isDefined) {
-              // create session
-              val authenticator = Authenticator.create(None, totp_hash, email)
-              Redirect(controllers.routes.LoginPage.tfaTOTP()).withSession(request2session).withCookies(authenticator.toCookie)
-            } else if (user.isDefined) {
-              // create session
-              completePasswordAuth(user.get.id, email)
-            } else {
-              badRequest(UsernamePasswordProvider.loginForm, request, Some(ProviderController.InvalidCredentials))
-            }
+  def loginPost() = Action { implicit request =>
+    try {
+      val form = UsernamePasswordProvider.loginForm.bindFromRequest()
+      form.fold(
+        errors => badRequest(errors, request),
+        credentials => {
+          val email = credentials._1.trim
+          var user: Option[SocialUser] = None
+          var totp_hash: Option[String] = None
+          // check for 2FA
+          if (globals.userModel.userHasTotp(email)) {
+            totp_hash = globals.userModel.totpLoginStep1(email, credentials._2, models.LogModel.headersFromRequest(request), models.LogModel.ipFromRequest(request))
+          } else {
+            user = globals.userModel.findUserByEmailAndPassword(email, credentials._2, models.LogModel.headersFromRequest(request), models.LogModel.ipFromRequest(request))
           }
-        )
-      } catch {
-        case ex: AccessDeniedException => {
-          Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("auth.login.accessDenied"))
+          if (totp_hash.isDefined) {
+            // create session
+            val authenticator = Authenticator.create(None, totp_hash, email)
+            Redirect(controllers.routes.LoginPage.tfaTOTP()).withSession(request2session).withCookies(authenticator.toCookie)
+          } else if (user.isDefined) {
+            // create session
+            completePasswordAuth(user.get.id, email)
+          } else {
+            badRequest(UsernamePasswordProvider.loginForm, request, Some(ProviderController.InvalidCredentials))
+          }
         }
+      )
+    } catch {
+      case ex: AccessDeniedException => {
+        Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("auth.login.accessDenied"))
+      }
 
-        case other: Throwable => {
-          Logger.error("Unable to log user in. An exception was thrown", other)
-          Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("auth.login.errorLoggingIn"))
-        }
+      case other: Throwable => {
+        Logger.error("Unable to log user in. An exception was thrown", other)
+        Redirect(controllers.routes.LoginPage.login()).flashing("error" -> Messages("auth.login.errorLoggingIn"))
       }
     }
   }
