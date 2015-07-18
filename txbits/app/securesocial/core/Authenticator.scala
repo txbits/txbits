@@ -20,7 +20,6 @@ import java.security.SecureRandom
 import org.joda.time.DateTime
 import play.api.libs.Codecs
 import play.api.{ Play, Application, Plugin }
-import com.typesafe.plugin._
 import Play.current
 import play.api.cache.Cache
 import play.api.mvc.{ DiscardingCookie, Cookie }

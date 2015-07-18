@@ -17,7 +17,7 @@
 package securesocial.core
 
 import play.api.mvc._
-import play.api.i18n.Messages
+import play.api.i18n.{ I18nSupport, Messages }
 import play.api.Logger
 import play.api.libs.json.{ JsValue, Json }
 import play.api.http.HeaderNames
@@ -47,7 +47,7 @@ case class RequestWithUser[A](user: Option[SocialUser], request: Request[A]) ext
  *      Ok("Hello %s".format(request.user.displayName))
  *    }
  */
-trait SecureSocial extends Controller {
+trait SecureSocial extends Controller with I18nSupport {
   /**
    * A Forbidden response for ajax clients
    * @param request

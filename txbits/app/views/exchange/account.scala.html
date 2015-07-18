@@ -1,9 +1,9 @@
-@(user: securesocial.core.SocialUser)(implicit request: RequestHeader, lang: Lang)
+@(user: securesocial.core.SocialUser)(implicit request: RequestHeader, messages: Messages)
 
 @import securesocial.core.UsernamePasswordProvider
 @import helper._
 
-@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
+@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(messages)) }
 
 @scripts = {
     <script src="@routes.Assets.at("js/account.js")"></script>

@@ -34,7 +34,7 @@ class ApplicationSpec extends Specification {
   "Application" should {
 
     "send 404 on a bad request" in new WithCleanTestDbApplication {
-      route(FakeRequest(GET, "/boum")) must beNone
+      route(FakeRequest(GET, "/boum")).map(status).getOrElse(OK) mustEqual NOT_FOUND
     }
 
     "render the index page" in new WithCleanTestDbApplication {

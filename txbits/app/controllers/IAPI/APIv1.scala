@@ -16,17 +16,22 @@
 
 package controllers.IAPI
 
+import javax.inject.Inject
+
+import controllers.Util
 import play.api._
+import play.api.i18n.I18nSupport
 import play.api.mvc._
 import play.api.libs.json._
+import play.api.libs.json.Reads._
+import play.api.libs.json.Writes._
+import play.api.i18n.MessagesApi
 import service.{ PGP, TOTPUrl }
 import org.postgresql.util.PSQLException
 import org.apache.commons.codec.binary.Base64.encodeBase64
 import java.security.SecureRandom
-import controllers.Util
 
-object APIv1 extends Controller with securesocial.core.SecureSocial {
-
+class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
   // Json serializable case classes have implicit definitions in their companion objects
 
   import globals._
@@ -278,23 +283,28 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def addPgp() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
-    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
-    val password = (request.request.body \ "password").validate[String].get
-    val pgp = (request.request.body \ "pgp").validate[String].get
-    val parsedKey = PGP.parsePublicKey(pgp)
-    if (parsedKey.isDefined) {
-      if (globals.userModel.addPGP(request.user.id, password, tfa_code, parsedKey.get._2)) {
-        Ok(Json.obj())
+    (for (
+      password <- (request.request.body \ "password").validate[String];
+      pgp <- (request.request.body \ "pgp").validate[String];
+      parsedKey = PGP.parsePublicKey(pgp);
+      tfa_code = (request.request.body \ "tfa_code").asOpt[String]
+    ) yield {
+      if (parsedKey.isDefined) {
+        if (globals.userModel.addPGP(request.user.id, password, tfa_code, parsedKey.get._2)) {
+          Ok(Json.obj())
+        } else {
+          BadRequest(Json.obj("message" -> "Failed to add pgp key. Check your password and two factor auth code if you use two factor auth."))
+        }
       } else {
-        BadRequest(Json.obj("message" -> "Failed to add pgp key. Check your password and two factor auth code if you use two factor auth."))
+        BadRequest(Json.obj("message" -> "Failed to add pgp key. No valid key was found in the given input."))
       }
-    } else {
-      BadRequest(Json.obj("message" -> "Failed to add pgp key. No valid key was found in the given input."))
-    }
+    }).getOrElse(
+      BadRequest(Json.obj("message" -> "Failed to parse input."))
+    )
   }
 
   def removePgp() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
-    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
+    val tfa_code = (request.request.body \ "tfa_code").asOpt[String]
     val password = (request.request.body \ "password").validate[String].get
     if (globals.userModel.removePGP(request.user.id, password, tfa_code)) {
       Ok(Json.obj())
@@ -313,27 +323,37 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
   }
 
   def updateApiKey() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
-    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
-    val apiKey = (request.request.body \ "api_key").validate[String].get
-    val trading = (request.request.body \ "trading").validate[Boolean].get
-    val tradeHistory = (request.request.body \ "trade_history").validate[Boolean].get
-    val listBalance = (request.request.body \ "list_balance").validate[Boolean].get
-    val comment = (request.request.body \ "comment").validate[String].get.take(32)
-    if (globals.userModel.updateApiKey(request.user.id, tfa_code, apiKey, comment, trading, tradeHistory, listBalance)) {
-      Ok(Json.obj())
-    } else {
-      BadRequest(Json.obj("message" -> "Failed to update API key."))
-    }
+    (for (
+      apiKey <- (request.request.body \ "api_key").validate[String];
+      trading <- (request.request.body \ "trading").validate[Boolean];
+      tradeHistory <- (request.request.body \ "trade_history").validate[Boolean];
+      listBalance <- (request.request.body \ "list_balance").validate[Boolean];
+      comment <- (request.request.body \ "comment").validate[String];
+      tfa_code = (request.request.body \ "tfa_code").asOpt[String]
+    ) yield {
+      if (globals.userModel.updateApiKey(request.user.id, tfa_code, apiKey, comment.take(32), trading, tradeHistory, listBalance)) {
+        Ok(Json.obj())
+      } else {
+        BadRequest(Json.obj("message" -> "Failed to update API key."))
+      }
+    }).getOrElse(
+      BadRequest(Json.obj("message" -> "Failed to parse input."))
+    )
   }
 
   def disableApiKey() = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
-    val tfa_code = (request.request.body \ "tfa_code").validate[Option[String]].get
-    val apiKey = (request.request.body \ "api_key").validate[String].get
-    if (globals.userModel.disableApiKey(request.user.id, tfa_code, apiKey)) {
-      Ok(Json.obj())
-    } else {
-      BadRequest(Json.obj("message" -> "Failed to disable API key."))
-    }
+    (for (
+      apiKey <- (request.request.body \ "api_key").validate[String];
+      tfa_code = (request.request.body \ "tfa_code").asOpt[String]
+    ) yield {
+      if (globals.userModel.disableApiKey(request.user.id, tfa_code, apiKey)) {
+        Ok(Json.obj())
+      } else {
+        BadRequest(Json.obj("message" -> "Failed to disable API key."))
+      }
+    }).getOrElse(
+      BadRequest(Json.obj("message" -> "Failed to parse input."))
+    )
   }
 
   def getApiKeys = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
@@ -345,9 +365,9 @@ object APIv1 extends Controller with securesocial.core.SecureSocial {
     (for (
       currency <- (body \ "currency").validate[String];
       amount <- (body \ "amount").validate[BigDecimal];
-      address <- (body \ "address").validate[String]
+      address <- (body \ "address").validate[String];
+      tfa_code = (body \ "tfa_code").asOpt[String]
     ) yield {
-      val tfa_code = (body \ "tfa_code").asOpt[String]
 
       if (CryptoAddress.isValid(address, currency, Play.current.configuration.getBoolean("fakeexchange").get)) {
         try {

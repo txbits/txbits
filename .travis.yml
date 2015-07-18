@@ -1,0 +1,12 @@
+language: scala
+scala:
+- 2.11.7
+jdk:
+- oraclejdk8
+before_install: cd txbits
+addons:
+  postgresql: "9.3"
+before_script:
+- psql -c "CREATE USER \"user\" WITH SUPERUSER PASSWORD 'password';" -U postgres
+- psql -c "CREATE DATABASE txbits_test;" -U postgres
+- psql -c "GRANT ALL PRIVILEGES ON DATABASE txbits_test TO \"user\";" -U postgres

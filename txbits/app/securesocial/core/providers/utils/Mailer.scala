@@ -23,7 +23,6 @@ import play.api.libs.concurrent.Akka
 import play.api.mvc.RequestHeader
 import play.api.i18n.Messages
 import play.twirl.api.{ Html, Txt }
-import controllers.SecureSocialTemplates
 import org.apache.commons.mail.{ DefaultAuthenticator, SimpleEmail, MultiPartEmail, EmailAttachment }
 import java.io.File
 import javax.mail.internet.InternetAddress
@@ -42,48 +41,47 @@ object Mailer {
   val UnknownEmailNoticeSubject = "mails.unknownEmail.subject"
   val PasswordResetOkSubject = "mails.passwordResetOk.subject"
 
-  def sendWithdrawalConfirmEmail(email: String, amount: String, currency: String, destination: String, id: Long, token: String, pgp: Option[String]) {
+  def sendWithdrawalConfirmEmail(email: String, amount: String, currency: String, destination: String, id: Long, token: String, pgp: Option[String])(implicit messages: Messages) {
     val url_confirm = "%s%s/%s".format(current.configuration.getString("url.withdrawal_confirm").getOrElse("http://localhost:9000/withdrawal_confirm/"), id, token)
     val url_reject = "%s%s/%s".format(current.configuration.getString("url.withdrawal_reject").getOrElse("http://localhost:9000/withdrawal_reject/"), id, token)
     val txtAndHtml = (Some(views.txt.auth.mails.withdrawalConfirmEmail(email, amount, currency, destination, id, token, url_confirm, url_reject)), None)
     sendEmail(Messages(WithdrawalConfirmSubject), email, txtAndHtml, pgp)
   }
 
-  def sendRefillWalletEmail(email: String, currency: String, nodeId: Int, balance: BigDecimal, balanceTarget: BigDecimal) {
+  def sendRefillWalletEmail(email: String, currency: String, nodeId: Int, balance: BigDecimal, balanceTarget: BigDecimal)(implicit messages: Messages) {
     val txtAndHtml = (Some(views.txt.auth.mails.refillWalletEmail(email, currency, nodeId, balance, balanceTarget)), None)
     sendEmail(s"Refill $currency wallet $nodeId", email, txtAndHtml)
   }
 
-  def sendAlreadyRegisteredEmail(email: String, pgp: Option[String]) {
+  def sendAlreadyRegisteredEmail(email: String, pgp: Option[String])(implicit messages: Messages) {
     val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/")
-    val txtAndHtml = SecureSocialTemplates.getAlreadyRegisteredEmail(email, url)
+    val txtAndHtml = (Some(views.txt.auth.mails.alreadyRegisteredEmail(email, url)), None)
     sendEmail(Messages(AlreadyRegisteredSubject), email, txtAndHtml, pgp)
   }
 
-  def sendSignUpEmail(to: String, token: String) {
+  def sendSignUpEmail(to: String, token: String)(implicit messages: Messages) {
     val url = current.configuration.getString("url.signup").getOrElse("http://localhost:9000/signup/") + token
-    val txtAndHtml = SecureSocialTemplates.getSignUpEmail(token, url)
+    val txtAndHtml = (Some(views.txt.auth.mails.signUpEmail(token, url)), None)
     sendEmail(Messages(SignUpEmailSubject), to, txtAndHtml)
   }
 
-  def sendWelcomeEmail(user: SocialUser)(implicit request: RequestHeader) {
-    val txtAndHtml = SecureSocialTemplates.getWelcomeEmail(user)
+  def sendWelcomeEmail(user: SocialUser)(implicit request: RequestHeader, messages: Messages) {
+    val txtAndHtml = (Some(views.txt.auth.mails.welcomeEmail(user)), None)
     sendEmail(Messages(WelcomeEmailSubject), user.email, txtAndHtml, user.pgp)
   }
 
-  def sendPasswordResetEmail(email: String, token: String, pgp: Option[String]) {
+  def sendPasswordResetEmail(email: String, token: String, pgp: Option[String])(implicit messages: Messages) {
     val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/") + token
-    val txtAndHtml = SecureSocialTemplates.getSendPasswordResetEmail(email, url)
+    val txtAndHtml = (Some(views.txt.auth.mails.passwordResetEmail(email, url)), None)
     sendEmail(Messages(PasswordResetSubject), email, txtAndHtml, pgp)
   }
 
-  def sendPasswordChangedNotice(email: String, pgp: Option[String])(implicit request: RequestHeader) {
-    val txtAndHtml = SecureSocialTemplates.getPasswordChangedNoticeEmail(email)
+  def sendPasswordChangedNotice(email: String, pgp: Option[String])(implicit request: RequestHeader, messages: Messages) {
+    val txtAndHtml = (Some(views.txt.auth.mails.passwordChangedNotice(email)), None)
     sendEmail(Messages(PasswordResetOkSubject), email, txtAndHtml, pgp)
   }
 
   private def sendEmail(subject: String, recipient: String, body: (Option[Txt], Option[Html]), pgp: Option[String] = None) {
-    import com.typesafe.plugin._
     import scala.concurrent.duration._
     import play.api.libs.concurrent.Execution.Implicits._
 
@@ -154,7 +152,6 @@ object Mailer {
 
   // XXX: currently not used
   def sendEmailWithFile(subject: String, recipient: String, body: String, attachment: EmailAttachment) {
-    import com.typesafe.plugin._
     import scala.concurrent.duration._
     import play.api.libs.concurrent.Execution.Implicits._
 

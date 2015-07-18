@@ -1,8 +1,8 @@
-@(loggedIn: Boolean)(implicit request: RequestHeader, lang: Lang)
+@(loggedIn: Boolean)(implicit request: RequestHeader, messages: Messages)
 @import securesocial.core.UsernamePasswordProvider
 @import helper._
 @import securesocial.core.UsernamePasswordProvider
-@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(lang)) }
+@implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(messages)) }
 
 @scripts = {
     <script src="@routes.Assets.at("js/content_index.js")"></script>

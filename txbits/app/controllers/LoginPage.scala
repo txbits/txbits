@@ -16,18 +16,22 @@
  */
 package controllers
 
+import javax.inject.Inject
+
 import models.{ LogEvent, LogType }
 import play.Logger
 import play.api.Play
 import play.api.Play.current
+import play.api.i18n.I18nSupport
 import play.api.mvc.{ Action, Controller }
+import play.api.i18n.MessagesApi
 import securesocial.core._
 import service.txbitsUserService
 
 /**
  * The Login page controller
  */
-object LoginPage extends Controller {
+class LoginPage @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
   /**
    * The property that specifies the page the user is redirected to after logging out.
    */
@@ -47,16 +51,16 @@ object LoginPage extends Controller {
       Redirect(to)
     } else {
       if (SecureSocial.enableRefererAsOriginalUrl) {
-        SecureSocial.withRefererAsOriginalUrl(Ok(SecureSocialTemplates.getLoginPage(request, UsernamePasswordProvider.loginForm)))
+        SecureSocial.withRefererAsOriginalUrl(Ok(views.html.auth.login(UsernamePasswordProvider.loginForm)))
       } else {
-        Ok(SecureSocialTemplates.getLoginPage(request, UsernamePasswordProvider.loginForm))
+        Ok(views.html.auth.login(UsernamePasswordProvider.loginForm))
 
       }
     }
   }
 
   def tfaTOTP = Action { implicit request =>
-    Ok(SecureSocialTemplates.getTFATOTPPage(request, ProviderController.tfaForm))
+    Ok(views.html.auth.TFAGoogle(ProviderController.tfaForm))
   }
 
   /**

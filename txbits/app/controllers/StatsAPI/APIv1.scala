@@ -16,15 +16,20 @@
 
 package controllers.StatsAPI
 
+import javax.inject.Inject
+
 import globals._
+import play.api.i18n.I18nSupport
 import play.api.libs.json._
-import play.api.mvc.{ Action, Controller, WebSocket }
+import play.api.libs.json.Reads._
+import play.api.libs.json.Writes._
+import play.api.mvc.{ Action, Controller }
 import play.api.libs.iteratee.{ Iteratee, Concurrent }
+import play.api.i18n.MessagesApi
 import scala.collection.mutable
 import play.api.libs.iteratee.Concurrent.Channel
 import org.joda.time.DateTime
 import play.api.db.DB
-import service.sql.frontend
 import java.sql.Timestamp
 import models.Match
 import akka.actor.Cancellable
@@ -49,7 +54,8 @@ object TickerHistory {
 
 // DON'T DO AUTHENTICATED ACTIONS OVER WEBSOCKETS UNTIL SOMEONE CAN VERIFY THAT THIS IS A SAFE THING TO DO
 
-object APIv1 extends Controller {
+class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
+  import APIv1._
 
   val channels = mutable.Set[Channel[String]]()
   var lastMatchDatetime: DateTime = new DateTime(0)
@@ -62,45 +68,26 @@ object APIv1 extends Controller {
   def onStart() {
     val i = current.configuration.getInt(tickerInterval).getOrElse(DefaultInterval)
 
-    //DISABLED FOR NOW UNTIL WE DO WEBSOCKET PUSH TICKER STUFF
-    /*
-    cancellable = Some(
-      Akka.system.scheduler.schedule(i.seconds, i.seconds) {
-        checkMatchesAndNotifySockets()
-      }
-    )*/
   }
 
   def onStop() {
     cancellable.map(_.cancel())
   }
 
-  def checkMatchesAndNotifySockets(): Unit = DB.withConnection(masterDB) { implicit c =>
-    try {
-      val matches = frontend.getRecentMatches.on(
-        'last_match -> new Timestamp(lastMatchDatetime.getMillis)
-      )().map(row =>
-          Match(
-            row[BigDecimal]("amount"),
-            row[BigDecimal]("price"),
-            row[DateTime]("created"),
-            row[String]("base"),
-            row[String]("counter")
-          )
-        )
-      if (!matches.isEmpty) {
-        // mathc is match with ch flipped because match is a keyword
-        val mathc = matches.head
-        val json = Match.toJson(mathc)
-        channels.foreach(_ push json.toString())
-        lastMatchDatetime = new DateTime(mathc.created)
-        lastMatchForPair.put("%s/%s".format(mathc.base, mathc.counter), Json.obj("last" -> mathc.price, "base" -> mathc.base, "counter" -> mathc.counter))
-      }
-    } catch {
-      case e: PSQLException => // Ignore failures (they can be caused by a connection that just closed and hopefully next time we'll get a valid connection
-    }
+  def ticker = Action {
+    Ok(Json.toJson(tickerFromDb))
   }
 
+  def chart(base: String, counter: String) = Action {
+    if (globals.metaModel.activeMarkets.contains(base, counter)) {
+      Ok(Json.toJson(chartFromDB(base, counter)))
+    } else {
+      BadRequest(Json.obj("message" -> "Invalid pair."))
+    }
+  }
+}
+
+object APIv1 {
   def tickerFromDb = DB.withConnection(masterDB) { implicit c =>
     globals.metaModel.validPairs.flatMap {
       case (base, counter, active, minAmount) =>
@@ -124,55 +111,23 @@ object APIv1 extends Controller {
     }
   }
 
-  def ticker = Action {
-    Ok(Json.toJson(tickerFromDb))
-  }
-
-  //TODO: display a ticker instead of the last trade
-  // It looks like any website can connect as the currently logged in user over a websocket
-  def websocketTicker = WebSocket.using[String] { request =>
-    val (out, channel) = Concurrent.broadcast[String]
-
-    channels += channel
-
-    //log the message to stdout and send response back to client
-    val in = Iteratee.foreach[String] {
-      msg =>
-        // reply to any request with the full list of currencies
-        channels.foreach(_ push Json.toJson(lastMatchForPair.map(m => m._2)).toString())
-    }.map { _ =>
-      channels -= channel
-    }
-    (in, out)
-  }
-
   def chartFromDB(base: String, counter: String) = DB.withConnection(masterDB) { implicit c =>
     play.api.cache.Cache.getOrElse("%s.%s.stats".format(base, counter)) {
-      frontend.chartFromDb.on(
-        'base -> base,
-        'counter -> counter
-      )().filter(row => row[Option[Date]]("start_of_period").isDefined).map(row => {
-          // We want a json array because that's what the graphing api understands
-          // Format: Date,Open,High,Low,Close,Volume
+      SQL""" select * from chart_from_db($base, $counter)"""().filter(row =>
+        row[Option[Date]]("start_of_period").isDefined).map(row => {
+        // We want a json array because that's what the graphing api understands
+        // Format: Date,Open,High,Low,Close,Volume
 
-          Seq(
-            JsNumber(row[Option[Date]]("start_of_period").get.getTime),
-            JsNumber(row[Option[BigDecimal]]("open").get),
-            JsNumber(row[Option[BigDecimal]]("high").get),
-            JsNumber(row[Option[BigDecimal]]("low").get),
-            JsNumber(row[Option[BigDecimal]]("close").get),
-            JsNumber(row[Option[BigDecimal]]("volume").get)
-          )
+        Seq(
+          JsNumber(row[Option[Date]]("start_of_period").get.getTime),
+          JsNumber(row[Option[BigDecimal]]("open").get),
+          JsNumber(row[Option[BigDecimal]]("high").get),
+          JsNumber(row[Option[BigDecimal]]("low").get),
+          JsNumber(row[Option[BigDecimal]]("close").get),
+          JsNumber(row[Option[BigDecimal]]("volume").get)
+        )
 
-        }).toList
-    }
-  }
-
-  def chart(base: String, counter: String) = Action {
-    if (globals.metaModel.activeMarkets.contains(base, counter)) {
-      Ok(Json.toJson(chartFromDB(base, counter)))
-    } else {
-      BadRequest(Json.obj("message" -> "Invalid pair."))
+      }).toList
     }
   }
 }

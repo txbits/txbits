@@ -16,12 +16,18 @@
 
 package controllers.API
 
+import javax.inject.Inject
+
 import play.api._
+import play.api.i18n.I18nSupport
 import play.api.mvc._
 import play.api.libs.json._
+import play.api.libs.json.Reads._
+import play.api.libs.json.Writes._
 import org.joda.time.DateTime
+import play.api.i18n.MessagesApi
 
-object APIv1 extends Controller {
+class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
   def balance = Action(parse.json) { implicit request =>
     val body = request.body
@@ -139,9 +145,9 @@ object APIv1 extends Controller {
     val body = request.body
     (for (
       apiKey <- (body \ "api_key").validate[String];
-      before <- (body \ "before").validate[Option[DateTime]];
-      limit <- (body \ "limit").validate[Option[Int]];
-      lastId <- (body \ "last_id").validate[Option[Long]]
+      before = (body \ "before").asOpt[DateTime];
+      limit = (body \ "limit").asOpt[Int];
+      lastId = (body \ "last_id").asOpt[Long]
     ) yield {
       Ok(Json.toJson(globals.userModel.tradeHistory(None, Some(apiKey), before, limit, lastId)))
     }).getOrElse(

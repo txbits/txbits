@@ -26,8 +26,6 @@ import controllers.IAPI.CryptoAddress
 @RunWith(classOf[JUnitRunner])
 class StatsSpec extends Specification with Mockito {
 
-  val fee = globals.metaModel.tradeFees
-
   "Stats API" should {
 
     "update stats for the right pair after a bid matches" in new WithCleanTestDbApplication {

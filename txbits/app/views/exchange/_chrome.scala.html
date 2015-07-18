@@ -1,4 +1,4 @@
-@(title: String, icon: String= "", scripts: Html = Html(""), styles: Html = Html(""))(content: Html)(implicit request: RequestHeader, lang: Lang)
+@(title: String, icon: String= "", scripts: Html = Html(""), styles: Html = Html(""))(content: Html)(implicit request: RequestHeader, messages: Messages)
 @import securesocial.core.UsernamePasswordProvider
 
 @navItem(url: String, icon: String, title:String) = {

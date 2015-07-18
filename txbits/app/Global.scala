@@ -19,10 +19,9 @@ import controllers.IAPI.CryptoAddress
 import java.net.{ PasswordAuthentication, URL }
 import java.net.{ PasswordAuthentication, Authenticator, URL }
 import play.api.db.DB
+import play.api.i18n.{ MessagesApi, I18nSupport }
 import play.api.mvc.Result
 import play.api.Play.current
-import play.filters.csrf.CSRFFilter
-import play.filters.headers.SecurityHeadersFilter
 import scala.concurrent.duration._
 import models._
 import play.api._
@@ -32,10 +31,10 @@ import play.api.libs.json.Json
 import play.libs.Akka
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import service.sql.misc
 import service.txbitsUserService
 import usertrust.{ UserTrustModel, UserTrustService }
 import wallet.{ WalletModel, Wallet }
+import anorm._
 
 package object globals {
   val masterDB = "default"
@@ -44,7 +43,74 @@ package object globals {
 
   if (Play.current.configuration.getBoolean("meta.devdb").getOrElse(false)) {
     DB.withConnection(globals.masterDB)({ implicit c =>
-      misc.devdb.execute()
+      SQL"""
+      begin;
+      delete from deposits_crypto;
+      delete from deposits_other;
+      delete from deposits;
+      delete from users_passwords;
+      delete from users_api_keys;
+      delete from users_tfa_secrets;
+      delete from users_backup_otps;
+      delete from users_addresses;
+      delete from dw_fees;
+      delete from trade_fees;
+      delete from totp_tokens_blacklist;
+      delete from withdrawals_other;
+      delete from withdrawals_crypto;
+      delete from withdrawals_crypto_tx_mutated;
+      delete from withdrawals_crypto_tx_cold_storage;
+      delete from withdrawals_crypto_tx;
+      delete from withdrawals;
+      delete from currencies_crypto;
+      delete from wallets_crypto;
+      delete from balances;
+      delete from matches;
+      delete from stats_30_min;
+      delete from orders;
+      delete from markets;
+      delete from withdrawal_limits;
+      delete from currencies;
+      delete from event_log;
+      delete from users;
+
+      select currency_insert('BTC',10);
+      select currency_insert('LTC',20);
+      select currency_insert('USD',30);
+      select currency_insert('CAD',40);
+
+      insert into markets(base,counter, limit_min, position) values ('BTC','USD',0.01,10);
+      insert into markets(base,counter, limit_min, position) values ('LTC','USD',0.1,20);
+      insert into markets(base,counter, limit_min, position) values ('LTC','BTC',0.1,30);
+      insert into markets(base,counter, limit_min, position) values ('USD','CAD',1.00,40);
+
+      insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('BTC', 'blockchain', 0.000, 0.000, 0.001, 0.000);
+      insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('LTC', 'blockchain', 0.000, 0.000, 0.010, 0.000);
+      insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('USD', 'wire', 0.000, 0.000, 0.000, 0.000);
+      insert into dw_fees(currency, method, deposit_constant, deposit_linear, withdraw_constant, withdraw_linear) values ('CAD', 'wire', 0.000, 0.000, 0.000, 0.000);
+
+      insert into trade_fees(linear, one_way) values (0.005, true);
+
+      insert into withdrawal_limits(currency, limit_min, limit_max) values ('BTC', 0.010, 10);
+      insert into withdrawal_limits(currency, limit_min, limit_max) values ('LTC', 0.100, 100);
+      insert into withdrawal_limits(currency, limit_min, limit_max) values ('USD', 1, 10000);
+      insert into withdrawal_limits(currency, limit_min, limit_max) values ('CAD', 1, 10000);
+
+      insert into currencies_crypto(currency) values('BTC');
+      insert into currencies_crypto(currency) values('LTC');
+
+      insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max) values('LTC', 42, 0, 0, 1000, 10000);
+      insert into wallets_crypto(currency, last_block_read, balance_min, balance_warn, balance_target, balance_max) values('BTC', 42, 0, 0, 100, 1000);
+
+      insert into users(id, email) values (0, '');
+      insert into balances (user_id, currency) select 0, currency from currencies;
+
+      select create_user('me@viktorstanchev.com', 'password', true, null);
+      select create_user('a@a.com', 'qwerty123', false, null);
+
+      update balances set balance = 1000 where user_id in (select id from users where email in ('me@viktorstanchev.com', 'a@a.com')) and currency in ('USD', 'CAD');
+      commit;
+      """.execute()
     })
   }
 
@@ -124,7 +190,7 @@ package object globals {
 
 }
 
-object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with GlobalSettings {
+class Global(val messagesApi: MessagesApi) extends GlobalSettings with I18nSupport {
 
   override def onError(request: RequestHeader, ex: Throwable): Future[Result] = {
     implicit val r = request
@@ -132,6 +198,7 @@ object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with Gl
       case "application/json" =>
         Future.successful(InternalServerError(Json.toJson(Map("error" -> ("Internal Error: " + ex.getMessage)))))
       case _ =>
+
         Future.successful(InternalServerError(views.html.meta.error(ex)))
     }.getOrElse(Future.successful(InternalServerError(views.html.meta.error(ex))))
   }
@@ -164,13 +231,10 @@ object Global extends WithFilters(SecurityHeadersFilter(), CSRFFilter()) with Gl
       System.exit(0)
     }
     txbitsUserService.onStart()
-    controllers.StatsAPI.APIv1.onStart()
   }
 
   override def onStop(app: Application) {
     Logger.info("Application shutdown...")
     txbitsUserService.onStop()
-    controllers.StatsAPI.APIv1.onStop()
   }
-
 }
