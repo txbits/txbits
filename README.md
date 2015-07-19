@@ -1,5 +1,7 @@
 # TxBits
 
+[![Build Status](https://travis-ci.org/txbits/txbits.svg?branch=master)](https://travis-ci.org/txbits/txbits)
+
 An open source Bitcoin and crypto currency exchange
 
 https://www.txbits.org
