@@ -52,7 +52,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
   private var confirmedDeposits: mutable.Set[Deposit] = _
   // Last batch withdrawal created, initialized from DB
   private var sentWithdrawalTx: Option[(Long, String)] = _
-  // Last withdrawal if it could not be sent because the wallet had insufficient funds
+  // Last withdrawal if it could not be sent
   private var stalledWithdrawalTx: Option[(Long, BigDecimal, Map[String, BigDecimal])] = _
 
   private def initMemberVars(): Unit = {
@@ -70,9 +70,24 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
     refillRequested = false
     pendingDeposits = mutable.Map(walletModel.getPendingDeposits(currency, nodeId): _*)
     confirmedDeposits = mutable.Set.empty
-    // If a withdrawal was created but not marked as sent, it will not be sent again
     sentWithdrawalTx = walletModel.getUnconfirmedWithdrawalTx(currency, nodeId)
-    stalledWithdrawalTx = None
+    stalledWithdrawalTx = sentWithdrawalTx match {
+      // If a withdrawal was created but not marked as sent
+      case Some((id, "")) =>
+        val withdrawalId = id
+        // Set sentWithdrawalTx to the last confirmed withdrawal for verification
+        sentWithdrawalTx = walletModel.getLastConfirmedWithdrawalTx(currency, nodeId)
+        val withdrawals = walletModel.getWithdrawalTxData(withdrawalId)
+        val withdrawalsTotal = withdrawals.view.map(_._2).sum
+        Some(withdrawalId, withdrawalsTotal, walletModel.getColdStorageTransfer(withdrawalId) match {
+          case Some((address, value)) =>
+            withdrawals + (address -> value)
+          case _ =>
+            withdrawals
+        })
+      case _ =>
+        None
+    }
   }
 
   // Check for new deposits every average block time
@@ -117,6 +132,11 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       var withdrawalTxHash: String = ""
       var withdrawalTxFee: BigDecimal = 0
       var withdrawalTimeReceived: Int = lastWithdrawalTimeReceived
+      val recoverWithdrawalTxData: Option[mutable.Map[String, BigDecimal]] = if (firstUpdate && stalledWithdrawalTx.isDefined) {
+        Some(mutable.Map.empty)
+      } else {
+        None
+      }
 
       while (transactionIterator.hasNext) {
         val transaction = transactionIterator.next()
@@ -137,6 +157,12 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
               // Withdrawal fees are negative so take the absolute value
               withdrawalTxFee = transaction.get("fee").decimalValue().abs()
               withdrawalTimeReceived = timeReceived
+              if (recoverWithdrawalTxData.isDefined) {
+                recoverWithdrawalTxData.get.clear()
+              }
+            }
+            if (recoverWithdrawalTxData.isDefined && txid == withdrawalTxHash) {
+              recoverWithdrawalTxData.get.put(address, amount)
             }
           }
         } else if (category == "receive" && confirmations > 0) {
@@ -168,6 +194,21 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       // Remove confirmed deposits that are no longer returned
       confirmedDeposits = confirmedDeposits & sinceBlockConfirmedDeposits
 
+      if (recoverWithdrawalTxData.isDefined) {
+        sentWithdrawalTx match {
+          case Some((id, txHash)) if txHash == withdrawalTxHash =>
+            sentWithdrawalTx = None
+          case _ =>
+            stalledWithdrawalTx match {
+              case Some((withdrawalId, withdrawalsTotal, withdrawals)) if withdrawalTxHash != "" && withdrawals == recoverWithdrawalTxData.get =>
+                walletModel.sentWithdrawalTx(withdrawalId, withdrawalTxHash, withdrawalsTotal)
+                sentWithdrawalTx = Some(withdrawalId, withdrawalTxHash)
+              case _ =>
+                sentWithdrawalTx = None
+            }
+            stalledWithdrawalTx = None
+        }
+      }
       // If last batch withdrawal is confirmed, send the next batch
       if (withdrawalConfirmations >= minWithdrawalConfirmations) {
         sentWithdrawalTx match {
@@ -192,7 +233,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
             case _ =>
               walletModel.createWithdrawalTx(currency, nodeId) match {
                 case Some(withdrawalId) =>
-                  val withdrawals = walletModel.getWithdrawalTx(withdrawalId)
+                  val withdrawals = walletModel.getWithdrawalTxData(withdrawalId)
                   val withdrawalsTotal = withdrawals.view.map(_._2).sum
                   val balanceLowerBound = balance - withdrawalsTotal
                   if (balanceLowerBound < 0) {

@@ -29,9 +29,9 @@ import play.api.test._
 
 import org.specs2.mock._
 import wallet.{ WalletModel, Wallet }
-import com.googlecode.jsonrpc4j.JsonRpcHttpClient
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import _root_.com.googlecode.jsonrpc4j.JsonRpcHttpClient
+import _root_.com.fasterxml.jackson.databind.node.ObjectNode
+import _root_.com.fasterxml.jackson.databind.ObjectMapper
 import wallet.Wallet.CryptoCurrency.CryptoCurrency
 import akka.testkit.TestActorRef
 import play.libs.Akka
@@ -445,7 +445,7 @@ class WalletSpec extends Specification with Mockito {
         """).asInstanceOf[ObjectNode]
       wallet.update()
 
-      val withdrawalTx = globals.walletModel.getWithdrawalTx(resultId)
+      val withdrawalTx = globals.walletModel.getWithdrawalTxData(resultId)
       withdrawalTx should be equalTo Map("masdfasdfasdf" -> BigDecimal(0.98))
 
       val result = globals.engineModel.balance(Some(uid), None)
@@ -540,7 +540,7 @@ class WalletSpec extends Specification with Mockito {
         """).asInstanceOf[ObjectNode]
       wallet.update()
 
-      val withdrawalTx = globals.walletModel.getWithdrawalTx(resultId)
+      val withdrawalTx = globals.walletModel.getWithdrawalTxData(resultId)
       withdrawalTx should be equalTo Map("masdfasdfasdf" -> BigDecimal(0.98))
 
       val result = globals.engineModel.balance(Some(uid), None)

@@ -301,6 +301,8 @@ create table withdrawals_crypto_tx (
     created timestamp default current_timestamp not null,
     sent timestamp,
     confirmed timestamp,
+    check((tx_hash is null and sent is null) or (tx_hash is not null and sent is not null)),
+    check(sent is not null or confirmed is null),
     foreign key (currency) references currencies(currency),
     foreign key (currency, node_id) references wallets_crypto(currency, node_id)
 );
