@@ -136,7 +136,7 @@ class WalletModel(val db: String = "default") {
   }
 
   def getLastConfirmedWithdrawalTx(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQL""" select * from get_last_confirmed_withdrawal_tx(${currency.toString}, $nodeId) """().map(row => row[Option[Long]]("id") -> row[Option[String]]("tx_hash")).head match {
+    SQL""" select * from get_last_confirmed_withdrawal_tx(${currency.toString}, $nodeId) """().map(row => row[Option[Long]]("confirmed_id") -> row[Option[String]]("confirmed_tx_hash")).head match {
       case (Some(id: Long), Some(txHash: String)) => Some(id, txHash)
       case _ => None
     }
@@ -163,7 +163,7 @@ class WalletModel(val db: String = "default") {
   }
 
   def getColdStorageTransfer(txId: Long) = DB.withConnection(db) { implicit c =>
-    SQL""" select get_cold_storage_transfer($txId) """().map(row => row[Option[String]]("address") -> row[Option[BigDecimal]]("value")).head match {
+    SQL""" select * from get_cold_storage_transfer($txId) """().map(row => row[Option[String]]("address") -> row[Option[BigDecimal]]("value")).head match {
       case (Some(address: String), Some(value: BigDecimal)) => Some(address, value)
       case _ => None
     }

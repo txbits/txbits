@@ -546,23 +546,9 @@ class WalletSpec extends Specification with Mockito {
       val result = globals.engineModel.balance(Some(uid), None)
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
 
-      import globals._
-      import play.api.db.DB
-      import anorm._
+      val (txId, mutatedTxHash) = globals.walletModel.getLastConfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
 
-      val (txFee, originalTxHash, mutatedTxHash) = DB.withConnection(walletModel.db) { implicit c =>
-        SQL(
-          """
-            |select tx_fee, tx_hash, tx_hash_mutated
-            |from withdrawals_crypto_tx wct inner join withdrawals_crypto_tx_mutated wctm
-            |on wctm.id = wct.id where wct.id = {id} and
-            |sent is not NULL and confirmed is not NULL
-          """.stripMargin).on('id -> resultId)().map(row =>
-            (row[BigDecimal]("tx_fee"), row[String]("tx_hash"), row[String]("tx_hash_mutated"))).head
-      }
-
-      txFee shouldEqual BigDecimal(0.001)
-      originalTxHash shouldEqual "sha256txhash"
+      txId shouldEqual resultId
       mutatedTxHash shouldEqual "mutatedtxhash"
     }
 
@@ -650,6 +636,379 @@ class WalletSpec extends Specification with Mockito {
       val result = globals.engineModel.balance(Some(uid), None)
       // balance should equal the user's 12.34 + 1.23 deposit, the duplicate 1.23 deposit is intentionally not credited
       result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap.updated("LTC", (BigDecimal((12.34 - feeAmt - 12.34 * feePct) + (1.23 - feeAmt - 1.23 * feePct)), BigDecimal(0)))
+    }
+
+    "send a withdrawal only if the wallet has enough funds" in new WithCleanTestDbApplication {
+      val uid = globals.userModel.create("test@test.test", "", false).get
+
+      globals.userModel.addFakeMoney(uid, "LTC", 11)
+
+      // we are testing an actor
+      implicit val actorSystem = Akka.system()
+
+      val feeAmt = 0.01
+      val feePct = 0
+      globals.engineModel.setFees("LTC", "blockchain", 0, 0, feeAmt, feePct)
+
+      import globals._
+      import play.api.db.DB
+      import anorm._
+
+      DB.withConnection(walletModel.db) { implicit c =>
+        SQL"""update wallets_crypto set balance = 10 where currency = 'LTC' and node_id = 0""".execute()
+      }
+
+      globals.engineModel.withdraw(uid, "LTC", 11, "masdfasdfasdf", None)
+
+      // assemble a mock rpc to make calls into
+      val rpc = mock[JsonRpcHttpClient]
+
+      // first we fake the call to get the block number
+      var blockCount = 99999999
+      rpc.invoke("getblockcount", null, classOf[Int]) answers (_ => blockCount)
+      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => "sha256txhash")
+
+      // we mock the call to get the transactions
+      val m = new ObjectMapper()
+      var list = m.readTree(
+        """
+          {
+            "transactions": [
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+
+      rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) answers (_ => list)
+
+      // this is our system under test with mocked out engine and rpc parameters
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
+      val wallet = walletActor.underlyingActor
+
+      wallet.update()
+      blockCount += 100
+
+      // pretend like the user confirmed all withdrawals requested
+      val reqs = globals.userTrustModel.getPendingWithdrawalRequests
+      reqs.length shouldEqual 1
+      for (req <- reqs) {
+        globals.userTrustModel.saveWithdrawalToken(req._1.id, "token", DateTime.now.plusMinutes(9001))
+        globals.engineModel.confirmWithdrawal(req._1.id, "token") shouldEqual true
+      }
+
+      wallet.update()
+
+      val (unsentId, unsentHash) = globals.walletModel.getUnconfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      unsentHash shouldEqual ""
+
+      // refill the hot wallet and the withdrawal should send
+      blockCount += 100
+      list = m.readTree(
+        """
+          {
+            "transactions": [
+              {
+                "account": "",
+                "address": "mrefilladdress",
+                "category": "receive",
+                "amount": 12.34,
+                "confirmations": 100,
+                "txid": "refilltxhash",
+                "time": 1300000000,
+                "timereceived": 1300000000
+              }
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+      wallet.update()
+
+      val (resultId, resultHash) = globals.walletModel.getUnconfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      resultId shouldEqual unsentId
+      resultHash shouldEqual "sha256txhash"
+
+      // Now confirm the withdrawal
+      blockCount += 100
+      list = m.readTree(
+        """
+          {
+            "transactions": [
+              {
+                "account": "",
+                "address": "masdfasdfasdf",
+                "category": "send",
+                "amount": -10.99,
+                "fee" : -0.00100000,
+                "confirmations": 100,
+                "txid": "sha256txhash",
+                "time": 1400000000,
+                "timereceived": 1400000000
+              }
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+      wallet.update()
+
+      val withdrawalTx = globals.walletModel.getWithdrawalTxData(resultId)
+      withdrawalTx should be equalTo Map("masdfasdfasdf" -> BigDecimal(10.99))
+
+      val result = globals.engineModel.balance(Some(uid), None)
+      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
+    }
+
+    "resend a withdrawal that failed to send" in new WithCleanTestDbApplication {
+      val uid = globals.userModel.create("test@test.test", "", false).get
+
+      globals.userModel.addFakeMoney(uid, "LTC", 2)
+
+      // we are testing an actor
+      implicit val actorSystem = Akka.system()
+
+      val feeAmt = 0.01
+      val feePct = 0
+      globals.engineModel.setFees("LTC", "blockchain", 0, 0, feeAmt, feePct)
+
+      globals.engineModel.withdraw(uid, "LTC", 1, "mfirstaddress", None)
+
+      // assemble a mock rpc to make calls into
+      val rpc = mock[JsonRpcHttpClient]
+
+      // first we fake the call to get the block number
+      var blockCount = 99999999
+      rpc.invoke("getblockcount", null, classOf[Int]) answers (_ => blockCount)
+      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => "firsttxhash")
+
+      // we mock the call to get the transactions
+      val m = new ObjectMapper()
+      var list = m.readTree(
+        """
+          {
+            "transactions": [
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+
+      rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) answers (_ => list)
+
+      // this is our system under test with mocked out engine and rpc parameters
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
+      val wallet = walletActor.underlyingActor
+
+      wallet.update()
+      blockCount += 100
+
+      // pretend like the user confirmed all withdrawals requested
+      val reqs = globals.userTrustModel.getPendingWithdrawalRequests
+      reqs.length shouldEqual 1
+      for (req <- reqs) {
+        globals.userTrustModel.saveWithdrawalToken(req._1.id, "token", DateTime.now.plusMinutes(9001))
+        globals.engineModel.confirmWithdrawal(req._1.id, "token") shouldEqual true
+      }
+
+      wallet.update()
+
+      val (firstId, firstHash) = globals.walletModel.getUnconfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      firstHash shouldEqual "firsttxhash"
+
+      // Now confirm the withdrawal
+      blockCount += 100
+      list = m.readTree(
+        """
+          {
+            "transactions": [
+              {
+                "account": "",
+                "address": "mfirstaddress",
+                "category": "send",
+                "amount": -0.99,
+                "fee" : -0.00100000,
+                "confirmations": 100,
+                "txid": "firsttxhash",
+                "time": 1300000000,
+                "timereceived": 1300000000
+              }
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+
+      globals.engineModel.withdraw(uid, "LTC", 1, "masdfasdfasdf", None)
+
+      // pretend like the user confirmed all withdrawals requested
+      val reqs2 = globals.userTrustModel.getPendingWithdrawalRequests
+      reqs2.length shouldEqual 1
+      for (req <- reqs2) {
+        globals.userTrustModel.saveWithdrawalToken(req._1.id, "token", DateTime.now.plusMinutes(9001))
+        globals.engineModel.confirmWithdrawal(req._1.id, "token") shouldEqual true
+      }
+
+      // simulate losing rpc connection during a send
+      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => throw new Exception())
+      wallet.update()
+
+      val firstWithdrawalTx = globals.walletModel.getWithdrawalTxData(firstId)
+      firstWithdrawalTx should be equalTo Map("mfirstaddress" -> BigDecimal(0.99))
+
+      // first withdrawal should have been confirmed
+      val (firstConfirmedId, firstConfirmedHash) = globals.walletModel.getLastConfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      firstConfirmedId shouldEqual firstId
+      firstConfirmedHash shouldEqual "firsttxhash"
+
+      val (unsentId, unsentHash) = globals.walletModel.getUnconfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      unsentHash shouldEqual ""
+
+      // restore rpc connection
+      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => "sha256txhash")
+      wallet.update()
+
+      val (resultId, resultHash) = globals.walletModel.getUnconfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      resultId shouldEqual unsentId
+      resultHash shouldEqual "sha256txhash"
+
+      // Now confirm the withdrawal
+      blockCount += 100
+      list = m.readTree(
+        """
+          {
+            "transactions": [
+              {
+                "account": "",
+                "address": "masdfasdfasdf",
+                "category": "send",
+                "amount": -0.99,
+                "fee" : -0.00100000,
+                "confirmations": 100,
+                "txid": "sha256txhash",
+                "time": 1400000000,
+                "timereceived": 1400000000
+              }
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+      wallet.update()
+
+      val withdrawalTx = globals.walletModel.getWithdrawalTxData(resultId)
+      withdrawalTx should be equalTo Map("masdfasdfasdf" -> BigDecimal(0.99))
+
+      val result = globals.engineModel.balance(Some(uid), None)
+      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
+
+      val (confirmedId, confirmedHash) = globals.walletModel.getLastConfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      confirmedId shouldEqual unsentId
+      confirmedHash shouldEqual "sha256txhash"
+    }
+
+    "confirm a withdrawal that may or may not have been sent" in new WithCleanTestDbApplication {
+      val uid = globals.userModel.create("test@test.test", "", false).get
+
+      globals.userModel.addFakeMoney(uid, "LTC", 11)
+
+      // we are testing an actor
+      implicit val actorSystem = Akka.system()
+
+      val feeAmt = 0.01
+      val feePct = 0
+      globals.engineModel.setFees("LTC", "blockchain", 0, 0, feeAmt, feePct)
+
+      globals.engineModel.withdraw(uid, "LTC", 11, "masdfasdfasdf", None)
+
+      // assemble a mock rpc to make calls into
+      val rpc = mock[JsonRpcHttpClient]
+
+      // first we fake the call to get the block number
+      var blockCount = 99999999
+      rpc.invoke("getblockcount", null, classOf[Int]) answers (_ => blockCount)
+      // simulate losing rpc connection during a send
+      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => throw new Exception())
+
+      // we mock the call to get the transactions
+      val m = new ObjectMapper()
+      var list = m.readTree(
+        """
+          {
+            "transactions": [
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+
+      rpc.invoke(same("listsinceblock"), any[Array[String]], same(classOf[ObjectNode])) answers (_ => list)
+
+      // this is our system under test with mocked out engine and rpc parameters
+      val walletActor = TestActorRef(new Wallet(rpc, Wallet.CryptoCurrency.LTC, 0, walletParams, globals.walletModel, test = true))
+      val wallet = walletActor.underlyingActor
+
+      wallet.update()
+      blockCount += 100
+
+      // pretend like the user confirmed all withdrawals requested
+      val reqs = globals.userTrustModel.getPendingWithdrawalRequests
+      reqs.length shouldEqual 1
+      for (req <- reqs) {
+        globals.userTrustModel.saveWithdrawalToken(req._1.id, "token", DateTime.now.plusMinutes(9001))
+        globals.engineModel.confirmWithdrawal(req._1.id, "token") shouldEqual true
+      }
+
+      wallet.update()
+
+      val (unsentId, unsentHash) = globals.walletModel.getUnconfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      unsentHash shouldEqual ""
+
+      // the withdrawal should have been sent
+      blockCount += 100
+      list = m.readTree(
+        """
+          {
+            "transactions": [
+              {
+                "account": "",
+                "address": "masdfasdfasdf",
+                "category": "send",
+                "amount": -10.99,
+                "fee" : -0.00100000,
+                "confirmations": 0,
+                "txid": "sha256txhash",
+                "time": 1400000000,
+                "timereceived": 1400000000
+              }
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+      // restore rpc connection
+      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => "sha256txhash")
+      wallet.update()
+
+      val (resultId, resultHash) = globals.walletModel.getUnconfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      resultId shouldEqual unsentId
+      resultHash shouldEqual "sha256txhash"
+
+      // Now confirm the withdrawal
+      blockCount += 100
+      list = m.readTree(
+        """
+          {
+            "transactions": [
+              {
+                "account": "",
+                "address": "masdfasdfasdf",
+                "category": "send",
+                "amount": -10.99,
+                "fee" : -0.00100000,
+                "confirmations": 100,
+                "txid": "sha256txhash",
+                "time": 1400000000,
+                "timereceived": 1400000000
+              }
+            ]
+          }
+        """).asInstanceOf[ObjectNode]
+      wallet.update()
+
+      val withdrawalTx = globals.walletModel.getWithdrawalTxData(resultId)
+      withdrawalTx should be equalTo Map("masdfasdfasdf" -> BigDecimal(10.99))
+
+      val result = globals.engineModel.balance(Some(uid), None)
+      result should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
+
+      val (confirmedId, confirmedHash) = globals.walletModel.getLastConfirmedWithdrawalTx(Wallet.CryptoCurrency.LTC, 0).getOrElse((0L, ""))
+      confirmedId shouldEqual unsentId
+      confirmedHash shouldEqual "sha256txhash"
     }
   }
 }

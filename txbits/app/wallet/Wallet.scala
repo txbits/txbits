@@ -41,6 +41,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
 
   private var lastBlockRead: Int = _
   private var lastWithdrawalTimeReceived: Int = _
+  private var lastWithdrawalBlock: Int = _
   private var firstUpdate: Boolean = _
   private var changeAddressCount: Int = _
   private var balance: BigDecimal = _
@@ -64,6 +65,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
         lastBlockRead = minConfirmations
         lastWithdrawalTimeReceived = withdrawalTimeReceived
     }
+    lastWithdrawalBlock = lastBlockRead
     firstUpdate = true
     changeAddressCount = params.addressPool / 2
     balance = walletModel.getBalance(currency, nodeId)
@@ -149,7 +151,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
         Logger.debug("[wallet] [%s, %s] processing transaction %s of type %s for %s with %s confirmations for address %s".format(currency, nodeId, txid, category, amount, confirmations, address))
 
         if (category == "send") {
-          if (sentWithdrawalTx.isDefined) {
+          if (sentWithdrawalTx.isDefined || recoverWithdrawalTxData.isDefined) {
             val timeReceived: Int = transaction.get("timereceived").asInt()
             if (confirmations < withdrawalConfirmations && confirmations >= 0 && timeReceived > withdrawalTimeReceived) {
               withdrawalConfirmations = confirmations
@@ -162,7 +164,8 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
               }
             }
             if (recoverWithdrawalTxData.isDefined && txid == withdrawalTxHash) {
-              recoverWithdrawalTxData.get.put(address, amount)
+              // Withdrawal amounts are negative so take the absolute value
+              recoverWithdrawalTxData.get.put(address, amount.abs)
             }
           }
         } else if (category == "receive" && confirmations > 0) {
@@ -194,23 +197,29 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       // Remove confirmed deposits that are no longer returned
       confirmedDeposits = confirmedDeposits & sinceBlockConfirmedDeposits
 
+      // Recover if there is an unconfirmed withdrawal that may or may not have been sent
       if (recoverWithdrawalTxData.isDefined) {
         sentWithdrawalTx match {
-          case Some((id, txHash)) if txHash == withdrawalTxHash =>
+          case Some((id, txHash)) if txHash == withdrawalTxHash && withdrawalTimeReceived >= lastWithdrawalTimeReceived =>
+            // The most recent withdrawal was previously confirmed so the stalled withdrawal was never sent
             sentWithdrawalTx = None
           case _ =>
             stalledWithdrawalTx match {
               case Some((withdrawalId, withdrawalsTotal, withdrawals)) if withdrawalTxHash != "" && withdrawals == recoverWithdrawalTxData.get =>
+                // The most recent withdrawal was the last unconfirmed withdrawal so update its status as sent
                 walletModel.sentWithdrawalTx(withdrawalId, withdrawalTxHash, withdrawalsTotal)
                 sentWithdrawalTx = Some(withdrawalId, withdrawalTxHash)
               case _ =>
+                Logger.warn("[wallet] [%s, %s] Unexpected most recent withdrawal with tx hash %s".format(currency, nodeId, withdrawalTxHash))
                 sentWithdrawalTx = None
             }
+            // The most recent withdrawal was not the last to confirm so do not resend the last unconfirmed withdrawal
             stalledWithdrawalTx = None
         }
       }
       // If last batch withdrawal is confirmed, send the next batch
       if (withdrawalConfirmations >= minWithdrawalConfirmations) {
+        lastWithdrawalBlock = withdrawalConfirmations
         sentWithdrawalTx match {
           case Some((id, txHash)) if withdrawalTxHash != "" =>
             if (txHash != withdrawalTxHash)
@@ -288,7 +297,8 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       }
 
       // Subtract minConfirmations as it could be decreased when actor is restarted
-      walletModel.setLastBlockRead(currency, nodeId, blockHeight - minConfirmations, lastWithdrawalTimeReceived)
+      // Make sure we have a withdrawal to check against for crash recovery
+      walletModel.setLastBlockRead(currency, nodeId, math.min(blockHeight - minConfirmations, lastWithdrawalBlock), lastWithdrawalTimeReceived)
       lastBlockRead = blockHeight
       firstUpdate = false
     } catch {

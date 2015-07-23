@@ -185,7 +185,7 @@ begin
   where id = a_id and address = a_address and
   tx_hash = a_tx_hash and confirmed is NULL;;
 
-  if found and d.user_id <> 0 then
+  if found then
     update wallets_crypto set balance = balance + d.amount
     where currency = d.currency and node_id = a_node_id;;
 
