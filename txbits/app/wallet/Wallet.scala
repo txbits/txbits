@@ -124,6 +124,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
     }
 
     try {
+      Logger.info("[wallet] [%s, %s] Begin processing transactions up to block %s".format(currency, nodeId, blockHeight))
       // Retrieve transactions up to the minimum number of confirmations required
       val lastBlockHash = getBlockHash(lastBlockRead - minConfirmations)
       val list = listSinceBlock(lastBlockHash)
@@ -301,6 +302,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
       walletModel.setLastBlockRead(currency, nodeId, math.min(blockHeight - minConfirmations, lastWithdrawalBlock), lastWithdrawalTimeReceived)
       lastBlockRead = blockHeight
       firstUpdate = false
+      Logger.info("[wallet] [%s, %s] Finished processing transactions up to block %s".format(currency, nodeId, blockHeight))
     } catch {
       case ex: Throwable =>
         Logger.error("[wallet] [%s, %s] error processing transactions: %s".format(currency, nodeId, ex))
@@ -355,6 +357,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
   }
 
   private def getBalance = {
+    // This method is unused as balance is now tracked in the database
     rpc.invoke("getbalance", null, classOf[BigDecimal])
   }
 

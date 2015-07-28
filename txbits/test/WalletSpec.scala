@@ -73,7 +73,6 @@ class WalletSpec extends Specification with Mockito {
       // first we fake the call to get the block number
       val blockCount = 10
       rpc.invoke("getblockcount", null, classOf[Int]) returns blockCount
-      rpc.invoke("getbalance", null, classOf[BigDecimal]) returns BigDecimal(9999)
 
       // we mock the call to get the transactions
       val m = new ObjectMapper()
@@ -139,7 +138,6 @@ class WalletSpec extends Specification with Mockito {
       // first we fake the call to get the block number
       val blockCount = 99999999
       rpc.invoke("getblockcount", null, classOf[Int]) returns blockCount
-      rpc.invoke("getbalance", null, classOf[BigDecimal]) returns BigDecimal(9999)
 
       // we mock the call to get the transactions
       val m = new ObjectMapper()
@@ -193,7 +191,6 @@ class WalletSpec extends Specification with Mockito {
       // first we fake the call to get the block number
       val blockCount = 99999999
       rpc.invoke("getblockcount", null, classOf[Int]) returns blockCount
-      rpc.invoke("getbalance", null, classOf[BigDecimal]) returns BigDecimal(9999)
 
       // we mock the call to get the transactions
       val m = new ObjectMapper()
@@ -251,7 +248,6 @@ class WalletSpec extends Specification with Mockito {
       // first we fake the call to get the block number
       val blockCount = 99999999
       rpc.invoke("getblockcount", null, classOf[Int]) returns blockCount
-      rpc.invoke("getbalance", null, classOf[BigDecimal]) returns BigDecimal(9999)
 
       // we mock the call to get the transactions
       val m = new ObjectMapper()
@@ -306,7 +302,6 @@ class WalletSpec extends Specification with Mockito {
       // first we fake the call to get the block number
       var blockCount = 99999999
       rpc.invoke("getblockcount", null, classOf[Int]) answers (_ => blockCount)
-      rpc.invoke("getbalance", null, classOf[BigDecimal]) returns BigDecimal(9999)
 
       // we mock the call to get the transactions
       val m = new ObjectMapper()
@@ -388,7 +383,6 @@ class WalletSpec extends Specification with Mockito {
       // first we fake the call to get the block number
       var blockCount = 99999999
       rpc.invoke("getblockcount", null, classOf[Int]) answers (_ => blockCount)
-      rpc.invoke("getbalance", null, classOf[BigDecimal]) returns BigDecimal(9999)
       rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => "sha256txhash")
 
       // we mock the call to get the transactions
@@ -472,7 +466,6 @@ class WalletSpec extends Specification with Mockito {
       // first we fake the call to get the block number
       var blockCount = 99999999
       rpc.invoke("getblockcount", null, classOf[Int]) answers (_ => blockCount)
-      rpc.invoke("getbalance", null, classOf[BigDecimal]) returns BigDecimal(9999)
       rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => "sha256txhash")
 
       // we mock the call to get the transactions
@@ -573,7 +566,6 @@ class WalletSpec extends Specification with Mockito {
       // first we fake the call to get the block number
       val blockCount = 99999999
       rpc.invoke("getblockcount", null, classOf[Int]) returns blockCount
-      rpc.invoke("getbalance", null, classOf[BigDecimal]) returns BigDecimal(9999)
 
       // we mock the call to get the transactions
       val m = new ObjectMapper()
@@ -840,7 +832,7 @@ class WalletSpec extends Specification with Mockito {
       }
 
       // simulate losing rpc connection during a send
-      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => throw new Exception())
+      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => throw new Exception("Fake error"))
       wallet.update()
 
       val firstWithdrawalTx = globals.walletModel.getWithdrawalTxData(firstId)
@@ -916,7 +908,7 @@ class WalletSpec extends Specification with Mockito {
       var blockCount = 99999999
       rpc.invoke("getblockcount", null, classOf[Int]) answers (_ => blockCount)
       // simulate losing rpc connection during a send
-      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => throw new Exception())
+      rpc.invoke(same("sendmany"), any[Array[Object]], same(classOf[String])) answers (_ => throw new Exception("Fake error"))
 
       // we mock the call to get the transactions
       val m = new ObjectMapper()
