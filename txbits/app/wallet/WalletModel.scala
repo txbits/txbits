@@ -173,6 +173,10 @@ class WalletModel(val db: String = "default") {
     SQL""" select set_withdrawal_tx_hash_mutated($txId, $txHash) """.execute()
   }
 
+  def getWithdrawConstantFee(currency: CryptoCurrency) = DB.withConnection(db) { implicit c =>
+    SQL""" select get_withdraw_constant_fee(${currency.toString}) """().map(row => row[BigDecimal]("get_withdraw_constant_fee")).head
+  }
+
 }
 
 object WalletModel {
