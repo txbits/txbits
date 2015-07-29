@@ -20,6 +20,55 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">@Messages("exchange.account.api_reference.title")</div>
+                <div class="panel-body">
+                    <div class="tablescroller">
+                        <table class="table table-condensed responsive tablescroller-head">
+                            <thead>
+                                <tr>
+                                    <th>@Messages("exchange.account.api_reference.public")</th>
+                                    <th class="money-heading">GET</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>@Messages("exchange.account.api_reference.ticker")</td><td class="money">/iapi/1/ticker</td></tr>
+                                <tr><td>@Messages("exchange.account.api_reference.recent_trades")</td><td class="money">/iapi/1/recent_trades/<b>BASE</b>/<b>COUNTER</b></td></tr>
+                                <tr><td>@Messages("exchange.account.api_reference.order_book")</td><td class="money">/iapi/1/open_trades/<b>BASE</b>/<b>COUNTER</b></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p></p>
+                    <div class="tablescroller">
+                        <table class="table table-condensed responsive tablescroller-head">
+                            <thead>
+                                <tr>
+                                    <th>@Messages("exchange.account.api_reference.authenticated")</th>
+                                    <th class="money-heading">POST</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>@Messages("exchange.account.api_reference.buy")</td><td class="money">/api/1/bid</td></tr>
+                                <tr><td></td><td class="json-ref">{"api_key":"","base":"","counter":"","amount":"","price":""}</td></tr>
+                                <tr><td>@Messages("exchange.account.api_reference.sell")</td><td class="money">/api/1/ask</td></tr>
+                                <tr><td></td><td class="json-ref">{"api_key":"","base":"","counter":"","amount":"","price":""}</td></tr>
+                                <tr><td>@Messages("exchange.account.api_reference.cancel_order")</td><td class="money">/api/1/cancel</td></tr>
+                                <tr><td></td><td class="json-ref">{"api_key":"","order":""}</td></tr>
+                                <tr><td>@Messages("exchange.account.api_reference.list_orders")</td><td class="money">/api/1/pending_trades</td></tr>
+                                <tr><td></td><td class="json-ref">{"api_key":""}</td></tr>
+                                <tr><td>@Messages("exchange.account.api_reference.trade_history")</td><td class="money">/api/1/trade_history</td></tr>
+                                <tr><td></td><td class="json-ref">{"api_key":""<i>,"before":"","limit":"","last_id":""</i>}</td></tr>
+                                <tr><td>@Messages("exchange.account.api_reference.list_balance")</td><td class="money">/api/1/balance</td></tr>
+                                <tr><td></td><td class="json-ref">{"api_key":""}</td></tr>
+                            </tbody>
+                        </table>
+                        <p>@Messages("exchange.account.api_reference.example"): curl -H "Content-Type: application/json" -X POST -d '{"api_key":""}' https://example.com/api/1/balance</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row">

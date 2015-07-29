@@ -64,6 +64,11 @@ body {
     text-align:right;
 }
 
+.json-ref {
+    font-size:0.7em;
+    text-align:right;
+}
+
 .clickable {
     cursor: pointer;
 }
