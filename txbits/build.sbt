@@ -37,4 +37,8 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
 scalacOptions ++= Seq("-deprecation", "-feature")
 
+sources in (Compile, doc) := Seq.empty
+
+publishArtifact in (Compile, packageDoc) := false
+
 scalariformSettings
