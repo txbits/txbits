@@ -132,7 +132,7 @@ class EngineModel(val db: String = "default") {
     val res = SQL""" select * from order_new($uid, $apiKey, $base, $counter, ${amount.bigDecimal}, ${price.bigDecimal}, $isBid) """().map(row =>
       row[Option[Long]]("new_id") -> row[Option[BigDecimal]]("new_remains")
     ).head match {
-      case (Some(id: Long), Some(remains: BigDecimal)) => Some(id, remains)
+      case (Some(id: Long), Some(remains: BigDecimal)) => Some(Json.obj("order" -> id.toString, "remains" -> remains.bigDecimal.toPlainString))
       case _ => None
     }
     if (res.isDefined) {
