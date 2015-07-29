@@ -27,8 +27,10 @@ order_new(
   new_counter varchar(4),
   new_amount numeric(23,8),
   new_price numeric(23,8),
-  new_is_bid boolean)
-returns boolean as $$
+  new_is_bid boolean,
+  out new_id bigint,
+  out new_remains numeric(23,8))
+returns record as $$
 declare
     o orders%rowtype;; -- first order (chronologically)
     o2 orders%rowtype;; -- second order (chronologically)
@@ -50,7 +52,7 @@ begin
     end if;;
 
     if new_user_id is null then
-      return null;;
+      return;;
     end if;;
 
     -- increase holds
@@ -66,7 +68,7 @@ begin
 
     -- insufficient funds
     if not found then
-      return false;;
+      return;;
     end if;;
 
     -- trade fees
@@ -138,7 +140,9 @@ begin
       end loop;;
     end if;;
 
-    return true;;
+    new_id := o2.id;;
+    new_remains := o2.remains;;
+    return;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 

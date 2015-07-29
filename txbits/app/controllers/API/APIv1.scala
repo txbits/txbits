@@ -61,11 +61,11 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.askBid(None, Some(apiKey), base, counter, amount, price, isBid = false)
-              if (res) {
-                Ok(Json.obj())
-              } else {
-                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
+              globals.engineModel.askBid(None, Some(apiKey), base, counter, amount, price, isBid = false) match {
+                case Some((id, remains)) =>
+                  Ok(Json.obj("id" -> id.toString, "remains" -> remains.bigDecimal.toPlainString))
+                case _ =>
+                  BadRequest(Json.obj("message" -> "Non-sufficient funds."))
               }
             case Some((active, minAmount)) if active =>
               BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))
@@ -99,11 +99,11 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
         if (price > 0 && amount > 0) {
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
-              val res = globals.engineModel.askBid(None, Some(apiKey), base, counter, amount, price, isBid = true)
-              if (res) {
-                Ok(Json.obj())
-              } else {
-                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
+              globals.engineModel.askBid(None, Some(apiKey), base, counter, amount, price, isBid = true) match {
+                case Some((id, remains)) =>
+                  Ok(Json.obj("id" -> id.toString, "remains" -> remains.bigDecimal.toPlainString))
+                case _ =>
+                  BadRequest(Json.obj("message" -> "Non-sufficient funds."))
               }
             case Some((active, minAmount)) if active =>
               BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))

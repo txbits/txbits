@@ -86,7 +86,7 @@ class EngineModelSpec extends Specification with Mockito {
     "no money = no bid" in new WithCleanTestDbApplication {
       val uid = globals.userModel.create("test@test.test", "", false).get
 
-      globals.engineModel.askBid(Some(uid), None, "LTC", "USD", 1, 1, true) must beFalse
+      globals.engineModel.askBid(Some(uid), None, "LTC", "USD", 1, 1, true) must beEmpty
 
       val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
       orders_res should be equalTo orderBookEmpty

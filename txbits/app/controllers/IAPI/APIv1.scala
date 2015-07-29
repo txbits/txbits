@@ -91,7 +91,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
               val res = globals.engineModel.askBid(Some(request.user.id), None, base, counter, amount, price, isBid = false)
-              if (res) {
+              if (res.isDefined) {
                 Ok(Json.obj())
               } else {
                 BadRequest(Json.obj("message" -> "Non-sufficient funds."))
@@ -128,7 +128,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
               val res = globals.engineModel.askBid(Some(request.user.id), None, base, counter, amount, price, isBid = true)
-              if (res) {
+              if (res.isDefined) {
                 Ok(Json.obj())
               } else {
                 BadRequest(Json.obj("message" -> "Non-sufficient funds."))
