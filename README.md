@@ -6,7 +6,14 @@ An open source Bitcoin and crypto currency exchange
 
 https://www.txbits.org
 
-Copyright (C) 2014-2015  Viktor Stanchev & Kirk Zathey
+## Dev environment setup TL;DR
+
+1. `jdk-8`
+1. postgres 9.3+ on `localhost` with database name `txbits_testnet`, superuser `user` and password `password`
+1. `./txbits.sh run`
+1. Log in at `http://localhost:9000` as `a@a.com` with password `qwerty123`
+1. To run unit tests, create a database named `txbits_test` and run `./txbits.sh test`
+1. Read the wiki pages https://github.com/txbits/txbits/wiki
 
 For detailed development environment setup instructions see our wiki at https://github.com/txbits/txbits/wiki
 
@@ -25,11 +32,6 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-## Dev environment setup TL;DR
+-----------
 
-1. `jdk-8`
-1. postgres 9.3+ on `localhost` with database name `txbits_testnet`, superuser `user` and password `password`
-1. `./txbits.sh run`
-1. Log in at `http://localhost:9000` as `a@a.com` with password `qwerty123`
-1. To run unit tests, create a database named `txbits_test` and run `./txbits.sh test`
-1. Read the wiki pages https://github.com/txbits/txbits/wiki
+Copyright (C) 2014-2015  Viktor Stanchev & Kirk Zathey
