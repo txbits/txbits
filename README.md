@@ -8,9 +8,9 @@ https://www.txbits.org
 
 ## Dev environment setup TL;DR
 
-1. `jdk-8`
-1. postgres 9.3+ on `localhost` with database name `txbits_testnet`, superuser `user` and password `password`
-1. `./txbits.sh run`
+1. Get `jdk-8`
+1. Get postgres 9.3+ running on `localhost` with database name `txbits_testnet`, superuser `user` and password `password`
+1. Run `./txbits.sh run`
 1. Log in at `http://localhost:9000` as `a@a.com` with password `qwerty123`
 1. To run unit tests, create a database named `txbits_test` and run `./txbits.sh test`
 1. Read the wiki pages https://github.com/txbits/txbits/wiki
