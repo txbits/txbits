@@ -15,8 +15,6 @@ https://www.txbits.org
 1. To run unit tests, create a database named `txbits_test` and run `./txbits.sh test`
 1. Read the wiki pages https://github.com/txbits/txbits/wiki
 
-For detailed development environment setup instructions see our wiki at https://github.com/txbits/txbits/wiki
-
 ## License
 
 This program is free software: you can redistribute it and/or modify
