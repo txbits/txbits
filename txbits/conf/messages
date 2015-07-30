@@ -63,7 +63,7 @@ withdrawal.confirm.fail=Failed to confirm withdrawal. Double check the link you 
 withdrawal.reject.success=Withdrawal rejected.
 withdrawal.reject.fail=Failed to reject withdrawal. Double check the link you clicked on.
 
-help.one_way=If your order does not match immediately the fee is waived
+help.one_way=Fee is waived on any portion of your order that is not filled immediately
 
 text.password.advice=Tip: Use a randomly generated password and save it in a password manager or write it down.
 

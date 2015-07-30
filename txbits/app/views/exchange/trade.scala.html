@@ -121,7 +121,7 @@
                 </div>
             </div>
             <button type="submit" id="bid-submit" class="bid btn btn-success btn-block">@{Messages("terminology.bid")} {{base}}</button>
-            {{#if one_way}}* @{Messages("help.one_way")}{{/if}}
+            {{#if one_way}}<p></p><p>* @{Messages("help.one_way")}</p>{{/if}}
         </form>
     </script>
 
@@ -174,7 +174,7 @@
                 </div>
             </div>
             <button type="submit" id="ask-submit" class="ask btn btn-danger btn-block">@{Messages("terminology.ask")} {{base}}</button>
-            {{#if one_way}}* @{Messages("help.one_way")}{{/if}}
+            {{#if one_way}}<p></p><p>* @{Messages("help.one_way")}</p>{{/if}}
         </form>
     </script>
 
