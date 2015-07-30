@@ -81,7 +81,9 @@ exchange.account.tfa_withdrawal=Two-Factor Authentication on Withdrawals
 exchange.account.tfa_type=Two-Factor Authentication Type
 exchange.account.mailinglist=Receive updates about new features and changes to TxBits
 auth.signup.mailinglist=Receive updates about new features and changes to TxBits
-auth.signup.accepttos=I accept the terms and conditions
+auth.signup.tos.title=Terms of Service
+auth.signup.tos.body=The exchange and its operator is not liable for any loses of funds. This includes but is not limited to loses arising from account compromises, server compromises, or programming errors. You are responsible for ensuring your computer is safe from malware and exploits. It is recommended that you do not keep any funds on the exchange that you are not actively trading.
+auth.signup.tos.accept=I accept the terms and conditions
 
 exchange.account.api_reference.title=API Reference
 exchange.account.api_reference.public=Public
