@@ -209,6 +209,7 @@ auth.password.title=Reset Password
 auth.password.passwordUpdated=Your password was updated successfully
 auth.password.reset=Reset Password
 auth.password.error=There was a problem changing your password. Please try again
+auth.password.crack_time=Crack Time
 
 # Password change
 auth.passwordChange.title=Change Password
