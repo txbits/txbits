@@ -28,7 +28,7 @@
         <p class="well well-sm">@Messages("text.password.advice")</p>
 
         @*TODO: make this prettier*@
-        <p>Crack time: <span id="crack_time">...</span></p>
+        <p><b>Crack Time:</b> <span id="crack_time">...</span></p>
 
         @helper.inputPassword(
             signUpForm("password.password1"),
@@ -55,6 +55,12 @@
         <div class="checkbox">
             <label>
                 <input type="checkbox" value="true" name="mailinglist"> @Messages("auth.signup.mailinglist")
+            </label>
+        </div>
+
+        <div class="checkbox">
+            <label id="accepttos-label">
+                <input type="checkbox" value="true" name="accepttos" id="accepttos"> @Messages("auth.signup.accepttos")
             </label>
         </div>
 

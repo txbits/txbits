@@ -81,6 +81,7 @@ exchange.account.tfa_withdrawal=Two-Factor Authentication on Withdrawals
 exchange.account.tfa_type=Two-Factor Authentication Type
 exchange.account.mailinglist=Receive updates about new features and changes to TxBits
 auth.signup.mailinglist=Receive updates about new features and changes to TxBits
+auth.signup.accepttos=I accept the terms and conditions
 
 exchange.account.api_reference.title=API Reference
 exchange.account.api_reference.public=Public

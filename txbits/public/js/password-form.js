@@ -41,5 +41,21 @@ $(function(){
         }
         $password1.keyup(check_form);
         $password2.keyup(check_form);
+    }).submit(function(e) {
+        var $this = $(this);
+        var min_len = $this.attr('data-password-length');
+        var $password1 = $this.find('#password_password1');
+        var $password2 = $this.find('#password_password2');
+        var $accepttos = $this.find('#accepttos');
+        if ($password1.val().length < min_len) {
+            show_error('', $password1, "Password not long enough.");
+            e.preventDefault();
+        } else if ($password1.val() != $password2.val()) {
+            show_error('', $password2, "Passwords don't match.");
+            e.preventDefault();
+        } else if ($accepttos.length != 0 && !$accepttos.prop('checked')) {
+            $('#accepttos-label').addClass("text-danger");
+            e.preventDefault();
+        }
     });
 });
