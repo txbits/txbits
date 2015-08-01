@@ -33,8 +33,8 @@
 
 @exchangeScripts = {
     <script src="@routes.Assets.at("js/vendor/jquery.pnotify.js")"></script>
-    <script src="@routes.Assets.at("js/vendor/jquery.qrcode-0.10.1.js")"></script>
-    <script src="@routes.Assets.at("js/vendor/moment.js")"></script>
+    <script src="@routes.Assets.at("js/vendor/jquery.qrcode-0.10.1.min.js")"></script>
+    <script src="@routes.Assets.at("js/vendor/moment.min.js")"></script>
 }
 
 @_global_chrome(title, Html(scripts + exchangeScripts.body), Html(styles + exchangeStyles.body)) {
