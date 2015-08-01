@@ -32,7 +32,7 @@ GET         /withdrawal_reject/:id/:token              controllers.WithdrawalCon
 
 # This is our ticker API which should be completely separable from our main one
 # This api uses no authentication
-GET         /iapi/1/ticker                              controllers.StatsAPI.APIv1.ticker
+GET         /api/1/ticker                               controllers.StatsAPI.APIv1.ticker
 GET         /iapi/1/chart/:base/:counter                controllers.StatsAPI.APIv1.chart(base, counter)
 
 # Route for changing the language cookie
@@ -66,8 +66,8 @@ GET         /iapi/1/deposit_crypto_all                  controllers.IAPI.APIv1.d
 GET         /iapi/1/deposit_crypto/:currency            controllers.IAPI.APIv1.depositCrypto(currency)
 GET         /iapi/1/pairs                               controllers.IAPI.APIv1.pairs
 GET         /iapi/1/currencies                          controllers.IAPI.APIv1.currencies
-GET         /iapi/1/open_trades/:first/:second          controllers.IAPI.APIv1.openTrades(first, second)
-GET         /iapi/1/recent_trades/:first/:second        controllers.IAPI.APIv1.recentTrades(first, second)
+GET         /api/1/open_trades/:first/:second           controllers.API.APIv1.openTrades(first, second)
+GET         /api/1/recent_trades/:first/:second         controllers.API.APIv1.recentTrades(first, second)
 GET         /iapi/1/deposit_withdraw_history            controllers.IAPI.APIv1.depositWithdrawHistory
 GET         /iapi/1/trade_history                       controllers.IAPI.APIv1.tradeHistory
 GET         /iapi/1/pending_trades                      controllers.IAPI.APIv1.pendingTrades

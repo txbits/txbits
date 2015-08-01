@@ -350,13 +350,6 @@ set_withdrawal_tx_hash_mutated (
   values (a_tx_id, a_tx_hash);;
 $$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
 
-create or replace function
-get_withdraw_constant_fee (
-  a_currency varchar(4)
-) returns numeric(23,8) as $$
-  select withdraw_constant from dw_fees where currency = a_currency and method = 'blockchain';;
-$$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
-
 
 # --- !Downs
 
@@ -380,5 +373,4 @@ drop function if exists confirmed_withdrawal_tx (bigint, numeric(23,8)) cascade;
 drop function if exists create_cold_storage_transfer (bigint, varchar(34), numeric(23,8)) cascade;
 drop function if exists get_cold_storage_transfer (bigint) cascade;
 drop function if exists set_withdrawal_tx_hash_mutated (bigint, varchar(64)) cascade;
-drop function if exists get_withdraw_constant_fee (varchar(4)) cascade;
 

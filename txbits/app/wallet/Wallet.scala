@@ -38,7 +38,6 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
   final val (active, minDepositConfirmations, minWithdrawalConfirmations) = walletModel.getMinConfirmations(currency)
   final val minConfirmations = math.max(minDepositConfirmations, minWithdrawalConfirmations)
   final val (retired, balanceMin, balanceWarn, balanceTarget, balanceMax) = walletModel.getNodeInfo(currency, nodeId)
-  final val withdrawConstant = walletModel.getWithdrawConstantFee(currency)
 
   private var lastBlockRead: Int = _
   private var lastWithdrawalTimeReceived: Int = _
@@ -233,7 +232,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
         balance = walletModel.getBalance(currency, nodeId)
         sentWithdrawalTx = if (balance > balanceMin) {
           stalledWithdrawalTx match {
-            case Some((withdrawalId, withdrawalsTotal, withdrawals)) if balance >= withdrawalsTotal + withdrawConstant =>
+            case Some((withdrawalId, withdrawalsTotal, withdrawals)) if balance >= withdrawalsTotal + params.maxTxFee =>
               val withdrawalTxHash = sendMany(withdrawals.asJava)
               walletModel.sentWithdrawalTx(withdrawalId, withdrawalTxHash, withdrawalsTotal)
               changeAddressCount += 1
@@ -246,7 +245,7 @@ class Wallet(rpc: JsonRpcHttpClient, currency: CryptoCurrency, nodeId: Int, para
                 case Some(withdrawalId) =>
                   val withdrawals = walletModel.getWithdrawalTxData(withdrawalId)
                   val withdrawalsTotal = withdrawals.view.map(_._2).sum
-                  val balanceLowerBound = balance - withdrawalsTotal - withdrawConstant
+                  val balanceLowerBound = balance - withdrawalsTotal - params.maxTxFee
                   if (balanceLowerBound < 0) {
                     stalledWithdrawalTx = Some(withdrawalId, withdrawalsTotal, withdrawals)
                     None
@@ -411,6 +410,7 @@ object Wallet {
     addressPool: Int,
     backupPath: Option[String],
     coldAddress: Option[String],
-    refillEmail: Option[String])
+    refillEmail: Option[String],
+    maxTxFee: BigDecimal)
 }
 

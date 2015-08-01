@@ -29,6 +29,28 @@ import play.api.i18n.MessagesApi
 
 class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
+  /* Public */
+
+  def recentTrades(base: String, counter: String) = Action { implicit request =>
+    // a specific pair will be given as an argument
+    if (globals.metaModel.activeMarkets.contains(base, counter)) {
+      Ok(globals.engineModel.recentTrades(base, counter))
+    } else {
+      BadRequest(Json.obj("message" -> "Invalid pair."))
+    }
+  }
+
+  def openTrades(base: String, counter: String) = Action { implicit request =>
+    // a specific pair will be given as an argument
+    if (globals.metaModel.activeMarkets.contains(base, counter)) {
+      Ok(globals.engineModel.ordersDepth(base, counter))
+    } else {
+      BadRequest(Json.obj("message" -> "Invalid pair."))
+    }
+  }
+
+  /* Authenticated */
+
   def balance = Action(parse.json) { implicit request =>
     val body = request.body
     (for (

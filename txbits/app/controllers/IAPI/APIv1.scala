@@ -166,24 +166,6 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
     )
   }
 
-  def openTrades(base: String, counter: String) = Action { implicit request =>
-    // a specific pair will be given as an argument
-    if (globals.metaModel.activeMarkets.contains(base, counter)) {
-      Ok(globals.engineModel.ordersDepth(base, counter))
-    } else {
-      BadRequest(Json.obj("message" -> "Invalid pair."))
-    }
-  }
-
-  def recentTrades(base: String, counter: String) = Action { implicit request =>
-    // a specific pair will be given as an argument
-    if (globals.metaModel.activeMarkets.contains(base, counter)) {
-      Ok(engineModel.recentTrades(base, counter))
-    } else {
-      BadRequest(Json.obj("message" -> "Invalid pair."))
-    }
-  }
-
   def depositWithdrawHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     val (before, limit, lastId) = Util.parse_pagination_params
     Ok(Json.toJson(userModel.depositWithdrawHistory(request.user.id, before, limit, lastId)))

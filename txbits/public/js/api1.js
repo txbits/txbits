@@ -96,7 +96,7 @@ var API;
         }),
 
         ticker: APIWrap(function() {
-            return $.get(prefix+'ticker', 'json');
+            return $.get('/api/1/ticker', 'json');
         }),
 
         trade_history: APIWrap(paginated('trade_history')),
@@ -126,11 +126,11 @@ var API;
         }),
 
         open_trades: APIWrap(function(first, second) {
-            return $.get(prefix+'open_trades/'+first+'/'+second, 'json');
+            return $.get('/api/1/open_trades/'+first+'/'+second, 'json');
         }),
 
         recent_trades: APIWrap(function(first, second) {
-            return $.get(prefix+'recent_trades/'+first+'/'+second, 'json');
+            return $.get('/api/1/recent_trades/'+first+'/'+second, 'json');
         }),
 
         user: APIWrap(function() {
