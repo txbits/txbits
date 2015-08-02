@@ -78,7 +78,7 @@ begin
     end if;;
     f2 := fee.linear;;
 
-    perform pg_advisory_xact_lock(id) from markets where base = new_base and counter = new_counter;;
+    perform pg_advisory_xact_lock(-1, id) from markets where base = new_base and counter = new_counter;;
 
     insert into orders(user_id, base, counter, original, remains, price, is_bid)
     values (new_user_id, new_base, new_counter, new_amount, new_amount, new_price, new_is_bid)
@@ -177,7 +177,7 @@ begin
       return null;;
     end if;;
 
-    perform pg_advisory_xact_lock(id) from markets where base = b and counter = c;;
+    perform pg_advisory_xact_lock(-1, id) from markets where base = b and counter = c;;
 
     update orders set closed = true
     where id = o_id and user_id = o_user_id and closed = false and remains > 0
@@ -1466,7 +1466,7 @@ begin
   update users_addresses ua
     set user_id = a_uid, assigned = current_timestamp
     from (    
-      select distinct on (currency) address
+      select distinct on (currency) id, address
       from users_addresses
       where assigned is NULL and user_id = 0 and currency not in (
         select a.currency
@@ -1478,8 +1478,8 @@ begin
                 ) order by users_addresses.currency, assigned desc
              ) a
         left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
-      )
-    ) ua2 where ua.address = ua2.address;;
+      ) and pg_try_advisory_xact_lock(id)
+    ) ua2 where ua.id = ua2.id;;
 
   return query
     select currency, address, assigned from users_addresses
