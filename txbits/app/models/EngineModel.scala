@@ -132,7 +132,7 @@ class EngineModel(val db: String = "default") {
     val res = SQL""" select * from order_new($uid, $apiKey, $base, $counter, ${amount.bigDecimal}, ${price.bigDecimal}, $isBid) """().map(row =>
       row[Option[Long]]("new_id") -> row[Option[BigDecimal]]("new_remains")
     ).head match {
-      case (Some(id: Long), Some(remains: BigDecimal)) => Some(Json.obj("order" -> id.toString, "remains" -> remains.bigDecimal.toPlainString))
+      case (Some(id: Long), Some(remains: BigDecimal)) => Some(TradeResult(id, remains.bigDecimal.toPlainString))
       case _ => None
     }
     if (res.isDefined) {
@@ -308,6 +308,13 @@ case class Trade(id: Long, typ: String, amount: String, price: String, base: Str
 object Trade {
   implicit val writes = Json.writes[Trade]
   implicit val format = Json.format[Trade]
+}
+
+case class TradeResult(order: Long, remains: String)
+
+object TradeResult {
+  implicit val writes = Json.writes[TradeResult]
+  implicit val format = Json.format[TradeResult]
 }
 
 case class Match(amount: BigDecimal, price: BigDecimal, created: DateTime, base: String, counter: String)

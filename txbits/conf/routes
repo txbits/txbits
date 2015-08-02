@@ -33,7 +33,7 @@ GET         /withdrawal_reject/:id/:token              controllers.WithdrawalCon
 # This is our ticker API which should be completely separable from our main one
 # This api uses no authentication
 GET         /api/1/ticker                               controllers.StatsAPI.APIv1.ticker
-GET         /iapi/1/chart/:base/:counter                controllers.StatsAPI.APIv1.chart(base, counter)
+GET         /api/1/chart/:base/:counter                 controllers.StatsAPI.APIv1.chart(base, counter)
 
 # Route for changing the language cookie
 GET         /chlang/:lang                              controllers.Application.chlang(lang)

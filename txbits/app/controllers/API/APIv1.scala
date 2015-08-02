@@ -85,7 +85,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
             case Some((active, minAmount)) if active && amount >= minAmount =>
               val res = globals.engineModel.askBid(None, Some(apiKey), base, counter, amount, price, isBid = false)
               if (res.isDefined) {
-                Ok(res.get)
+                Ok(Json.toJson(res.get))
               } else {
                 BadRequest(Json.obj("message" -> "Non-sufficient funds."))
               }
@@ -123,7 +123,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
             case Some((active, minAmount)) if active && amount >= minAmount =>
               val res = globals.engineModel.askBid(None, Some(apiKey), base, counter, amount, price, isBid = true)
               if (res.isDefined) {
-                Ok(res.get)
+                Ok(Json.toJson(res.get))
               } else {
                 BadRequest(Json.obj("message" -> "Non-sufficient funds."))
               }
