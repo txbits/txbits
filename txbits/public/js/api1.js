@@ -1,12 +1,13 @@
 var API;
 (function(){
-    var prefix = '/iapi/1/';
+    var iapi_prefix = '/iapi/1/';
+    var api_prefix = '/api/1/';
     var limit = 20;
 
     // This creates a simple paginated function that makes calls to `path`
     function paginated(path) {
         return function(before, last_id) {
-            return $.get(prefix+path, {before: before, limit: limit, last_id: last_id});
+            return $.get(iapi_prefix+path, {before: before, limit: limit, last_id: last_id});
         };
     }
 
@@ -32,19 +33,19 @@ var API;
     };
     API = {
         balance: APIWrap(function() {
-            return $.get(prefix+'balance', 'json');
+            return $.get(iapi_prefix+'balance', 'json');
         }),
 
         pending_withdrawals: APIWrap(function(){
-            return $.get(prefix+'pending_withdrawals_all', 'json')
+            return $.get(iapi_prefix+'pending_withdrawals_all', 'json')
         }),
 
         pending_deposits: APIWrap(function(){
-            return $.get(prefix+'pending_deposits_all', 'json')
+            return $.get(iapi_prefix+'pending_deposits_all', 'json')
         }),
 
         bid: APIWrap(function(base, counter, amount, price) {
-            return $.ajax(prefix+'bid', {
+            return $.ajax(iapi_prefix+'bid', {
                 type: 'POST',
                 data: JSON.stringify({base: base, counter: counter, amount: amount, price: price}),
                 dataType: 'json',
@@ -53,7 +54,7 @@ var API;
         }),
 
         ask: APIWrap(function(base, counter, amount, price) {
-            return $.ajax(prefix+'ask', {
+            return $.ajax(iapi_prefix+'ask', {
                 type: 'POST',
                 data: JSON.stringify({base: base, counter: counter, amount: amount, price: price}),
                 dataType: 'json',
@@ -62,7 +63,7 @@ var API;
         }),
 
         cancel: APIWrap(function(id) {
-            return $.ajax(prefix+'cancel', {
+            return $.ajax(iapi_prefix+'cancel', {
                 type: 'POST',
                 data: JSON.stringify({order: Number(id)}),
                 dataType: 'json',
@@ -71,7 +72,7 @@ var API;
         }),
 
         withdraw: APIWrap(function(currency, amount, address, tfa_code) {
-            return $.ajax(prefix+'withdraw', {
+            return $.ajax(iapi_prefix+'withdraw', {
                 type: 'POST',
                 data: JSON.stringify({currency: currency, amount: amount, address: address, tfa_code: tfa_code}),
                 dataType: 'json',
@@ -80,23 +81,23 @@ var API;
         }),
 
         pairs: APIWrap(function() {
-            return $.get(prefix+'pairs', 'json');
+            return $.get(iapi_prefix+'pairs', 'json');
         }),
 
         currencies: APIWrap(function() {
-            return $.get(prefix+'currencies', 'json');
+            return $.get(iapi_prefix+'currencies', 'json');
         }),
 
         deposit_crypto: APIWrap(function(currency) {
-            return $.get(prefix+'deposit_crypto/'+currency, 'json');
+            return $.get(iapi_prefix+'deposit_crypto/'+currency, 'json');
         }),
 
         deposit_crypto_all: APIWrap(function() {
-            return $.get(prefix+'deposit_crypto_all', 'json');
+            return $.get(iapi_prefix+'deposit_crypto_all', 'json');
         }),
 
         ticker: APIWrap(function() {
-            return $.get(prefix+'ticker', 'json');
+            return $.get(api_prefix+'ticker', 'json');
         }),
 
         trade_history: APIWrap(paginated('trade_history')),
@@ -106,39 +107,39 @@ var API;
         deposit_withdraw_history: APIWrap(paginated('deposit_withdraw_history')),
 
         pending_trades: APIWrap(function() {
-            return $.get(prefix+'pending_trades', 'json');
+            return $.get(iapi_prefix+'pending_trades', 'json');
         }),
 
         trade_fees: APIWrap(function() {
-            return $.get(prefix+'trade_fees', 'json');
+            return $.get(iapi_prefix+'trade_fees', 'json');
         }),
 
         dw_fees: APIWrap(function() {
-            return $.get(prefix+'dw_fees', 'json');
+            return $.get(iapi_prefix+'dw_fees', 'json');
         }),
 
         dw_limits: APIWrap(function() {
-            return $.get(prefix+'dw_limits', 'json');
+            return $.get(iapi_prefix+'dw_limits', 'json');
         }),
 
         required_confirms: APIWrap(function() {
-            return $.get(prefix+'required_confirms', 'json');
+            return $.get(iapi_prefix+'required_confirms', 'json');
         }),
 
         open_trades: APIWrap(function(first, second) {
-            return $.get(prefix+'open_trades/'+first+'/'+second, 'json');
+            return $.get(api_prefix+'open_trades/'+first+'/'+second, 'json');
         }),
 
         recent_trades: APIWrap(function(first, second) {
-            return $.get(prefix+'recent_trades/'+first+'/'+second, 'json');
+            return $.get(api_prefix+'recent_trades/'+first+'/'+second, 'json');
         }),
 
         user: APIWrap(function() {
-            return $.get(prefix+'user', 'json');
+            return $.get(iapi_prefix+'user', 'json');
         }),
 
         turnoff_tfa: APIWrap(function(code, password) {
-            return $.ajax(prefix+'turnoff_tfa', {
+            return $.ajax(iapi_prefix+'turnoff_tfa', {
                 type: 'POST',
                 data: JSON.stringify({tfa_code: code, password: password}),
                 dataType: 'json',
@@ -147,7 +148,7 @@ var API;
         }),
 
         turnoff_emails: APIWrap(function() {
-            return $.ajax(prefix+'turnoff_emails', {
+            return $.ajax(iapi_prefix+'turnoff_emails', {
                 type: 'POST',
                 data: "{}",
                 dataType: 'json',
@@ -156,7 +157,7 @@ var API;
         }),
 
         turnon_emails: APIWrap(function() {
-            return $.ajax(prefix+'turnon_emails', {
+            return $.ajax(iapi_prefix+'turnon_emails', {
                 type: 'POST',
                 data: "{}",
                 dataType: 'json',
@@ -165,11 +166,11 @@ var API;
         }),
 
         gen_totp_secret: APIWrap(function() {
-            return $.post(prefix+'gen_totp_secret', 'json');
+            return $.post(iapi_prefix+'gen_totp_secret', 'json');
         }),
 
         turnon_tfa: APIWrap(function(code, password) {
-            return $.ajax(prefix+'turnon_tfa', {
+            return $.ajax(iapi_prefix+'turnon_tfa', {
                 type: 'POST',
                 data: JSON.stringify({tfa_code: code, password: password}),
                 dataType: 'json',
@@ -178,7 +179,7 @@ var API;
         }),
 
         add_pgp: APIWrap(function(password, code, pgp) {
-            return $.ajax(prefix+'add_pgp', {
+            return $.ajax(iapi_prefix+'add_pgp', {
                 type: 'POST',
                 data: JSON.stringify({tfa_code: code, password: password, pgp: pgp}),
                 dataType: 'json',
@@ -187,7 +188,7 @@ var API;
         }),
 
         remove_pgp: APIWrap(function(password, code) {
-            return $.ajax(prefix+'remove_pgp', {
+            return $.ajax(iapi_prefix+'remove_pgp', {
                 type: 'POST',
                 data: JSON.stringify({tfa_code: code, password: password}),
                 dataType: 'json',
@@ -196,7 +197,7 @@ var API;
         }),
 
         add_api_key: APIWrap(function() {
-            return $.ajax(prefix+'add_api_key', {
+            return $.ajax(iapi_prefix+'add_api_key', {
                 type: 'POST',
                 data: "{}",
                 dataType: 'json',
@@ -205,7 +206,7 @@ var API;
         }),
 
         update_api_key: APIWrap(function(code, api_key, comment, trading, trade_history, list_balance) {
-            return $.ajax(prefix+'update_api_key', {
+            return $.ajax(iapi_prefix+'update_api_key', {
                 type: 'POST',
                 data: JSON.stringify({tfa_code: code, api_key: api_key, comment: comment, trading: trading, trade_history: trade_history, list_balance: list_balance}),
                 dataType: 'json',
@@ -214,7 +215,7 @@ var API;
         }),
 
         disable_api_key: APIWrap(function(code, api_key) {
-            return $.ajax(prefix+'disable_api_key', {
+            return $.ajax(iapi_prefix+'disable_api_key', {
                 type: 'POST',
                 data: JSON.stringify({tfa_code: code, api_key: api_key}),
                 dataType: 'json',
@@ -223,11 +224,11 @@ var API;
         }),
 
         get_api_keys: APIWrap(function() {
-            return $.get(prefix+'get_api_keys', 'json');
+            return $.get(iapi_prefix+'get_api_keys', 'json');
         }),
 
         chart: APIWrap(function(base, counter) {
-            return $.get(prefix+'chart/'+base+'/'+counter, 'json');
+            return $.get(api_prefix+'chart/'+base+'/'+counter, 'json');
         })
     };
 })();

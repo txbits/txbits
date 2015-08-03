@@ -130,6 +130,14 @@ class WalletModel(val db: String = "default") {
   def getUnconfirmedWithdrawalTx(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
     SQL""" select * from get_unconfirmed_withdrawal_tx(${currency.toString}, $nodeId) """().map(row => row[Option[Long]]("id") -> row[Option[String]]("tx_hash")).head match {
       case (Some(id: Long), Some(txHash: String)) => Some(id, txHash)
+      case (Some(id: Long), None) => Some(id, "")
+      case _ => None
+    }
+  }
+
+  def getLastConfirmedWithdrawalTx(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
+    SQL""" select * from get_last_confirmed_withdrawal_tx(${currency.toString}, $nodeId) """().map(row => row[Option[Long]]("confirmed_id") -> row[Option[String]]("confirmed_tx_hash")).head match {
+      case (Some(id: Long), Some(txHash: String)) => Some(id, txHash)
       case _ => None
     }
   }
@@ -138,8 +146,8 @@ class WalletModel(val db: String = "default") {
     SQL""" select create_withdrawal_tx(${currency.toString}, $nodeId) """().map(row => row[Option[Long]]("create_withdrawal_tx")).head
   }
 
-  def getWithdrawalTx(txId: Long) = DB.withConnection(db) { implicit c =>
-    SQL""" select * from get_withdrawal_tx($txId) """().map(row => row[String]("address") -> row[BigDecimal]("value")).toMap
+  def getWithdrawalTxData(txId: Long) = DB.withConnection(db) { implicit c =>
+    SQL""" select * from get_withdrawal_tx_data($txId) """().map(row => row[String]("address") -> row[BigDecimal]("value")).toMap
   }
 
   def sentWithdrawalTx(txId: Long, txHash: String, txAmount: BigDecimal) = DB.withConnection(db) { implicit c =>
@@ -152,6 +160,13 @@ class WalletModel(val db: String = "default") {
 
   def createColdStorageTransfer(txId: Long, address: String, value: BigDecimal) = DB.withConnection(db) { implicit c =>
     SQL""" select create_cold_storage_transfer($txId, $address, ${value.bigDecimal}) """.execute()
+  }
+
+  def getColdStorageTransfer(txId: Long) = DB.withConnection(db) { implicit c =>
+    SQL""" select * from get_cold_storage_transfer($txId) """().map(row => row[Option[String]]("address") -> row[Option[BigDecimal]]("value")).head match {
+      case (Some(address: String), Some(value: BigDecimal)) => Some(address, value)
+      case _ => None
+    }
   }
 
   def setWithdrawalTxHashMutated(txId: Long, txHash: String) = DB.withConnection(db) { implicit c =>

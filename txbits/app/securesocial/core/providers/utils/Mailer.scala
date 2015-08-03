@@ -42,8 +42,8 @@ object Mailer {
   val PasswordResetOkSubject = "mails.passwordResetOk.subject"
 
   def sendWithdrawalConfirmEmail(email: String, amount: String, currency: String, destination: String, id: Long, token: String, pgp: Option[String])(implicit messages: Messages) {
-    val url_confirm = "%s%s/%s".format(current.configuration.getString("url.withdrawal_confirm").getOrElse("http://localhost:9000/withdrawal_confirm/"), id, token)
-    val url_reject = "%s%s/%s".format(current.configuration.getString("url.withdrawal_reject").getOrElse("http://localhost:9000/withdrawal_reject/"), id, token)
+    val url_confirm = "%s/%s/%s".format(current.configuration.getString("url.withdrawal_confirm").getOrElse("http://localhost:9000/withdrawal_confirm"), id, token)
+    val url_reject = "%s/%s/%s".format(current.configuration.getString("url.withdrawal_reject").getOrElse("http://localhost:9000/withdrawal_reject"), id, token)
     val txtAndHtml = (Some(views.txt.auth.mails.withdrawalConfirmEmail(email, amount, currency, destination, id, token, url_confirm, url_reject)), None)
     sendEmail(Messages(WithdrawalConfirmSubject), email, txtAndHtml, pgp)
   }
@@ -54,13 +54,13 @@ object Mailer {
   }
 
   def sendAlreadyRegisteredEmail(email: String, pgp: Option[String])(implicit messages: Messages) {
-    val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/")
+    val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset")
     val txtAndHtml = (Some(views.txt.auth.mails.alreadyRegisteredEmail(email, url)), None)
     sendEmail(Messages(AlreadyRegisteredSubject), email, txtAndHtml, pgp)
   }
 
   def sendSignUpEmail(to: String, token: String)(implicit messages: Messages) {
-    val url = current.configuration.getString("url.signup").getOrElse("http://localhost:9000/signup/") + token
+    val url = current.configuration.getString("url.signup").getOrElse("http://localhost:9000/signup") + "/" + token
     val txtAndHtml = (Some(views.txt.auth.mails.signUpEmail(token, url)), None)
     sendEmail(Messages(SignUpEmailSubject), to, txtAndHtml)
   }
@@ -71,7 +71,7 @@ object Mailer {
   }
 
   def sendPasswordResetEmail(email: String, token: String, pgp: Option[String])(implicit messages: Messages) {
-    val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset/") + token
+    val url = current.configuration.getString("url.passwordreset").getOrElse("http://localhost:9000/reset") + "/" + token
     val txtAndHtml = (Some(views.txt.auth.mails.passwordResetEmail(email, url)), None)
     sendEmail(Messages(PasswordResetSubject), email, txtAndHtml, pgp)
   }

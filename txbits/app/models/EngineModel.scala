@@ -129,19 +129,21 @@ class EngineModel(val db: String = "default") {
   }
 
   def askBid(uid: Option[Long], apiKey: Option[String], base: String, counter: String, amount: BigDecimal, price: BigDecimal, isBid: Boolean) = DB.withConnection(db) { implicit c =>
-    val res = SQL""" select order_new($uid, $apiKey, $base, $counter, ${amount.bigDecimal}, ${price.bigDecimal}, $isBid)
-    """().map(_[Option[Boolean]]("order_new")).head
+    val res = SQL""" select * from order_new($uid, $apiKey, $base, $counter, ${amount.bigDecimal}, ${price.bigDecimal}, $isBid) """().map(row =>
+      row[Option[Long]]("new_id") -> row[Option[BigDecimal]]("new_remains")
+    ).head match {
+      case (Some(id: Long), Some(remains: BigDecimal)) => Some(TradeResult(id, remains.bigDecimal.toPlainString))
+      case _ => None
+    }
     if (res.isDefined) {
       flushMarketCaches(base, counter)
     }
-    res.get
+    res
   }
 
   def ordersDepth(base: String, counter: String) = DB.withConnection(db) { implicit c =>
     play.api.cache.Cache.getOrElse("%s.%s.orders".format(base, counter)) {
-      val PriceIndex = 0
-      val AmountIndex = 1
-      val (asks, bids, total_base, total_counter) = SQL""" select * from orders_depth($base, $counter) """.on('base -> base, 'counter -> counter)().map(row => (
+      val (asks, bids, total_base, total_counter) = SQL""" select * from orders_depth($base, $counter) """().map(row => (
         row[Option[Array[Array[java.math.BigDecimal]]]]("asks").getOrElse(Array[Array[java.math.BigDecimal]]()),
         row[Option[Array[Array[java.math.BigDecimal]]]]("bids").getOrElse(Array[Array[java.math.BigDecimal]]()),
         row[java.math.BigDecimal]("total_base"),
@@ -306,6 +308,13 @@ case class Trade(id: Long, typ: String, amount: String, price: String, base: Str
 object Trade {
   implicit val writes = Json.writes[Trade]
   implicit val format = Json.format[Trade]
+}
+
+case class TradeResult(order: Long, remains: String)
+
+object TradeResult {
+  implicit val writes = Json.writes[TradeResult]
+  implicit val format = Json.format[TradeResult]
 }
 
 case class Match(amount: BigDecimal, price: BigDecimal, created: DateTime, base: String, counter: String)

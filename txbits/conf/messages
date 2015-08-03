@@ -63,7 +63,7 @@ withdrawal.confirm.fail=Failed to confirm withdrawal. Double check the link you 
 withdrawal.reject.success=Withdrawal rejected.
 withdrawal.reject.fail=Failed to reject withdrawal. Double check the link you clicked on.
 
-help.one_way=If your order does not match immediately the fee is waived
+help.one_way=Fee is waived on any portion of your order that is not filled immediately
 
 text.password.advice=Tip: Use a randomly generated password and save it in a password manager or write it down.
 
@@ -81,6 +81,23 @@ exchange.account.tfa_withdrawal=Two-Factor Authentication on Withdrawals
 exchange.account.tfa_type=Two-Factor Authentication Type
 exchange.account.mailinglist=Receive updates about new features and changes to TxBits
 auth.signup.mailinglist=Receive updates about new features and changes to TxBits
+auth.signup.tos.title=Terms of Service
+auth.signup.tos.body=The exchange and its operator is not liable for any loses of funds. This includes but is not limited to loses arising from account compromises, server compromises, or programming errors. You are responsible for ensuring your computer is safe from malware and exploits. It is recommended that you do not keep any funds on the exchange that you are not actively trading.
+auth.signup.tos.accept=I accept the terms and conditions
+
+exchange.account.api_reference.title=API Reference
+exchange.account.api_reference.public=Public
+exchange.account.api_reference.ticker=Ticker
+exchange.account.api_reference.recent_trades=Recent Trades
+exchange.account.api_reference.order_book=Order Book
+exchange.account.api_reference.authenticated=Authenticated
+exchange.account.api_reference.buy=Buy
+exchange.account.api_reference.sell=Sell
+exchange.account.api_reference.cancel_order=Cancel Order
+exchange.account.api_reference.list_orders=List Orders
+exchange.account.api_reference.trade_history=Trade History
+exchange.account.api_reference.list_balance=List Balance
+exchange.account.api_reference.example=Example with cURL
 
 exchange.account.api_keys.title=API Keys
 exchange.account.api_keys.api_key=API Key
@@ -192,6 +209,7 @@ auth.password.title=Reset Password
 auth.password.passwordUpdated=Your password was updated successfully
 auth.password.reset=Reset Password
 auth.password.error=There was a problem changing your password. Please try again
+auth.password.crack_time=Crack Time
 
 # Password change
 auth.passwordChange.title=Change Password

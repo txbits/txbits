@@ -175,10 +175,27 @@ package object globals {
           Logger.warn("Invalid email address for %s wallet. Refill notifications disabled.".format(currency)); None
         case None => None
       }
+      val maxTxFee = Play.current.configuration.getString("wallet.%s.node.%s.maxTxFee".format(currencyName, nodeId)) match {
+        case Some(fee) =>
+          try {
+            val f = BigDecimal(fee)
+            if (f > 0) {
+              f
+            } else {
+              Logger.warn("Invalid max tx fee for %s wallet.".format(currency))
+              BigDecimal(0)
+            }
+          } catch {
+            case _: Throwable =>
+              Logger.warn("Invalid max tx fee for %s wallet.".format(currency))
+              BigDecimal(0)
+          }
+        case _ => BigDecimal(0)
+      }
 
       val rpcUrl = new URL(rpcUrlString)
       rpcAuth.register(rpcUrl, new PasswordAuthentication(rpcUser, rpcPassword.toCharArray))
-      val params = Wallet.WalletParams(checkDelay.seconds, checkInterval.seconds, addressDelay.seconds, addressInterval.seconds, addressPool, backupPath, coldAddress, refillEmail)
+      val params = Wallet.WalletParams(checkDelay.seconds, checkInterval.seconds, addressDelay.seconds, addressInterval.seconds, addressPool, backupPath, coldAddress, refillEmail, maxTxFee)
       Akka.system.actorOf(Wallet.props(new JsonRpcHttpClient(rpcUrl), currency, nodeId, params, walletModel))
     }
 

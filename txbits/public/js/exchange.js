@@ -121,10 +121,11 @@ $(function(){
                         var $form = $('#bid');
                         var amount = Number($form.find(".amount").val());
                         var price = Number($form.find(".price").val());
-                        API.bid(base, counter, amount, price).success(function(){
+                        API.bid(base, counter, amount, price).success(function(data){
+                            var remains = Number(data.remains);
                             $.pnotify({
-                                title: 'Buy order placed.',
-                                text: 'Market: ' + base + "/" + counter + ', Amount: ' + amount + ', Price: ' + price,
+                                title: 'Buy order ' + (remains > 0 ? (remains == amount ? 'placed.' : 'partially filled.') : 'filled.'),
+                                text: 'Market: ' + base + "/" + counter + ', Amount: ' + amount + ', Remains: ' + remains,
                                 styling: 'bootstrap',
                                 type: 'success',
                                 text_escape: true
@@ -142,10 +143,11 @@ $(function(){
                         var $form = $('#ask');
                         var amount = Number($form.find(".amount").val());
                         var price = Number($form.find(".price").val());
-                        API.ask(base, counter, amount, price).success(function(){
+                        API.ask(base, counter, amount, price).success(function(data){
+                            var remains = Number(data.remains);
                             $.pnotify({
-                                title: 'Sell order placed.',
-                                text: 'Market: ' + base + "/" + counter + ', Amount: ' + amount + ', Price: ' + price,
+                                title: 'Sell order ' + (remains > 0 ? (remains == amount ? 'placed.' : 'partially filled.') : 'filled.'),
+                                text: 'Market: ' + base + "/" + counter + ', Amount: ' + amount + ', Remains: ' + remains,
                                 styling: 'bootstrap',
                                 type: 'success',
                                 text_escape: true

@@ -49,6 +49,7 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
 
   val form = Form[RegistrationInfo](
     mapping(
+      AcceptTos -> boolean.verifying(acceptTos => acceptTos),
       MailingList -> boolean,
       Password ->
         tuple(
@@ -57,8 +58,8 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
         ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
       Pgp -> text.verifying(Messages(PgpKeyInvalid), pgp => pgp == "" || PGP.parsePublicKey(pgp).isDefined)
     ) // binding
-    ((list, password, pgp) => RegistrationInfo(list, password._1, pgp)) // unbinding
-    (info => Some(info.mailingList, ("", ""), info.pgp))
+    ((_, list, password, pgp) => RegistrationInfo(list, password._1, pgp)) // unbinding
+    (info => Some(true, info.mailingList, ("", ""), info.pgp))
   )
 
   val startForm = Form(
@@ -236,6 +237,7 @@ object Registration {
   val PasswordUpdated = "auth.password.passwordUpdated"
   val ErrorUpdatingPassword = "auth.password.error"
 
+  val AcceptTos = "accepttos"
   val MailingList = "mailinglist"
   val Password = "password"
   val Password1 = "password1"

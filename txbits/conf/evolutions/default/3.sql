@@ -185,7 +185,7 @@ begin
   where id = a_id and address = a_address and
   tx_hash = a_tx_hash and confirmed is NULL;;
 
-  if found and d.user_id <> 0 then
+  if found then
     update wallets_crypto set balance = balance + d.amount
     where currency = d.currency and node_id = a_node_id;;
 
@@ -219,10 +219,29 @@ get_unconfirmed_withdrawal_tx (
   out tx_hash varchar(64)
 ) returns record as $$
   select id, tx_hash from withdrawals_crypto_tx
-  where id = (select max(id) from withdrawals_crypto_tx
-  where currency = a_currency and node_id = a_node_id) and
-  sent is not NULL and confirmed is NULL;;
+    where id = (select max(id) from withdrawals_crypto_tx
+      where currency = a_currency and node_id = a_node_id)
+    and confirmed is NULL;;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
+
+create or replace function
+get_last_confirmed_withdrawal_tx (
+  a_currency varchar(4),
+  a_node_id integer,
+  out confirmed_id bigint,
+  out confirmed_tx_hash varchar(64)
+) returns record as $$
+declare
+begin
+  select max(id) into confirmed_id from withdrawals_crypto_tx
+    where currency = a_currency and node_id = a_node_id and
+    sent is not NULL and confirmed is not NULL;;
+
+  select coalesce(tx_hash_mutated, tx_hash) into confirmed_tx_hash from
+    withdrawals_crypto_tx wct left join withdrawals_crypto_tx_mutated wctm
+    on wct.id = wctm.id where wct.id = confirmed_id;;
+end;;
+$$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 create_withdrawal_tx (
@@ -256,7 +275,7 @@ end;;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
-get_withdrawal_tx (
+get_withdrawal_tx_data (
   a_tx_id bigint,
   out address varchar(34),
   out value numeric(23,8)
@@ -313,6 +332,16 @@ create_cold_storage_transfer (
 $$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
+get_cold_storage_transfer (
+  a_tx_id bigint,
+  out address varchar(34),
+  out value numeric(23,8)
+) returns record as $$
+  select address, value from withdrawals_crypto_tx_cold_storage
+  where id = a_tx_id;;
+$$ language sql stable security invoker set search_path = public, pg_temp cost 100;
+
+create or replace function
 set_withdrawal_tx_hash_mutated (
   a_tx_id bigint,
   a_tx_hash varchar(64)
@@ -336,10 +365,12 @@ drop function if exists is_confirmed_deposit (varchar(34), varchar(64)) cascade;
 drop function if exists get_pending_deposits (varchar(4), integer) cascade;
 drop function if exists confirmed_deposit (bigint, varchar(34), varchar(64), integer) cascade;
 drop function if exists get_unconfirmed_withdrawal_tx (varchar(4), integer) cascade;
+drop function if exists get_last_confirmed_withdrawal_tx (varchar(4), integer) cascade;
 drop function if exists create_withdrawal_tx (varchar(4), integer) cascade;
-drop function if exists get_withdrawal_tx (bigint) cascade;
+drop function if exists get_withdrawal_tx_data (bigint) cascade;
 drop function if exists sent_withdrawal_tx (bigint, varchar(64), numeric(23,8)) cascade;
 drop function if exists confirmed_withdrawal_tx (bigint, numeric(23,8)) cascade;
 drop function if exists create_cold_storage_transfer (bigint, varchar(34), numeric(23,8)) cascade;
+drop function if exists get_cold_storage_transfer (bigint) cascade;
 drop function if exists set_withdrawal_tx_hash_mutated (bigint, varchar(64)) cascade;
 

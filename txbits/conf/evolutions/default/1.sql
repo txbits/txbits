@@ -30,7 +30,7 @@ create table currencies (
 
 create table dw_fees (
     currency varchar(4) not null,
-    method varchar(10) not null,
+    method varchar(16) not null,
     deposit_constant numeric(23,8) not null check(deposit_constant >= 0),
     deposit_linear numeric(23,8) not null check(deposit_linear >= 0),
     withdraw_constant numeric(23,8) not null check(withdraw_constant >= 0),
@@ -301,6 +301,8 @@ create table withdrawals_crypto_tx (
     created timestamp default current_timestamp not null,
     sent timestamp,
     confirmed timestamp,
+    check((tx_hash is null and sent is null) or (tx_hash is not null and sent is not null)),
+    check(sent is not null or confirmed is null),
     foreign key (currency) references currencies(currency),
     foreign key (currency, node_id) references wallets_crypto(currency, node_id)
 );

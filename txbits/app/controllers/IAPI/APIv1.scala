@@ -91,8 +91,8 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
               val res = globals.engineModel.askBid(Some(request.user.id), None, base, counter, amount, price, isBid = false)
-              if (res) {
-                Ok(Json.obj())
+              if (res.isDefined) {
+                Ok(Json.toJson(res.get))
               } else {
                 BadRequest(Json.obj("message" -> "Non-sufficient funds."))
               }
@@ -128,8 +128,8 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
           globals.metaModel.activeMarkets.get(base, counter) match {
             case Some((active, minAmount)) if active && amount >= minAmount =>
               val res = globals.engineModel.askBid(Some(request.user.id), None, base, counter, amount, price, isBid = true)
-              if (res) {
-                Ok(Json.obj())
+              if (res.isDefined) {
+                Ok(Json.toJson(res.get))
               } else {
                 BadRequest(Json.obj("message" -> "Non-sufficient funds."))
               }
@@ -164,24 +164,6 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
     }.getOrElse(
       BadRequest(Json.obj("message" -> "Failed to parse input."))
     )
-  }
-
-  def openTrades(base: String, counter: String) = Action { implicit request =>
-    // a specific pair will be given as an argument
-    if (globals.metaModel.activeMarkets.contains(base, counter)) {
-      Ok(globals.engineModel.ordersDepth(base, counter))
-    } else {
-      BadRequest(Json.obj("message" -> "Invalid pair."))
-    }
-  }
-
-  def recentTrades(base: String, counter: String) = Action { implicit request =>
-    // a specific pair will be given as an argument
-    if (globals.metaModel.activeMarkets.contains(base, counter)) {
-      Ok(engineModel.recentTrades(base, counter))
-    } else {
-      BadRequest(Json.obj("message" -> "Invalid pair."))
-    }
   }
 
   def depositWithdrawHistory = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
