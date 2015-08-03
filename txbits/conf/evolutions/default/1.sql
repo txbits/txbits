@@ -143,9 +143,9 @@ create table withdrawal_limits (
     primary key (currency)
 );
 
-create sequence market_id_seq;
+create sequence market_id_seq maxvalue 2147483647;
 create table markets (
-    id bigint default nextval('market_id_seq') primary key,
+    id int default nextval('market_id_seq') primary key,
     base varchar(4) not null, -- BTC in BTC/USD
     counter varchar(4) not null, -- USD in BTC/USD
     unique (base, counter),
@@ -226,8 +226,10 @@ create table wallets_crypto (
     primary key (currency, node_id)
 );
 
+create sequence address_id_seq;
 create table users_addresses (
-    address varchar(34) primary key,
+    id bigint default nextval('address_id_seq') primary key,
+    address varchar(34) not null unique,
     user_id bigint default 0 not null,
     currency varchar(4) not null,
     node_id integer not null,
@@ -396,4 +398,5 @@ drop sequence if exists deposit_withdraw_id_seq cascade;
 drop sequence if exists market_id_seq cascade;
 drop sequence if exists event_log_id_seq cascade;
 drop sequence if exists withdrawals_crypto_tx_id_seq cascade;
+drop sequence if exists address_id_seq cascade;
 drop extension pgcrypto;
