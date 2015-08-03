@@ -55,7 +55,11 @@ $(function(){
         $accepttos.change(check_form);
         $this.submit(function(e) {
             check_form();
-            if ($this.find(".has-error").length > 0) {
+            // extra checks only when submitting
+            if ($password1.val().length == 0) {
+                show_error($fields, $password1Field, "Please enter a password.");
+            }
+            if ($this.find(".has-error").length > 0 || ($accepttos.length != 0 && !$accepttos.prop('checked'))) {
                 e.preventDefault();
             }
         })
