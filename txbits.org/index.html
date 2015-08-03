@@ -65,7 +65,7 @@
         <div class="jumbotron intro-image">
             <div class="container">
                 <h1>TxBits</h1>
-                <p class="subtitle">An open-source Bitcoin exchange</p>
+                <p class="subtitle">An open source Bitcoin and crypto currency exchange</p>
             </div>
         </div>
 
@@ -82,7 +82,7 @@
                     <div class="row detailed-points">
                         <div class="col-md-12">
                             <h2>Our Goal</h2>
-                            <p>TxBits aims to be the first commercial-grade open source Bitcoin/cryptocurrency
+                            <p>TxBits aims to be the first commercial-grade open source Bitcoin and crypto currency
                             exchange. We hope to be able to leverage the power of open source to
                             build the exchange with the <b>lowest fees</b>, <b>highest security</b>
                             and greatest <b>transparency</b>. In case the .com/.org domains are confusing:
@@ -99,15 +99,7 @@
                             <h2>Technical Design</h2>
                             <p>Our stack is: <b>Scala</b>, <b>Play</b>, <b>PostgreSQL</b>, <b>Bitcoin Core</b> and <b>Litecoin Core</b>.
                                 The software can support other Bitcoin-based cryptocurrencies such as Peercoin and Primecoin. We are
-                                currently using <b>nginx</b> as our frontend webserver. There are many different
-                                possible ways to deploy the exchange so we plan to show you how we do it. We will open source
-                                our <b>ansible</b> configs later on as an example of how to do it securely.
-                            </p>
-                            <p>This project is a work in progress and our initial release is intended for testing purposes only.
-                                For this reason, our public beta handles testnet coins only. There is currently limited support for
-                                administration tasks, fiat currencies, and the unit tests provide only partial coverage of the
-                                code base. While we have attempted to avoid performance pitfalls, we have done very little
-                                performance and load testing. We would appreciate contributions on any of these tasks.
+                                currently using <b>nginx</b> as our frontend webserver.
                             </p>
                         </div>
                     </div>
@@ -122,7 +114,7 @@
                                 with security in mind. This means that it is possible
                                 to lock everything down to a very high degree so that if an attacker
                                 is able to get through one layer of defense, there will still be more
-                                before they can reach the money.</p>
+                                before they can reach any funds.</p>
                             <p>There are four main components:
                                 the frontend, the database, the wallet actor and the individual
                                 wallets (bitcoind, litecoind). The frontend does not have direct access
@@ -130,12 +122,11 @@
                                 looks at the database and processes deposits and withdrawals. In the event
                                 of an attacker compromising the frontend, we (or whoever is hosting the exchange)
                                 will have the opportunity of
-                                detecting them and preventing them from stealing any coins. We are gradually
-                                moving all of our database accesses to a model where the frontend
-                                has very few permissions on the database, which will further
-                                limit what an attacker can do.</p>
-                            <p>Our initial release includes automatic wallet backups and transfers to cold storage as well as a strong
-                                password policy and two factor authentication.</p>
+                                detecting them and preventing them from stealing any coins. The frontend
+                                has very few permissions on the database, only the ability to run predefined
+                                "safe" functions, which further limits what an attacker can do.</p>
+                            <p>Our release includes automatic wallet backups and transfers to cold storage as well as a strong
+                                password policy, two factor authentication, and email confirmations with PGP encryption.</p>
                         </div>
                     </div>
                 </div>
@@ -223,7 +214,7 @@ DSYkmWIz7t5GMaAk9soZDOnY6bbuvZLx2i/Vjg5R0HEKammUOuOi7QtGb6pk1jTe
                     <div class="row detailed-points">
                         <div class="col-md-12">
                             <h2>Open Source License</h2>
-                            <p>For our license we have chosen AGPLv3, which means among other things that anyone who modifies the
+                            <p>TxBits uses the AGPLv3 license, which means among other things that anyone who modifies the
                                 TxBits software has to provide any users of their service with a copy of the source code.</p>
                         </div>
                     </div>
@@ -243,7 +234,7 @@ DSYkmWIz7t5GMaAk9soZDOnY6bbuvZLx2i/Vjg5R0HEKammUOuOi7QtGb6pk1jTe
                         </div>
                         <div class="col-sm-6">
                             <p class="text-right">
-                            Copyright &copy; 2014<br>
+                            Copyright &copy; 2014-2015<br>
                             All rights reserved
                             </p>
                         </div>
@@ -253,10 +244,9 @@ DSYkmWIz7t5GMaAk9soZDOnY6bbuvZLx2i/Vjg5R0HEKammUOuOi7QtGb6pk1jTe
         </div>
     </div>
 
-        <script src="./js/vendor/jquery-2.1.1.js"></script>
-        <script src="./js/vendor/jquery-migrate-1.2.1.js"></script>
-        <script src="./js/vendor/bootstrap.js"></script>
-        <script src="./js/vendor/handlebars-v2.0.0.js"></script>
+        <script src="./js/vendor/jquery-2.1.1.min.js"></script>
+        <script src="./js/vendor/jquery-migrate-1.2.1.min.js"></script>
+        <script src="./js/vendor/bootstrap.min.js"></script>
 
         <script>
           (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
