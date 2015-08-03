@@ -34,7 +34,9 @@ $(function(){
         var $accepttos = $this.find('#accepttos');
         var $fields = [$currentPasswordField, $password1Field, $password2Field];
         function check_form() {
-            if ($password1.val().length < min_len && $password1.val().length > 0) {
+            if ($password1.val().length == 0) {
+                show_error($fields, $password1Field, "Please enter a password.");
+            } else if ($password1.val().length < min_len) {
                 show_error($fields, $password1Field, "Password not long enough.");
             } else if ($password1.val() != $password2.val()) {
                 show_error($fields, $password2Field, "Passwords don't match.");
@@ -55,10 +57,6 @@ $(function(){
         $accepttos.change(check_form);
         $this.submit(function(e) {
             check_form();
-            // extra checks only when submitting
-            if ($password1.val().length == 0) {
-                show_error($fields, $password1Field, "Please enter a password.");
-            }
             if ($this.find(".has-error").length > 0 || ($accepttos.length != 0 && !$accepttos.prop('checked'))) {
                 e.preventDefault();
             }
