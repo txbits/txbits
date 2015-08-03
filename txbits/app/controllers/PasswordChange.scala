@@ -19,7 +19,7 @@ package controllers
 import javax.inject.Inject
 
 import play.api.Play
-import play.api.data.Form
+import play.api.data.{ FormError, Form }
 import play.api.data.Forms._
 import play.api.data.validation.{ Invalid, Valid, Constraint }
 import play.api.i18n.Messages
@@ -88,8 +88,7 @@ class PasswordChange @Inject() (val messagesApi: MessagesApi) extends Controller
             Mailer.sendPasswordChangedNotice(request.user.email, globals.userModel.userPgpByEmail(request.user.email))
             Redirect(onHandlePasswordChangeGoTo).flashing(Success -> Messages(OkMessage))
           } else {
-            //TODO: Show an error with Messages(InvalidPasswordMessage)
-            BadRequest(views.html.auth.passwordChange(form))
+            BadRequest(views.html.auth.passwordChange(form.withError("currentPassword", Messages(InvalidPasswordMessage))))
           }
         }
       )
