@@ -207,38 +207,7 @@ package object globals {
 
 }
 
-class Global(val messagesApi: MessagesApi) extends GlobalSettings with I18nSupport {
-
-  override def onError(request: RequestHeader, ex: Throwable): Future[Result] = {
-    implicit val r = request
-    request.contentType.map {
-      case "application/json" =>
-        Future.successful(InternalServerError(Json.toJson(Map("error" -> ("Internal Error: " + ex.getMessage)))))
-      case _ =>
-
-        Future.successful(InternalServerError(views.html.meta.error(ex)))
-    }.getOrElse(Future.successful(InternalServerError(views.html.meta.error(ex))))
-  }
-
-  override def onHandlerNotFound(request: RequestHeader) = {
-    implicit val r = request
-    request.contentType.map {
-      case "application/json" =>
-        Future.successful(NotFound(Json.toJson(Map("error" -> ("Not found: " + request.path)))))
-      case _ =>
-        Future.successful(NotFound(views.html.meta.notFound(request.path)))
-    }.getOrElse(Future.successful(NotFound(views.html.meta.notFound(request.path))))
-  }
-
-  override def onBadRequest(request: RequestHeader, error: String) = {
-    implicit val r = request
-    request.contentType.map {
-      case "application/json" =>
-        Future.successful(BadRequest(Json.toJson(Map("error" -> ("Bad Request: " + error)))))
-      case _ =>
-        Future.successful(BadRequest(views.html.meta.badRequest(error)))
-    }.getOrElse(Future.successful(BadRequest(views.html.meta.badRequest(error))))
-  }
+object Global extends GlobalSettings {
 
   override def onStart(app: Application) {
     Logger.info("Application has started")
