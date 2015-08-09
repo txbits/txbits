@@ -91,7 +91,7 @@ create or replace function
 create_deposit (
   a_currency varchar(4),
   a_node_id integer,
-  a_address varchar(34),
+  a_address varchar(35),
   a_amount numeric(23,8),
   a_tx_hash varchar(64)
 ) returns bigint as $$
@@ -127,7 +127,7 @@ create or replace function
 create_confirmed_deposit (
   a_currency varchar(4),
   a_node_id integer,
-  a_address varchar(34),
+  a_address varchar(35),
   a_amount numeric(23,8),
   a_tx_hash varchar(64)
 ) returns void as $$
@@ -142,7 +142,7 @@ $$ language plpgsql volatile security invoker set search_path = public, pg_temp 
 
 create or replace function
 is_confirmed_deposit (
-  a_address varchar(34),
+  a_address varchar(35),
   a_amount numeric(23,8),
   a_tx_hash varchar(64)
 ) returns boolean as $$
@@ -157,7 +157,7 @@ get_pending_deposits (
   a_currency varchar(4),
   a_node_id integer,
   out id bigint,
-  out address varchar(34),
+  out address varchar(35),
   out amount numeric(23,8),
   out tx_hash varchar(64)
 ) returns setof record as $$
@@ -172,7 +172,7 @@ $$ language sql stable security invoker set search_path = public, pg_temp cost 1
 create or replace function
 confirmed_deposit (
   a_id bigint,
-  a_address varchar(34),
+  a_address varchar(35),
   a_tx_hash varchar(64),
   a_node_id integer
 ) returns void as $$
@@ -277,7 +277,7 @@ $$ language plpgsql volatile security invoker set search_path = public, pg_temp 
 create or replace function
 get_withdrawal_tx_data (
   a_tx_id bigint,
-  out address varchar(34),
+  out address varchar(35),
   out value numeric(23,8)
 ) returns setof record as $$
   select address, sum(amount - fee) as value
@@ -324,7 +324,7 @@ $$ language plpgsql volatile security invoker set search_path = public, pg_temp 
 create or replace function
 create_cold_storage_transfer (
   a_tx_id bigint,
-  a_address varchar(34),
+  a_address varchar(35),
   a_value numeric(23,8)
 ) returns void as $$
   insert into withdrawals_crypto_tx_cold_storage (id, address, value)
@@ -334,7 +334,7 @@ $$ language sql volatile security invoker set search_path = public, pg_temp cost
 create or replace function
 get_cold_storage_transfer (
   a_tx_id bigint,
-  out address varchar(34),
+  out address varchar(35),
   out value numeric(23,8)
 ) returns record as $$
   select address, value from withdrawals_crypto_tx_cold_storage
@@ -359,18 +359,18 @@ drop function if exists get_node_info (varchar(4), integer) cascade;
 drop function if exists get_balance (varchar(4), integer) cascade;
 drop function if exists get_last_block_read (varchar(4), integer) cascade;
 drop function if exists set_last_block_read (varchar(4), integer, integer, integer) cascade;
-drop function if exists create_deposit (varchar(4), integer, varchar(34), numeric(23,8), varchar(64)) cascade;
-drop function if exists create_confirmed_deposit (varchar(4), integer, varchar(34), numeric(23,8), varchar(64)) cascade;
-drop function if exists is_confirmed_deposit (varchar(34), varchar(64)) cascade;
+drop function if exists create_deposit (varchar(4), integer, varchar(35), numeric(23,8), varchar(64)) cascade;
+drop function if exists create_confirmed_deposit (varchar(4), integer, varchar(35), numeric(23,8), varchar(64)) cascade;
+drop function if exists is_confirmed_deposit (varchar(35), varchar(64)) cascade;
 drop function if exists get_pending_deposits (varchar(4), integer) cascade;
-drop function if exists confirmed_deposit (bigint, varchar(34), varchar(64), integer) cascade;
+drop function if exists confirmed_deposit (bigint, varchar(35), varchar(64), integer) cascade;
 drop function if exists get_unconfirmed_withdrawal_tx (varchar(4), integer) cascade;
 drop function if exists get_last_confirmed_withdrawal_tx (varchar(4), integer) cascade;
 drop function if exists create_withdrawal_tx (varchar(4), integer) cascade;
 drop function if exists get_withdrawal_tx_data (bigint) cascade;
 drop function if exists sent_withdrawal_tx (bigint, varchar(64), numeric(23,8)) cascade;
 drop function if exists confirmed_withdrawal_tx (bigint, numeric(23,8)) cascade;
-drop function if exists create_cold_storage_transfer (bigint, varchar(34), numeric(23,8)) cascade;
+drop function if exists create_cold_storage_transfer (bigint, varchar(35), numeric(23,8)) cascade;
 drop function if exists get_cold_storage_transfer (bigint) cascade;
 drop function if exists set_withdrawal_tx_hash_mutated (bigint, varchar(64)) cascade;
 

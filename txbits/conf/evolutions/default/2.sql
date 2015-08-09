@@ -1415,7 +1415,7 @@ create or replace function
 get_addresses (
   a_uid bigint,
   a_currency varchar(4),
-  out o_address varchar(34),
+  out o_address varchar(35),
   out o_assigned timestamp(3)
 ) returns setof record as $$
 declare
@@ -1459,7 +1459,7 @@ create or replace function
 get_all_addresses (
   a_uid bigint,
   out o_currency varchar(4),
-  out o_address varchar(34),
+  out o_address varchar(35),
   out o_assigned timestamp(3)
 ) returns setof record as $$
 begin
@@ -1506,7 +1506,7 @@ user_pending_withdrawals (
   out amount numeric(23,8),
   out fee numeric(23,8),
   out created timestamp(3),
-  out info varchar(34),
+  out info varchar(35),
   out user_confirmed boolean
 ) returns setof record as $$
 begin
@@ -1529,7 +1529,7 @@ user_pending_deposits (
   out amount numeric(23,8),
   out fee numeric(23,8),
   out created timestamp(3),
-  out info varchar(34)
+  out info varchar(35)
 ) returns setof record as $$
 begin
   if a_uid = 0 then
@@ -1669,7 +1669,7 @@ deposit_withdraw_history (
   out currency varchar(4),
   out fee numeric(23,8),
   out type text,
-  out address varchar(34),
+  out address varchar(35),
   out user_rejected boolean
 ) returns setof record as $$
 begin
@@ -1831,7 +1831,7 @@ create or replace function
 withdraw_crypto (
   a_uid bigint,
   a_amount numeric(23,8),
-  a_address varchar(34),
+  a_address varchar(35),
   a_currency varchar(4),
   a_tfa_code int
 ) returns bigint as $$
@@ -1962,4 +1962,4 @@ drop function if exists trade_fees () cascade;
 drop function if exists dw_limits () cascade;
 drop function if exists get_pairs () cascade;
 drop function if exists chart_from_db (varchar(4), varchar(4)) cascade;
-drop function if exists withdraw_crypto (bigint, numeric(23,8), varchar(34), varchar(4)) cascade;
+drop function if exists withdraw_crypto (bigint, numeric(23,8), varchar(35), varchar(4)) cascade;

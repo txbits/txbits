@@ -229,7 +229,7 @@ create table wallets_crypto (
 create sequence address_id_seq;
 create table users_addresses (
     id bigint default nextval('address_id_seq') primary key,
-    address varchar(34) not null unique,
+    address varchar(35) not null unique,
     user_id bigint default 0 not null,
     currency varchar(4) not null,
     node_id integer not null,
@@ -259,7 +259,7 @@ create table deposits_crypto (
     id bigint not null primary key,
     amount numeric(23,8) not null, -- already in deposits but needed here for a unique constraint
     tx_hash varchar(64) not null,
-    address varchar(34) not null,
+    address varchar(35) not null,
     confirmed timestamp(3),
     unique(address, tx_hash, amount),
     foreign key (id, amount) references deposits(id, amount),
@@ -311,7 +311,7 @@ create table withdrawals_crypto_tx (
 
 create table withdrawals_crypto_tx_cold_storage (
     id bigint not null primary key,
-    address varchar(34) not null,
+    address varchar(35) not null,
     value numeric(23,8) not null check(value > 0),
     foreign key (id) references withdrawals_crypto_tx(id)
 );
@@ -325,7 +325,7 @@ create table withdrawals_crypto_tx_mutated (
 create table withdrawals_crypto (
     id bigint not null primary key,
     withdrawals_crypto_tx_id bigint,
-    address varchar(34) not null,
+    address varchar(35) not null,
     foreign key (id) references withdrawals(id) on delete cascade,
     foreign key (withdrawals_crypto_tx_id) references withdrawals_crypto_tx(id)
 );
