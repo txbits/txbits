@@ -781,7 +781,7 @@ get_api_keys (
   a_id bigint,
   out api_key text,
   out comment text,
-  out created timestamp,
+  out created timestamp(3),
   out trading boolean,
   out trade_history boolean,
   out list_balance boolean
@@ -1340,13 +1340,13 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 create or replace function
 login_log (
   a_uid bigint,
-  a_before timestamp default current_timestamp,
+  a_before timestamp(3) default current_timestamp,
   a_limit integer default 20,
   a_last_id bigint default 0,
   out id bigint,
   out email varchar(256),
   out ip text,
-  out created timestamp,
+  out created timestamp(3),
   out type text
 ) returns setof record as $$
 begin
@@ -1416,7 +1416,7 @@ get_addresses (
   a_uid bigint,
   a_currency varchar(4),
   out o_address varchar(34),
-  out o_assigned timestamp
+  out o_assigned timestamp(3)
 ) returns setof record as $$
 declare
   enabled boolean;;
@@ -1460,7 +1460,7 @@ get_all_addresses (
   a_uid bigint,
   out o_currency varchar(4),
   out o_address varchar(34),
-  out o_assigned timestamp
+  out o_assigned timestamp(3)
 ) returns setof record as $$
 begin
   if a_uid = 0 then
@@ -1505,7 +1505,7 @@ user_pending_withdrawals (
   out currency varchar(4),
   out amount numeric(23,8),
   out fee numeric(23,8),
-  out created timestamp,
+  out created timestamp(3),
   out info varchar(34),
   out user_confirmed boolean
 ) returns setof record as $$
@@ -1528,7 +1528,7 @@ user_pending_deposits (
   out currency varchar(4),
   out amount numeric(23,8),
   out fee numeric(23,8),
-  out created timestamp,
+  out created timestamp(3),
   out info varchar(34)
 ) returns setof record as $$
 begin
@@ -1553,7 +1553,7 @@ user_pending_trades (
   out price numeric(23,8),
   out base varchar(4),
   out counter varchar(4),
-  out created timestamp
+  out created timestamp(3)
 ) returns setof record as $$
 declare
   a_user_id bigint;;
@@ -1584,7 +1584,7 @@ recent_trades (
   a_base varchar(4),
   a_counter varchar(4),
   out amount numeric(23,8),
-  out created timestamp,
+  out created timestamp(3),
   out price numeric(23,8),
   out base varchar(4),
   out counter varchar(4),
@@ -1601,12 +1601,12 @@ create or replace function
 trade_history (
   a_uid bigint,
   a_api_key text,
-  a_before timestamp default current_timestamp,
+  a_before timestamp(3) default current_timestamp,
   a_limit integer default 20,
   a_last_id bigint default 0,
   out id bigint,
   out amount numeric(23,8),
-  out created timestamp,
+  out created timestamp(3),
   out price numeric(23,8),
   out base varchar(4),
   out counter varchar(4),
@@ -1660,12 +1660,12 @@ $$ language plpgsql stable security definer set search_path = public, pg_temp co
 create or replace function
 deposit_withdraw_history (
   a_id bigint,
-  a_before timestamp default current_timestamp,
+  a_before timestamp(3) default current_timestamp,
   a_limit integer default 20,
   a_last_id bigint default 0,
   out id bigint,
   out amount numeric(23,8),
-  out created timestamp,
+  out created timestamp(3),
   out currency varchar(4),
   out fee numeric(23,8),
   out type text,
@@ -1762,9 +1762,9 @@ $$ language sql stable security definer set search_path = public, pg_temp cost 1
 
 create or replace function
 get_recent_matches (
-  a_last_match timestamp,
+  a_last_match timestamp(3),
   out amount numeric(23,8),
-  out created timestamp,
+  out created timestamp(3),
   out price numeric(23,8),
   out base varchar(4),
   out counter varchar(4)
@@ -1814,7 +1814,7 @@ create or replace function
 chart_from_db (
   a_base varchar(4),
   a_counter varchar(4),
-  out start_of_period timestamp,
+  out start_of_period timestamp(3),
   out volume numeric(23,8),
   out low numeric(23,8),
   out high numeric(23,8),
@@ -1873,7 +1873,7 @@ stats_new(
   new_price numeric(23,8)
 ) returns void as $$
 declare
-  period timestamp;;
+  period timestamp(3);;
 begin
   period := date_trunc('hour', current_timestamp) + INTERVAL '30 min' * trunc(extract(minute from current_timestamp) / 30);;
 
@@ -1941,7 +1941,7 @@ drop function if exists delete_expired_tokens () cascade;
 drop function if exists totp_token_is_blacklisted (bigint, bigint) cascade;
 drop function if exists delete_expired_totp_blacklist_tokens () cascade;
 drop function if exists new_log (bigint, text, varchar(256), text, text, inet, text) cascade;
-drop function if exists login_log (bigint, timestamp, integer, bigint) cascade;
+drop function if exists login_log (bigint, timestamp(3), integer, bigint) cascade;
 drop function if exists balance (bigint, text) cascade;
 drop function if exists get_required_confirmations () cascade;
 drop function if exists get_addresses (bigint, varchar(4)) cascade;
@@ -1950,12 +1950,12 @@ drop function if exists user_pending_withdrawals (bigint) cascade;
 drop function if exists user_pending_deposits (bigint) cascade;
 drop function if exists user_pending_trades (bigint, text) cascade;
 drop function if exists recent_trades (varchar(4), varchar(4)) cascade;
-drop function if exists trade_history (bigint, text, timestamp, integer, bigint) cascade;
-drop function if exists deposit_withdraw_history (bigint, timestamp, integer, bigint) cascade;
+drop function if exists trade_history (bigint, text, timestamp(3), integer, bigint) cascade;
+drop function if exists deposit_withdraw_history (bigint, timestamp(3), integer, bigint) cascade;
 drop function if exists open_asks (varchar(4), varchar(4)) cascade;
 drop function if exists open_bids (varchar(4), varchar(4)) cascade;
 drop function if exists orders_depth (varchar(4), varchar(4)) cascade;
-drop function if exists get_recent_matches (timestamp) cascade;
+drop function if exists get_recent_matches (timestamp(3)) cascade;
 drop function if exists get_currencies () cascade;
 drop function if exists dw_fees () cascade;
 drop function if exists trade_fees () cascade;

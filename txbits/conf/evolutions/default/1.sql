@@ -46,7 +46,7 @@ create table trade_fees (
 
 create table users (
     id bigint primary key,
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     email varchar(256) not null,
     on_mailing_list bool default false not null,
     tfa_enabled bool default false not null,
@@ -59,7 +59,7 @@ create unique index unique_lower_email on users (lower(email));
 create table users_passwords (
     user_id bigint not null,
     password varchar(256) not null, -- salt is a part of the password field
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     foreign key (user_id) references users(id),
     primary key (user_id, created)
 );
@@ -68,7 +68,7 @@ create table users_api_keys (
     user_id bigint not null,
     api_key text not null unique check(length(api_key) = 24), -- 18 bytes in Base64
     comment text not null default '',
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     active bool default true not null,
     trading bool default false not null,
     trade_history bool default false not null,
@@ -80,7 +80,7 @@ create table users_api_keys (
 create table users_tfa_secrets (
     user_id bigint not null,
     tfa_secret varchar(256),
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     foreign key (user_id) references users(id),
     primary key (user_id, created)
 );
@@ -88,7 +88,7 @@ create table users_tfa_secrets (
 create table users_backup_otps (
     user_id bigint not null,
     otp int not null,
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     foreign key (user_id) references users(id),
     primary key (user_id, otp)
 );
@@ -102,7 +102,7 @@ create table trusted_action_requests (
 create table totp_tokens_blacklist (
     user_id bigint not null,
     token int not null,
-    expiration timestamp not null,
+    expiration timestamp(3) not null,
     foreign key (user_id) references users(id)
 );
 create index totp_tokens_blacklist_expiration_idx on totp_tokens_blacklist(expiration desc);
@@ -110,7 +110,7 @@ create index totp_tokens_blacklist_expiration_idx on totp_tokens_blacklist(expir
 create sequence event_log_id_seq;
 create table event_log (
     id bigint default nextval('event_log_id_seq') primary key,
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     email varchar(256),
     user_id bigint,
     ip inet,
@@ -161,7 +161,7 @@ create table markets (
 create sequence order_id_seq;
 create table orders (
     id bigint default nextval('order_id_seq') primary key,
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     original numeric(23,8) not null check(original > 0),
     closed bool default false not null,
     remains numeric(23,8) not null check(original >= remains and (remains > 0 or remains = 0 and closed = true)),
@@ -188,7 +188,7 @@ create table matches (
     ask_fee numeric(23,8) not null check(ask_fee >= 0),
     bid_fee numeric(23,8) not null check(bid_fee >= 0),
     price numeric(23,8) not null check(price > 0),
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     is_bid bool not null, -- true when an ask was matched by a new bid
     base varchar(4) not null,
     counter varchar(4) not null,
@@ -233,8 +233,8 @@ create table users_addresses (
     user_id bigint default 0 not null,
     currency varchar(4) not null,
     node_id integer not null,
-    created timestamp default current_timestamp not null,
-    assigned timestamp,
+    created timestamp(3) default current_timestamp not null,
+    assigned timestamp(3),
     foreign key (currency) references currencies(currency),
     foreign key (currency, node_id) references wallets_crypto(currency, node_id),
     foreign key (user_id) references users(id)
@@ -245,7 +245,7 @@ create sequence deposit_withdraw_id_seq;
 create table deposits (
     id bigint default nextval('deposit_withdraw_id_seq') primary key,
     amount numeric(23,8) not null check(amount > 0), -- before the fee
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     user_id bigint not null,
     currency varchar(4) not null,
     fee numeric(23,8) not null check(fee >= 0),
@@ -260,7 +260,7 @@ create table deposits_crypto (
     amount numeric(23,8) not null, -- already in deposits but needed here for a unique constraint
     tx_hash varchar(64) not null,
     address varchar(34) not null,
-    confirmed timestamp,
+    confirmed timestamp(3),
     unique(address, tx_hash, amount),
     foreign key (id, amount) references deposits(id, amount),
     foreign key (address) references users_addresses(address),
@@ -276,12 +276,12 @@ create table deposits_other (
 create table withdrawals (
     id bigint default nextval('deposit_withdraw_id_seq') primary key,
     amount numeric(23,8) not null check(amount > 0), -- before the fee
-    created timestamp default current_timestamp not null,
+    created timestamp(3) default current_timestamp not null,
     user_id bigint not null,
     currency varchar(4) not null,
     fee numeric(23,8) not null check(fee >= 0),
     confirmation_token varchar(256) default null, -- this is set to non-null when the user trust service sends out the token
-    token_expiration timestamp, -- this is set to non-null when the user trust service sends out the token
+    token_expiration timestamp(3), -- this is set to non-null when the user trust service sends out the token
     user_confirmed boolean not null default false,
     user_rejected boolean not null default false,
     check(not (user_confirmed and user_rejected)),
@@ -300,9 +300,9 @@ create table withdrawals_crypto_tx (
     tx_amount numeric(23,8) check(tx_amount >= 0),
     tx_fee numeric(23,8) check(tx_fee >= 0),
     node_id integer not null,
-    created timestamp default current_timestamp not null,
-    sent timestamp,
-    confirmed timestamp,
+    created timestamp(3) default current_timestamp not null,
+    sent timestamp(3),
+    confirmed timestamp(3),
     check((tx_hash is null and sent is null) or (tx_hash is not null and sent is not null)),
     check(sent is not null or confirmed is null),
     foreign key (currency) references currencies(currency),
@@ -340,8 +340,8 @@ create table withdrawals_other (
 create table tokens (
     token varchar(256) not null primary key,
     email varchar(256) not null,
-    creation timestamp not null,
-    expiration timestamp not null,
+    creation timestamp(3) not null,
+    expiration timestamp(3) not null,
     is_signup bool not null
 );
 create index tokens_expiration_idx on tokens(expiration desc);
@@ -350,7 +350,7 @@ create index tokens_expiration_idx on tokens(expiration desc);
 create table stats_30_min (
     base varchar(4) not null,
     counter varchar(4) not null,
-    start_of_period timestamp not null check(extract(minute from start_of_period) in (0, 30)),
+    start_of_period timestamp(3) not null check(extract(minute from start_of_period) in (0, 30)),
     volume numeric(23,8) not null,
     low numeric(23,8) not null,
     high numeric(23,8) not null,
