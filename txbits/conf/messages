@@ -97,6 +97,7 @@ exchange.account.api_reference.cancel_order=Cancel Order
 exchange.account.api_reference.list_orders=List Orders
 exchange.account.api_reference.trade_history=Trade History
 exchange.account.api_reference.list_balance=List Balance
+exchange.account.api_reference.type_info=Values with "" are strings. Fields in italics are optional.
 exchange.account.api_reference.example=Example with cURL
 
 exchange.account.api_keys.title=API Keys

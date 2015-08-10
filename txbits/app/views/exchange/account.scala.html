@@ -55,16 +55,17 @@
                                 <tr><td>@Messages("exchange.account.api_reference.sell")</td><td class="money">/api/1/ask</td></tr>
                                 <tr><td></td><td class="json-ref">{"api_key":"","base":"","counter":"","amount":"","price":""}</td></tr>
                                 <tr><td>@Messages("exchange.account.api_reference.cancel_order")</td><td class="money">/api/1/cancel</td></tr>
-                                <tr><td></td><td class="json-ref">{"api_key":"","order":""}</td></tr>
+                                <tr><td></td><td class="json-ref">{"api_key":"","order":}</td></tr>
                                 <tr><td>@Messages("exchange.account.api_reference.list_orders")</td><td class="money">/api/1/pending_trades</td></tr>
                                 <tr><td></td><td class="json-ref">{"api_key":""}</td></tr>
                                 <tr><td>@Messages("exchange.account.api_reference.trade_history")</td><td class="money">/api/1/trade_history</td></tr>
-                                <tr><td></td><td class="json-ref">{"api_key":""<i>,"before":"","limit":"","last_id":""</i>}</td></tr>
+                                <tr><td></td><td class="json-ref">{"api_key":""<i>,"before":,"limit":,"last_id":</i>}</td></tr>
                                 <tr><td>@Messages("exchange.account.api_reference.list_balance")</td><td class="money">/api/1/balance</td></tr>
                                 <tr><td></td><td class="json-ref">{"api_key":""}</td></tr>
                             </tbody>
                         </table>
-                        <p>@Messages("exchange.account.api_reference.example"): curl -H "Content-Type: application/json" -X POST -d '{"api_key":""}' https://example.com/api/1/balance</p>
+                        <p>@Messages("exchange.account.api_reference.type_info")</p>
+                        <p>@Messages("exchange.account.api_reference.example"): curl -H "Content-Type: application/json" -X POST -d '{"api_key":"<b>API_KEY</b>","order":<b>42</b>}' https://example.com/api/1/cancel</p>
                     </div>
                 </div>
             </div>
