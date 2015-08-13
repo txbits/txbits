@@ -46,6 +46,7 @@
                 <div class="navbar-collapse collapse">
                     <ul class="nav navbar-nav">
                         <li><a href="#goal-wrap">Goal</a></li>
+                        <li><a href="#release-wrap">Release Notes</a></li>
                         <li><a href="#design-wrap">Design</a></li>
                         <li><a href="#security-wrap">Security</a></li>
                         <li><a href="#about-wrap">About Us</a></li>
@@ -65,7 +66,7 @@
         <div class="jumbotron intro-image">
             <div class="container">
                 <h1>TxBits</h1>
-                <p class="subtitle">An open-source Bitcoin exchange</p>
+                <p class="subtitle">An open source Bitcoin and crypto currency exchange</p>
             </div>
         </div>
 
@@ -73,7 +74,8 @@
             <div id="signup-wrap">
                 <div class="text-center">
                     <h3>Try our beta on the testnet:
-                    <a href="https://testnet.txbits.com">https://testnet.txbits.com</a></h3>
+                    <a href="https://testnet-txbits.com">https://testnet-txbits.com</a></h3>
+                    <p>Hosting fund: 17n97hGK7aGTTp67tYm1XCkFgCcVrLnZ7S</p>
                 </div>
             </div>
 
@@ -82,12 +84,36 @@
                     <div class="row detailed-points">
                         <div class="col-md-12">
                             <h2>Our Goal</h2>
-                            <p>TxBits aims to be the first commercial-grade open source Bitcoin/cryptocurrency
+                            <p>TxBits aims to be the first commercial-grade open source Bitcoin and crypto currency
                             exchange. We hope to be able to leverage the power of open source to
                             build the exchange with the <b>lowest fees</b>, <b>highest security</b>
                             and greatest <b>transparency</b>. In case the .com/.org domains are confusing:
                             We are following the WordPress model where .org is about the open source
                             project and .com is one instance of it.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="release-wrap" class="linkable">
+                <div class="container" id="beta">
+                    <div class="row detailed-points">
+                        <div class="col-md-12">
+                            <h2>Release Notes</h2>
+                            <p>The most recent stable release is TxBits v0.2.0. Short list of new features compared
+                            to our initial preview release:</p>
+                            <ul>
+                              <li>Rewritten trading engine</li>
+                              <li>Multicolumn partial indexes on the database</li>
+                              <li>Removal of all database triggers</li>
+                              <li>Locked down database permissions for the frontend</li>
+                              <li>2FA recovery codes</li>
+                              <li>2FA verification is now on the database (frontend cannot authorize actions without a token)</li>
+                              <li>PGP encryption of emails</li>
+                              <li>API keys for automated trading</li>
+                              <li>Option to have asymmetric trading fees</li>
+                              <li>Pagination of account history using continuous scroll</li>
+                              <li>Many other bug fixes and improvements</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -99,15 +125,7 @@
                             <h2>Technical Design</h2>
                             <p>Our stack is: <b>Scala</b>, <b>Play</b>, <b>PostgreSQL</b>, <b>Bitcoin Core</b> and <b>Litecoin Core</b>.
                                 The software can support other Bitcoin-based cryptocurrencies such as Peercoin and Primecoin. We are
-                                currently using <b>nginx</b> as our frontend webserver. There are many different
-                                possible ways to deploy the exchange so we plan to show you how we do it. We will open source
-                                our <b>ansible</b> configs later on as an example of how to do it securely.
-                            </p>
-                            <p>This project is a work in progress and our initial release is intended for testing purposes only.
-                                For this reason, our public beta handles testnet coins only. There is currently limited support for
-                                administration tasks, fiat currencies, and the unit tests provide only partial coverage of the
-                                code base. While we have attempted to avoid performance pitfalls, we have done very little
-                                performance and load testing. We would appreciate contributions on any of these tasks.
+                                currently using <b>nginx</b> as our frontend webserver.
                             </p>
                         </div>
                     </div>
@@ -122,7 +140,7 @@
                                 with security in mind. This means that it is possible
                                 to lock everything down to a very high degree so that if an attacker
                                 is able to get through one layer of defense, there will still be more
-                                before they can reach the money.</p>
+                                before they can reach any funds.</p>
                             <p>There are four main components:
                                 the frontend, the database, the wallet actor and the individual
                                 wallets (bitcoind, litecoind). The frontend does not have direct access
@@ -130,12 +148,11 @@
                                 looks at the database and processes deposits and withdrawals. In the event
                                 of an attacker compromising the frontend, we (or whoever is hosting the exchange)
                                 will have the opportunity of
-                                detecting them and preventing them from stealing any coins. We are gradually
-                                moving all of our database accesses to a model where the frontend
-                                has very few permissions on the database, which will further
-                                limit what an attacker can do.</p>
-                            <p>Our initial release includes automatic wallet backups and transfers to cold storage as well as a strong
-                                password policy and two factor authentication.</p>
+                                detecting them and preventing them from stealing any coins. The frontend
+                                has very few permissions on the database, only the ability to run predefined
+                                "safe" functions, which further limits what an attacker can do.</p>
+                            <p>Our release includes automatic wallet backups and transfers to cold storage as well as a strong
+                                password policy, two factor authentication, and email confirmations with PGP encryption.</p>
                         </div>
                     </div>
                 </div>
@@ -154,9 +171,9 @@
                                 <div class="caption">
                                     <h2>Viktor Stanchev</h2>
                                     <p>Core Developer</p>
-                                    <p></p><a href="" id="viktor-email">Turn on javascript to show email.</a></p>
+                                    <p></p><a href="" id="viktor-email">Turn on javascript to show.</a></p>
                                     <script>(function(){var at = String.fromCharCode(64);var e = "me"+at+"viktorstanchev.com"; var c = document.getElementById("viktor-email"); c.innerHTML = e; c.href = "mailto:"+e;})();</script>
-                                    <p><a href="http://viktorstanchev.com">http://viktorstanchev.com</a></p>
+                                    <p><a href="http://viktor.land">http://viktor.land</a></p>
                                 </div>
                             </div>
                         </div>
@@ -166,7 +183,7 @@
                                 <div class="caption">
                                     <h2>Kirk Zathey</h2>
                                     <p>Core Developer</p>
-                                     <p></p><a href="" id="kirk-email">Turn on javascript to show email.</a></p>
+                                     <p></p><a href="" id="kirk-email">Turn on javascript to show.</a></p>
                                     <script>(function(){var at = String.fromCharCode(64);var e = "zathey"+at+"gmail.com"; var c = document.getElementById("kirk-email"); c.innerHTML = e; c.href = "mailto:"+e;})();</script>
                                 </div>
                             </div>
@@ -183,6 +200,37 @@
                                 <a href="" id="contact-email2">Turn on javascript to show email.</a>
                                 <script>(function(){var at = String.fromCharCode(64);var e = "contact"+at+"txbits.com"; var c = document.getElementById("contact-email2"); c.innerHTML = e; c.href = "mailto:"+e;})();</script>
                             </p>
+                            <p>Use this PGP key to email us privately:</p>
+                            <pre>-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v2
+
+mQENBFRImFcBCADZ/BPVBNbgaBn3xACTbZExBmh6Co50WnHeDYx6/ydcBW35C09g
+nVDdGNDP0mwpnHgvO9dlRFn/LS8YyUrF4Wl8tBOroyxdSbmWa9JUW/JOB305Oca1
+jXjKwGGA7CH6TGZW3k/Gp9JqMtInwzqyFWKOOTJDOdhJRCmn18NKwBx7qKnOgJhV
+fi9WC1+cSEcrw4bdEMTbVpFqY6IwJ8e/VDPj4BHqBrX868d1vjYrsgqBjmVoVkov
+ezZBTVj2hX70IPByA3sUhLfD9TBQoJFtw1cyymsXyod9Klk8/X4xszSBTEr0hQJh
+rlurUX9hWq6w9TptvvgrFKpTl87DoGrvLCbPABEBAAG0GlR4Qml0cyA8dHhiaXRz
+QHR4Yml0cy5jb20+iQE/BBMBAgApBQJUSJhXAhsDBQkB4TOABwsJCAcDAgEGFQgC
+CQoLBBYCAwECHgECF4AACgkQ58q7kss1ivb7XQf/Zgr7JXOsyniZDdLQ4ncyx+Y+
+oNAC4ylPCRHegj7t+NLBQ36pYk3f7zAYrocOPkVLsL/6MEWI9r25pCAHINlKXbWf
+DaFoIaK59Fot0HyXSCqJ//Ji7j4smoJ2U1+rQhvbziTC+n5B1aJBcGGaFuBnL0/V
+cjrunQT6J6gIJ9uivthyJ2dB7j5SGfKX5hli8ZrbqaHbNOfmCVlQahH5kTns04iV
+jp5erK5LdRIXP8mx2MsN+Ah4TUfYzyw5fkiwjcb95WEmRJScS1ooN0MtDguY0hFT
+hJfKI3Qy45swNWuodvOnvlmLtzGbZMa2nhR6uU9sUJpQLnw623Ls4KgZA0pVWbkB
+DQRUSJhXAQgAqLDKrlDomBLhFFX/elvsNGVMGK/0sE7KPlmHgJ1m1q4lEb5tdIRc
+PbwsFbo6viS+L48wKIL/hPQ50BuuMTO89aOBgUp0F3f9w0jYCLRU+jb0RYpH1JDW
+aAwmyt3A8ud1PC+o3RhMfSQPOy9KAPY1As0KPkMc3E8iN+fnrXAc4FSOaQ6pZEQb
+DX/n7dp1pupHE787C144OP4fTSXxEqhAIiYnFzPCgxezofxgUhHOHhgpkQdehXlT
+XMo46r9JBBlI6m1OeR0aK/HBv3MthH/lgqq2aZOaHw1fm1c5uNyloORITzlzkVeQ
+Y141L6W8du3f9xAEgqYiWTQ3wlPMNajv/QARAQABiQElBBgBAgAPBQJUSJhXAhsM
+BQkB4TOAAAoJEOfKu5LLNYr28PkH/A6EhxPS1mwI+5AD1MaX1xL9JhBaHSBzS0Jc
+7UKHrzBBI1oZiKqE6l7vX9DdAUNen8Ke71SJwJTKNdJqugMLqlgv2gZ6N5jXIMTD
+JHFlcTl87GfzfJQoOVRje21AhWDGDybMYa1rEpxCvu42R26yEqmIzzizPPU0jmkI
+WXAdlluGpXOTaVA5wTf1dhZ9lwXLcYHhTDMAVMdP5bWgOxkzWsWPeG3tMqe1wAEQ
+DSYkmWIz7t5GMaAk9soZDOnY6bbuvZLx2i/Vjg5R0HEKammUOuOi7QtGb6pk1jTe
+6dbx2kFXkqZtHQJ4qG9IQzHtHXhwo5HyOQiqSFyaj307atnqR18=
+=fTrx
+-----END PGP PUBLIC KEY BLOCK-----</pre>
                         </div>
                     </div>
                 </div>
@@ -192,7 +240,7 @@
                     <div class="row detailed-points">
                         <div class="col-md-12">
                             <h2>Open Source License</h2>
-                            <p>For our license we have chosen AGPLv3, which means among other things that anyone who modifies the
+                            <p>TxBits uses the AGPLv3 license, which means among other things that anyone who modifies the
                                 TxBits software has to provide any users of their service with a copy of the source code.</p>
                         </div>
                     </div>
@@ -212,7 +260,7 @@
                         </div>
                         <div class="col-sm-6">
                             <p class="text-right">
-                            Copyright &copy; 2014<br>
+                            Copyright &copy; 2014-2015<br>
                             All rights reserved
                             </p>
                         </div>
@@ -222,10 +270,9 @@
         </div>
     </div>
 
-        <script src="./js/vendor/jquery-2.1.1.js"></script>
-        <script src="./js/vendor/jquery-migrate-1.2.1.js"></script>
-        <script src="./js/vendor/bootstrap.js"></script>
-        <script src="./js/vendor/handlebars-v2.0.0.js"></script>
+        <script src="./js/vendor/jquery-2.1.1.min.js"></script>
+        <script src="./js/vendor/jquery-migrate-1.2.1.min.js"></script>
+        <script src="./js/vendor/bootstrap.min.js"></script>
 
         <script>
           (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
