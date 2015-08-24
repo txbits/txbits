@@ -1,0 +1,55 @@
+#!/bin/sh
+
+BASEDIR=`dirname $0`
+MY_NAME=`basename $0`
+
+usage(){
+cat << _EOF_
+Create symbolic links for tools
+
+Usage:
+
+$MY_NAME [options] [directory]
+
+directory is base directory to paste links to (default: current directory)
+
+options:
+  -d  dry run
+_EOF_
+}
+
+while getopts d o
+do case "$o" in
+  d)  E='echo ';;
+  [?])
+    usage
+    exit 1
+    ;;
+  esac
+done
+shift `expr $OPTIND - 1`
+
+[ -n "$E" ] && echo "DRY RUN MODE"
+
+# TODO: Deal with trying to create links inside of $BASEDIR
+
+if [ -n "$1" ]; then
+  outdir=$1
+  shift
+  echo "Creating links in $outdir"
+fi
+
+dirs=`find $BASEDIR -type d ! -path .`
+files=`find $BASEDIR -type f ! -path $BASEDIR/$MY_NAME ! -name '.*' ! -path $BASEDIR/LICENSE`
+
+[ -n "$outdir" ] && cd $outdir
+
+for d in $dirs; do
+  $E mkdir -p $d
+done
+
+for f in $files; do
+  $E ln -s $f .
+done
+
+# vi: expandtab ts=2 sw=2
