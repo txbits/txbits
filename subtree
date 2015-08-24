@@ -1,0 +1,11 @@
+#!/bin/sh
+
+[ $# -eq 1 ] || exit 1
+
+[ -n `git rev-parse --show-toplevel` ] || exit 2
+
+cd `git rev-parse --show-toplevel`
+
+git subtree $1 -P db/db_tools st-db_tools master
+
+# vi: expandtab ts=2 sw=2
