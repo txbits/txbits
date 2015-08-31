@@ -1,6 +1,15 @@
 #!/usr/bin/env sh
 
-./rebuild $@ || exit $?
+BASEDIR=`dirname $0`
+if ! . $BASEDIR/lib/util.sh; then
+  echo "FATAL: error sourcing $BASEDIR/lib/util.sh" 1>&2
+  exit 99
+fi
+
+if [ "$1" == "-r" ]; then
+  shift
+  ./rebuild $@ || exit $?
+fi
 
 DBNAME=`psql -qtc 'SELECT current_database()' $@` || exit $?
 TEST_SCHEMAS=`psql -qtf test_schemas.sql $@` || exit $?
