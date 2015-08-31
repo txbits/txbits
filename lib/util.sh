@@ -31,7 +31,7 @@ debug_vars () {
   local value=''
   for variable in $*; do
     eval value=\$$variable
-    out="$out $variable=$value"
+    out="$out $variable='$value'"
   done
   debug $level $out
 }
