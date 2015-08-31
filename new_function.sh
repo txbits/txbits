@@ -37,6 +37,8 @@ END
 -- vi: expandtab ts=2 sw=2
 _EOF_
 
+git add $file
+
 if [ -n "$VISUAL" ]; then
     $VISUAL $file &
 elif [ -n "$EDITOR" ]; then
