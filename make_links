@@ -1,10 +1,7 @@
 #!/bin/sh
 
 BASEDIR=`dirname $0`
-if ! . $BASEDIR/lib/util.sh; then
-  echo "FATAL: error sourcing $BASEDIR/lib/util.sh" 1>&2
-  exit 99
-fi
+MY_NAME=`basename $0`
 
 usage(){
 cat << _EOF_
@@ -12,34 +9,25 @@ Create symbolic links for tools
 
 Usage:
 
-$ME [options] [directory]
+$MY_NAME [options] [directory]
 
 directory is base directory to paste links to (default: current directory)
 
 options:
-  -d  set debug level (overrides \$DEBUG)
-  -n  dry run
-  -s  source directory (default: $BASEDIR)
+  -d  dry run
 _EOF_
 }
 
-while getopts d:n o; do
-  case "$o" in
-    d)
-      DEBUG=$OPTARG
-      debug_sanity
-      ;;
-    n)  E='echo ';;
-    s)  source=$OPTARG
-    [?])
-      usage
-      exit 1
-      ;;
+while getopts d o
+do case "$o" in
+  d)  E='echo ';;
+  [?])
+    usage
+    exit 1
+    ;;
   esac
 done
-debug 19 "\$@=$@" # Can't use @ with debug_vars
 shift `expr $OPTIND - 1`
-debug_vars 19 OPTIND
 
 [ -n "$E" ] && echo "DRY RUN MODE"
 
@@ -49,37 +37,19 @@ if [ -n "$1" ]; then
   outdir=$1
   shift
   echo "Creating links in $outdir"
-else
-  outdir=`pwd`
 fi
 
-# cd to $BASEDIR instead of 'find $BASEDIR' so we know the exact path we're getting
-cd $BASEDIR
-SOURCEDIR=`pwd`
-dirs=`find . -type d ! -path . | sed -e 's#^\.[/\]##'`
-files=`find . -type f ! -path ./$ME ! -name '.*' ! -path ./LICENSE | sed -e 's#^\.[/\]##'`
+dirs=`find $BASEDIR -type d ! -path .`
+files=`find $BASEDIR -type f ! -path $BASEDIR/$MY_NAME ! -name '.*' ! -path $BASEDIR/LICENSE`
 
-cd $outdir
+[ -n "$outdir" ] && cd $outdir
 
 for d in $dirs; do
   $E mkdir -p $d
 done
 
 for f in $files; do
-  dir=`dirname "$f" | sed -e 's#^\.[/\]##'`
-  file=`basename "$f"`
-  dest="$dir/$file"
-  source="$SOURCEDIR/$dest"
-  symdest=`readlink "$dest"`
-  debug_vars 3 dir file dest source symdest
-  if [ -n "$symdest" ]; then
-    [ "$symdest" == "$source" ] || die 3 "link at $dest points to $symdest, not $source"
-    # Do nothing if link exists and has correct destination
-    debug 1 "Link already exists: $source -> $dest"
-  else
-    [ -e "$dest" ] && die 3 "$dest already exists (attempting to link $source)"
-    $E ln -s $source $dest
-  fi
+  $E ln -s $f .
 done
 
 # vi: expandtab ts=2 sw=2
