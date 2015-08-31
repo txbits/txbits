@@ -20,9 +20,20 @@ TEST_SCHEMA_SQL=\
 		AND EXISTS( SELECT 1 FROM pg_proc WHERE pronamespace = n.oid )
 ;"
 
+TEST_SCHEMAS=`psql -qtc "$TEST_SCHEMA_SQL" $@` || exit $?
+
+TAP_SCHEMA_SQL=\
+"SELECT nspname
+  FROM pg_extension e
+    JOIN pg_namespace n ON n.oid = e.extnamespace
+  WHERE extname='pgtap'
+;"
+TAP_SCHEMA=`psql -qtc "$TAP_SCHEMA_SQL" $@` || exit $?
+
+[ -n "$TAP_SCHEMA" ] || die 2 "pgTap is not installed"
 
 for schema in $TEST_SCHEMAS; do
-  PGOPTIONS="-c search_path=tap" pg_prove --trap --state hot,all,save --failures --runtests --match '^[^_]' --jobs 9 --schema $schema -d $@
+  PGOPTIONS="-c search_path=$TAP_SCHEMA" pg_prove --trap --state hot,all,save --failures --runtests --match '^[^_]' --jobs 9 --schema $schema -d $@
 done
 
 # vi: expandtab sw=2 ts=2
