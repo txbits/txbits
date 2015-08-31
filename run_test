@@ -5,13 +5,14 @@ if ! . $BASEDIR/lib/util.sh; then
   echo "FATAL: error sourcing $BASEDIR/lib/util.sh" 1>&2
   exit 99
 fi
+debug 19 "Arguments: $@"
 
 if [ "$1" == "-r" ]; then
   shift
   ./rebuild $@ || exit $?
 fi
 
-DBNAME=`psql -qtc 'SELECT current_database()' $@` || exit $?
+DBNAME=`psql -qtc 'SELECT current_database()' $@ | sed -e 's/^ //'` || exit $?
 TEST_SCHEMA_SQL=\
 "SELECT nspname
 	FROM
@@ -20,7 +21,7 @@ TEST_SCHEMA_SQL=\
 		AND EXISTS( SELECT 1 FROM pg_proc WHERE pronamespace = n.oid )
 ;"
 
-TEST_SCHEMAS=`psql -qtc "$TEST_SCHEMA_SQL" $@` || exit $?
+TEST_SCHEMAS=`psql -qtc "$TEST_SCHEMA_SQL" $@ | sed -e 's/^ //'` || exit $?
 
 TAP_SCHEMA_SQL=\
 "SELECT nspname
@@ -28,7 +29,8 @@ TAP_SCHEMA_SQL=\
     JOIN pg_namespace n ON n.oid = e.extnamespace
   WHERE extname='pgtap'
 ;"
-TAP_SCHEMA=`psql -qtc "$TAP_SCHEMA_SQL" $@` || exit $?
+TAP_SCHEMA=`psql -qtc "$TAP_SCHEMA_SQL" $@ | sed -e 's/^ //'` || exit $?
+debug_vars 9 DBNAME TAP_SCHEMA TEST_SCHEMAS
 
 [ -n "$TAP_SCHEMA" ] || die 2 "pgTap is not installed"
 
