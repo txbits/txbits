@@ -12,7 +12,14 @@ if [ "$1" == "-r" ]; then
 fi
 
 DBNAME=`psql -qtc 'SELECT current_database()' $@` || exit $?
-TEST_SCHEMAS=`psql -qtf test_schemas.sql $@` || exit $?
+TEST_SCHEMA_SQL=\
+"SELECT nspname
+	FROM
+		pg_namespace n
+	WHERE nspname LIKE '_test%'
+		AND EXISTS( SELECT 1 FROM pg_proc WHERE pronamespace = n.oid )
+;"
+
 
 for schema in $TEST_SCHEMAS; do
   PGOPTIONS="-c search_path=tap" pg_prove --trap --state hot,all,save --failures --runtests --match '^[^_]' --jobs 9 --schema $schema -d $@
