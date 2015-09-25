@@ -78,6 +78,9 @@ SELECT ddl_tools.role__create( 'su_access', 'NOINHERIT', 'su' );
 ALTER SCHEMA ddl_tools OWNER TO su;
 ALTER FUNCTION ddl_tools.exec(text, name) OWNER TO su;
 ALTER FUNCTION ddl_tools.role__create(name, text, text) OWNER TO su;
+
 CREATE SCHEMA _ddl_tools;
+CREATE SCHEMA _test_ddl_tools;
+\i functions/ddl_tools.test_function.sql
 
 -- vi: expandtab ts=2 sw=2
