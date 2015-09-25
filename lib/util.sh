@@ -1,15 +1,5 @@
 ME=`basename $0`
 
-debug_sanity() {
-  # Ensure that DEBUG is set
-  if [ ${DEBUG:-0} = 0 ] ; then
-    [ -z "$1" ] && error "WARNING: \$DEBUG not set"
-    DEBUG=0
-  fi
-}
-debug_sanity "first time"
-
-
 debug() {
   local level=$1
   shift
@@ -93,6 +83,16 @@ stacktrace () {
     done
   ) 1>&2
 }
+
+debug_sanity() {
+  # Ensure that DEBUG is set
+  if [ ${DEBUG:-0} = 0 ] ; then
+    [ -n "$1" ] && error "WARNING: \$DEBUG not set"
+    DEBUG=0
+  fi
+}
+debug_sanity
+
 
 
 # vi: expandtab ts=2 sw=2
