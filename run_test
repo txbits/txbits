@@ -32,7 +32,7 @@ TAP_SCHEMA_SQL=\
 TAP_SCHEMA=`psql -qtc "$TAP_SCHEMA_SQL" $@ | sed -e 's/^ //'` || exit $?
 debug_vars 9 DBNAME TAP_SCHEMA TEST_SCHEMAS
 
-[ -n "$TAP_SCHEMA" ] || die 2 "pgTap is not installed"
+[ -n "$TAP_SCHEMA" ] || die 2 "pgTap extension is not installed in database $DBNAME"
 
 for schema in $TEST_SCHEMAS; do
   PGOPTIONS="-c search_path=$TAP_SCHEMA" pg_prove --trap --state hot,all,save --failures --runtests --match '^[^_]' --jobs 9 --schema $schema -d $@
