@@ -60,6 +60,64 @@ die() {
   exit $return
 }
 
+db_exists() {
+    local exists
+    exists=`psql -qtc "SELECT EXISTS( SELECT 1 FROM pg_database WHERE datname = '$dbname' )" postgres $@ | tr -d ' '`
+    if [ "$exists" == "t" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+pgxn_install() {
+    local name
+    local version
+    local options
+    local namever
+    name=$1
+    shift
+    if echo $1 | egrep -q '^-'; then
+        options=$@
+    else
+        version=$1
+        shift
+        options=$@
+    fi
+
+    if [ -n "$version" ]; then
+        namever="$name=$version"
+    else
+        namever=$name
+    fi
+    debug 7 "pgxn_install(): name=$name version=$version options=$options"
+
+
+    # Bounce out if already installed and same version
+    local control
+    control=$EXTDIR/${name}.control
+    if [ -f $control ]; then
+        # If we don't care about version bounce out now
+        [ -z "$version" ] && return
+
+        instver=`grep default_version $control | cut -d"'" -f2`
+        debug 9 "instver=$instver"
+        [ -n "$instver" ] || die 4 $'\nunable to determine installed version of $name'
+
+        # Return if it matches
+        [ "$instver" = "$version" ] && return
+    fi
+
+    echo -n "Installing $namever from pgxn"
+    [ -n "$options" ] && echo -n " with options '$options'"
+    echo
+
+    debug 9 $PGXN install --sudo sudo $namever $options
+    $PGXN install --sudo sudo $namever $options || die 3 $'\npgxn returned' $?
+    echo done
+    echo
+}
+
 
 stacktrace () {
   debug 200 "stacktrace( $@ )"
