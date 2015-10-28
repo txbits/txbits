@@ -6,7 +6,11 @@ if [ "$1" == "-r" ]; then
   remote=$2
   shift 2
 else
-  remote=st-db_tools
+  if [ "$1" == "push" ]; then
+    remote=st-db_tools-up
+  else
+    remote=st-db_tools
+  fi
 fi
 
 [ -n `git rev-parse --show-toplevel` ] || exit 2
