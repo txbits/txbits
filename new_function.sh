@@ -44,3 +44,9 @@ if [ -n "$VISUAL" ]; then
 elif [ -n "$EDITOR" ]; then
     $EDITOR file
 fi
+
+cat << _EOF_
+Don't forget to add
+
+\i $file
+_EOF_
