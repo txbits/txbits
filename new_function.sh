@@ -34,6 +34,16 @@ BEGIN
 END
 \$body$;
 
+SELECT ddl_tools.test_function(
+  '_test_$name'
+  , $body$
+  s CONSTANT name := bs;
+  f CONSTANT name := fn;
+BEGIN
+END
+$body$
+);
+
 -- vi: expandtab ts=2 sw=2
 _EOF_
 
