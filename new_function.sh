@@ -36,12 +36,12 @@ END
 
 SELECT ddl_tools.test_function(
   '_test_$name'
-  , $body$
+  , \$body$
   s CONSTANT name := bs;
   f CONSTANT name := fn;
 BEGIN
 END
-$body$
+\$body$
 );
 
 -- vi: expandtab ts=2 sw=2
