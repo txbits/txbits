@@ -37,7 +37,7 @@ debug_vars 9 DBNAME TAP_SCHEMA TEST_SCHEMAS
 fail=0
 for schema in $TEST_SCHEMAS; do
   PGOPTIONS="-c search_path=$TAP_SCHEMA" pg_prove --trap --state hot,all,save --failures --runtests --match '^[^_]' --jobs 9 --schema $schema -d $@
-  if [ $? gt 0 ]; then
+  if [ $? -gt 0 ]; then
     fail=1
   fi
 done
