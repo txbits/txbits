@@ -1,3 +1,5 @@
+-- This is a db_tools file!
+
 CREATE OR REPLACE FUNCTION _ddl_tools._test_function_strip_declare(
   function_name text
   , body text
@@ -96,6 +98,8 @@ BEGIN
 END
 $body$;
 
+-- This is a db_tools file!
+
 CREATE OR REPLACE FUNCTION ddl_tools.test_function(
   function_name text
   , body text
@@ -160,6 +164,8 @@ BEGIN
   ;
 END
 $body$;
+
+-- This is a db_tools file!
 
 -- Don't be cute and use test_funtion() to define this test...
 -- TODO: Need to actually create a test function in a separate transaction and make sure we can over-write it
@@ -252,5 +258,7 @@ BEGIN
   );
 END
 $body$;
+
+-- This is a db_tools file!
 
 -- vi: expandtab ts=2 sw=2

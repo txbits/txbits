@@ -1,3 +1,4 @@
+-- This is a db_tools file!
 CREATE SCHEMA tap;
 GRANT USAGE ON SCHEMA tap TO public;
 CREATE EXTENSION pgtap SCHEMA tap;
