@@ -1,3 +1,6 @@
 hello=Bienvenue, {0}
-guest=invité
+guest=invitï¿½
 about.text=Nous somme awesome.
+
+chrome.exchange.navigation.dashboard.title=Dashboard (fr)
+chrome.exchange.navigation.dashboard.label=Dashboard (fr)

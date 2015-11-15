@@ -22,6 +22,7 @@ import play.api.mvc._
 import play.api.i18n.{ I18nSupport, Lang }
 import play.api.Play.current
 import play.api.i18n.MessagesApi
+import play.i18n.Langs
 import scala.language.postfixOps
 
 class Application @Inject() (val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
@@ -51,9 +52,6 @@ class Application @Inject() (val messagesApi: MessagesApi) extends Controller wi
   }
 
   def chlang(lang: String) = UserAwareAction { implicit request =>
-    Redirect("/")
-    // XXX: broken because of play 2.4 upgrade
-    // TODO: fix this
-    //.withLang(Lang.get(lang).getOrElse(Lang.defaultLang))
+    Redirect("/").withLang(Lang.get(lang).getOrElse(Lang.defaultLang))
   }
 }
