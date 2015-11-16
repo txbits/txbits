@@ -52,6 +52,6 @@ class Application @Inject() (val messagesApi: MessagesApi) extends Controller wi
   }
 
   def chlang(lang: String) = UserAwareAction { implicit request =>
-    Redirect("/").withLang(Lang.get(lang).getOrElse(Lang.defaultLang))
+    Redirect(request.headers.get("referer").getOrElse("/")).withLang(Lang.get(lang).getOrElse(Lang.defaultLang))
   }
 }

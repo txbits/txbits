@@ -1,5 +1,6 @@
 @(title: String, scripts: Html = Html(""), styles: Html = Html(""), loggedIn: Boolean = false)(content: Html)(implicit request: RequestHeader, messages: Messages)
 @import securesocial.core.UsernamePasswordProvider
+@import play.api.Play.current
 
 @navItem(url: String, title:String) = {
 @if(request.path==url) {
@@ -49,6 +50,17 @@
                 </ul>
 
                 <ul class="nav navbar-nav navbar-right">
+                    <li class="dropdown" id="fat-menu">
+                        <a aria-expanded="false" aria-haspopup="true" role="button" data-toggle="dropdown" class="dropdown-toggle" href="#" id="langdrop">
+                            Language
+                            <span class="caret"></span>
+                        </a>
+                        <ul aria-labelledby="langdrop" class="dropdown-menu">
+                            @for(lang <- Lang.availables) {
+                                <li><a href="/chlang/@lang.code">@lang.language</a></li>
+                            }
+                        </ul>
+                    </li>
                 @if(loggedIn){
                     <li class="loggedin"><a href="@routes.Application.dashboard()">@Messages("chrome.gotodashboard") <i class="glyphicon glyphicon-user"></i></a></li>
                 } else {
