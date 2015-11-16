@@ -49,9 +49,7 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
       new DefaultLangs(play.api.Play.current.configuration))
     )
 
-    for ((email, is_signup) <- model.getTrustedActionRequests) {
-      // create and save token
-      val token = createToken(email, isSignUp = is_signup)
+    for ((email, is_signup, language) <- model.getTrustedActionRequests) {
       // send email to the user
       if (is_signup) {
         // check if there is already an account for this email address
@@ -61,11 +59,13 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
             Mailer.sendAlreadyRegisteredEmail(email, globals.userModel.userPgpByEmail(email))
           }
           case false => {
-            val token = createToken(email, isSignUp = true)
+            val token = createToken(email, isSignUp = is_signup, language)
             Mailer.sendSignUpEmail(email, token)
           }
         }
       } else {
+        // create and save token
+        val token = createToken(email, isSignUp = is_signup, language)
         Mailer.sendPasswordResetEmail(email, token, globals.userModel.userPgpByEmail(email))
       }
       // remove the token from the queue
@@ -79,7 +79,7 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
     }
   }
 
-  private def createToken(email: String, isSignUp: Boolean) = {
+  private def createToken(email: String, isSignUp: Boolean, language: String) = {
     val tokenId = IdGenerator.generateEmailToken
     val now = DateTime.now
 
@@ -87,7 +87,8 @@ class UserTrustService(val model: UserTrustModel) extends Actor {
       tokenId, email,
       now,
       now.plusMinutes(TokenDuration),
-      isSignUp = isSignUp
+      isSignUp = isSignUp,
+      language
     )
 
     model.saveToken(token)

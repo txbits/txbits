@@ -26,8 +26,8 @@ import anorm._
 
 class UserTrustModel(val db: String = "default") {
   def getTrustedActionRequests = DB.withConnection(db) { implicit c =>
-    SQL"""select email, is_signup from trusted_action_requests"""().map(row =>
-      (row[String]("email"), row[Boolean]("is_signup"))
+    SQL"""select email, is_signup, language from trusted_action_requests"""().map(row =>
+      (row[String]("email"), row[Boolean]("is_signup"), row[String]("language"))
     ).toList
   }
 
@@ -63,8 +63,8 @@ class UserTrustModel(val db: String = "default") {
 
   def saveToken(token: Token) = DB.withConnection(db) { implicit c =>
     SQL"""
-    insert into tokens (token, email, creation, expiration, is_signup)
-    values (${token.uuid}, ${token.email}, ${new Timestamp(token.creationTime.getMillis)}, ${new Timestamp(token.expirationTime.getMillis)}, ${token.isSignUp})
+    insert into tokens (token, email, creation, expiration, is_signup, language)
+    values (${token.uuid}, ${token.email}, ${new Timestamp(token.creationTime.getMillis)}, ${new Timestamp(token.expirationTime.getMillis)}, ${token.isSignUp}, ${token.language})
     """.execute
   }
 }

@@ -22,10 +22,9 @@ import models.{ LogEvent, LogType }
 import play.api.Play.current
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.i18n.{ I18nSupport, Messages }
+import play.api.i18n.{ Lang, I18nSupport, Messages, MessagesApi }
 import play.api.mvc.{ Result, _ }
 import play.api.{ Logger, Play }
-import play.api.i18n.MessagesApi
 import securesocial.core.{ AccessDeniedException, SocialUser, _ }
 import service.{ TOTPAuthenticator, TOTPSecret }
 
@@ -84,11 +83,6 @@ class ProviderController @Inject() (val messagesApi: MessagesApi) extends Contro
     Results.BadRequest(views.html.auth.login(f, msg))
   }
 
-  def completePasswordAuth[A](id: Long, email: String)(implicit request: Request[A]) = {
-    val authenticator = Authenticator.create(Some(id), None, email)
-    Redirect(toUrl(request2session)).withSession(request2session - SecureSocial.OriginalUrlKey).withCookies(authenticator.toCookie)
-  }
-
   def loginPost() = Action { implicit request =>
     try {
       val form = UsernamePasswordProvider.loginForm.bindFromRequest()
@@ -110,7 +104,12 @@ class ProviderController @Inject() (val messagesApi: MessagesApi) extends Contro
             Redirect(controllers.routes.LoginPage.tfaTOTP()).withSession(request2session).withCookies(authenticator.toCookie)
           } else if (user.isDefined) {
             // create session
-            completePasswordAuth(user.get.id, email)
+
+            val authenticator = Authenticator.create(Some(user.get.id), None, email)
+            Redirect(toUrl(request2session)).
+              withSession(request2session - SecureSocial.OriginalUrlKey).
+              withCookies(authenticator.toCookie).
+              withLang(Lang.get(user.get.language).getOrElse(Lang.defaultLang))
           } else {
             badRequest(UsernamePasswordProvider.loginForm, request, Some(ProviderController.InvalidCredentials))
           }

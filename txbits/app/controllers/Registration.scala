@@ -62,8 +62,17 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
     (info => Some(true, info.mailingList, ("", ""), info.pgp))
   )
 
-  val startForm = Form(
+  val emailForm = Form(
     Email -> email.verifying(nonEmpty)
+  )
+
+  val startForm = Form[StartRegistrationInfo](
+    mapping(
+      Email -> email.verifying(nonEmpty),
+      Language -> text.verifying(nonEmpty)
+    ) // binding
+    ((email, language) => StartRegistrationInfo(email, language)) // unbinding
+    (info => Some(info.email, info.language))
   )
 
   val changePasswordForm = Form(
@@ -95,9 +104,9 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
         errors => {
           BadRequest(views.html.auth.Registration.startSignUp(errors))
         },
-        email => {
-          txbitsUserService.signupStart(email)
-          Redirect(onHandleStartSignUpGoTo).flashing(Success -> Messages(ThankYouCheckEmail), Email -> email)
+        form => {
+          globals.userModel.trustedActionStart(form.email, isSignup = true, form.language)
+          Redirect(onHandleStartSignUpGoTo).flashing(Success -> Messages(ThankYouCheckEmail), Email -> form.email)
         }
       )
     } else NotFound
@@ -155,6 +164,7 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
               -1, // this is a placeholder
               t.email,
               0, //not verified
+              t.language,
               info.mailingList
             ), info.password, token, info.pgp)
             txbitsUserService.deleteToken(t.uuid)
@@ -174,18 +184,18 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
   }
 
   def startResetPassword = Action { implicit request =>
-    Ok(views.html.auth.Registration.startResetPassword(startForm))
+    Ok(views.html.auth.Registration.startResetPassword(emailForm))
   }
 
   def handleStartResetPassword = Action { implicit request =>
-    startForm.bindFromRequest.fold(
+    emailForm.bindFromRequest.fold(
       errors => {
         BadRequest(views.html.auth.Registration.startResetPassword(errors))
       },
       email => {
         txbitsUserService.userExists(email) match {
           case true => {
-            txbitsUserService.resetPassStart(email)
+            globals.userModel.trustedActionStart(email, isSignup = false, "")
           }
           case false => {
             // The user wasn't registered. Oh, well.
@@ -246,6 +256,7 @@ object Registration {
   val Success = "success"
   val Error = "error"
   val Pgp = "pgp"
+  val Language = "language"
 
   val RegistrationEnabled = "securesocial.registrationEnabled"
 
@@ -263,4 +274,5 @@ object Registration {
   }
 
   case class RegistrationInfo(mailingList: Boolean, password: String, pgp: String)
+  case class StartRegistrationInfo(email: String, language: String)
 }

@@ -41,9 +41,10 @@ package object globals {
   val masterDBWallet = "wallet"
   val masterDBTrusted = "trust"
 
-  if (Play.current.configuration.getBoolean("meta.devdb").getOrElse(false)) {
-    DB.withConnection(globals.masterDB)({ implicit c =>
-      SQL"""
+  try {
+    if (Play.current.configuration.getBoolean("meta.devdb").getOrElse(false)) {
+      DB.withConnection(globals.masterDB)({ implicit c =>
+        SQL"""
       begin;
       delete from deposits_crypto;
       delete from deposits_other;
@@ -72,6 +73,8 @@ package object globals {
       delete from withdrawal_limits;
       delete from currencies;
       delete from event_log;
+      delete from tokens;
+      delete from trusted_action_requests;
       delete from users;
 
       select currency_insert('BTC',10);
@@ -105,13 +108,18 @@ package object globals {
       insert into users(id, email) values (0, '');
       insert into balances (user_id, currency) select 0, currency from currencies;
 
-      select create_user('me@viktorstanchev.com', 'password', true, null);
-      select create_user('a@a.com', 'qwerty123', false, null);
+      select create_user('me@viktorstanchev.com', 'password', true, null, 'en');
+      select create_user('a@a.com', 'qwerty123', false, null, 'en');
 
       update balances set balance = 1000 where user_id in (select id from users where email in ('me@viktorstanchev.com', 'a@a.com')) and currency in ('USD', 'CAD');
       commit;
       """.execute()
-    })
+      })
+    }
+  } catch {
+    // XXX: any kind of error in the SQL above will cause this cryptic exception:
+    // org.postgresql.util.PSQLException: Cannot change transaction read-only property in the middle of a transaction.
+    case error: Throwable => Logger.error(error.toString)
   }
 
   val userModel = new UserModel(masterDB)
@@ -204,7 +212,6 @@ package object globals {
     }
     ((currency, nodeId), result)
   }
-
 }
 
 object Global extends GlobalSettings {

@@ -2,5 +2,6 @@ hello=Bienvenue, {0}
 guest=invit�
 about.text=Nous somme awesome.
 
+terminology.language=Langue
 chrome.exchange.navigation.dashboard.title=Dashboard (fr)
 chrome.exchange.navigation.dashboard.label=Dashboard (fr)

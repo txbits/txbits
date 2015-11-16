@@ -61,7 +61,7 @@ class UserModel(val db: String = "default") {
   // insecure version, usable only in tests
   def create(email: String, password: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
     SQL"""
-    select create_user as id from create_user($email, $password, $onMailingList, null)
+    select create_user as id from create_user($email, $password, $onMailingList, null, 'en')
     """.map(row => row[Long]("id")).list.headOption
   }
 
@@ -98,6 +98,7 @@ class UserModel(val db: String = "default") {
           row[Long]("id"),
           row[String]("email"),
           row[Int]("verification"),
+          row[String]("language"),
           row[Boolean]("on_mailing_list"),
           row[Boolean]("tfa_enabled"),
           row[Option[String]]("pgp")
@@ -133,14 +134,16 @@ class UserModel(val db: String = "default") {
       row[Option[Int]]("verification"),
       row[Option[Boolean]]("on_mailing_list"),
       row[Option[Boolean]]("tfa_enabled"),
-      row[Option[String]]("pgp")) match {
+      row[Option[String]]("pgp"),
+      row[String]("language")) match {
         case (Some(id: Long),
           Some(email: String),
           Some(verification: Int),
           Some(on_mailing_list: Boolean),
           Some(tfa_enabled: Boolean),
-          pgp: Option[String]) =>
-          Some(SocialUser(id, email, verification, on_mailing_list, tfa_enabled, pgp))
+          pgp: Option[String],
+          language: String) =>
+          Some(SocialUser(id, email, verification, language, on_mailing_list, tfa_enabled, pgp))
         case _ =>
           None
       }
@@ -149,21 +152,22 @@ class UserModel(val db: String = "default") {
 
   def findUserByEmailAndPassword(email: String, password: String, browserHeaders: String, ip: String): Option[SocialUser] = DB.withConnection(db) { implicit c =>
     SQL"""
-    select id, email, verification, on_mailing_list, tfa_enabled, pgp, active
-    from find_user_by_email_and_password($email, $password, $browserHeaders, inet($ip))
+    select * from find_user_by_email_and_password($email, $password, $browserHeaders, inet($ip))
     """().map(row => (row[Option[Long]]("id"),
       row[Option[String]]("email"),
       row[Option[Int]]("verification"),
       row[Option[Boolean]]("on_mailing_list"),
       row[Option[Boolean]]("tfa_enabled"),
-      row[Option[String]]("pgp")) match {
+      row[Option[String]]("pgp"),
+      row[String]("language")) match {
         case (Some(id: Long),
           Some(email: String),
           Some(verification: Int),
           Some(on_mailing_list: Boolean),
           Some(tfa_enabled: Boolean),
-          pgp: Option[String]) =>
-          Some(SocialUser(id, email, verification, on_mailing_list, tfa_enabled, pgp))
+          pgp: Option[String],
+          language: String) =>
+          Some(SocialUser(id, email, verification, language, on_mailing_list, tfa_enabled, pgp))
         case _ =>
           None
       }
@@ -205,7 +209,7 @@ class UserModel(val db: String = "default") {
     SQL"""
     select * from find_token($token)
     """().map(row =>
-      Token(token, row[String]("email"), row[DateTime]("creation"), row[DateTime]("expiration"), row[Boolean]("is_signup"))
+      Token(token, row[String]("email"), row[DateTime]("creation"), row[DateTime]("expiration"), row[Boolean]("is_signup"), row[String]("language"))
     ).headOption
   }
 
@@ -245,9 +249,9 @@ class UserModel(val db: String = "default") {
     ).head
   }
 
-  def trustedActionStart(email: String, isSignup: Boolean) = DB.withConnection(db) { implicit c =>
+  def trustedActionStart(email: String, isSignup: Boolean, language: String) = DB.withConnection(db) { implicit c =>
     SQL"""
-    select trusted_action_start as success from trusted_action_start($email, $isSignup)
+    select trusted_action_start as success from trusted_action_start($email, $isSignup, $language)
     """().map(row =>
       row[Boolean]("success")
     ).head
@@ -315,6 +319,14 @@ class UserModel(val db: String = "default") {
   def turnOnEmails(uid: Long) = DB.withConnection(db) { implicit c =>
     SQL"""
     select turnon_emails as success from turnon_emails($uid)
+    """().map(row =>
+      row[Boolean]("success")
+    ).head
+  }
+
+  def changeLanguage(uid: Long, language: String) = DB.withConnection(db) { implicit c =>
+    SQL"""
+    select change_language as success from change_language($uid, $language)
     """().map(row =>
       row[Boolean]("success")
     ).head

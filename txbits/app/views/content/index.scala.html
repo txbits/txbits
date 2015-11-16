@@ -2,6 +2,7 @@
 @import securesocial.core.UsernamePasswordProvider
 @import helper._
 @import securesocial.core.UsernamePasswordProvider
+@import play.api.Play.current
 @implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(messages)) }
 
 @scripts = {
@@ -35,6 +36,15 @@
                             <label class="sr-only" for="email2">@Messages("auth.signup.email2")</label>
                             <div class="controls">
                                 <input id="email2" name="email2" value="" class="form-control" type="text" placeholder="@Messages("auth.signup.email2")">
+                            </div>
+                        </div>
+                        <div id="language_field" class="form-group  ">
+                            <div class="controls">
+                                <select class="form-control" name="language" id="language">
+                                    @for(lang <- Lang.availables) {
+                                        <option value="@lang.code">@lang.language</option>
+                                    }
+                                </select>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-default" title="@Messages("auth.signup.createAccount")"><i class="glyphicon glyphicon-chevron-right"></i></button>
