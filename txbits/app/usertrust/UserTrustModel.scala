@@ -32,7 +32,7 @@ class UserTrustModel(val db: String = "default") {
   }
 
   def getPendingWithdrawalRequests = DB.withConnection(db) { implicit c =>
-    SQL"""select w.*, u.email, u.pgp, wc.address as destination from withdrawals w
+    SQL"""select w.*, u.email, u.id as uid, u.pgp, wc.address as destination from withdrawals w
        inner join users u on w.user_id = u.id
        left join withdrawals_crypto wc on w.id = wc.id
        where confirmation_token is null
@@ -47,6 +47,7 @@ class UserTrustModel(val db: String = "default") {
           row[String]("currency")
         ),
           row[String]("email"),
+          row[Long]("uid"),
           row[Option[String]]("pgp"),
           row[Option[String]]("destination")
       )

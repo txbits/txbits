@@ -128,12 +128,18 @@ trusted_action_start (
 ) returns boolean as $$
 declare
   email_exists boolean;;
+  lang varchar(10);;
 begin
   select true into email_exists from trusted_action_requests where email = a_email and is_signup = a_is_signup;;
   if email_exists then
     return false;;
   end if;;
-  insert into trusted_action_requests values (a_email, a_is_signup, a_language);;
+  if a_language = '' then
+    select language into lang from users where email = a_email;;
+  else
+    select a_language into lang;;
+  end if;;
+  insert into trusted_action_requests values (a_email, a_is_signup, lang);;
   return true;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;

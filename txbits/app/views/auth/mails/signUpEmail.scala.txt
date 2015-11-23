@@ -1,7 +1,7 @@
-@(token: String, url: String)
-Hello,
+@(token: String, url: String)(implicit messages: Messages)
+@Messages("mails.greeting")
 
-Please follow this link to complete your registration.
+@Messages("mails.sendSignUpEmail.body")
 
 @url
 

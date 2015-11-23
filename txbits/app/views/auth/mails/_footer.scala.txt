@@ -1,6 +1,7 @@
+@()(implicit messages: Messages)
 
-Yours truly,
+@Messages("mails.signature.start")
 
-The @play.api.Play.current.configuration.getString("application.name") team
+@Messages("mails.signature.from", play.api.Play.current.configuration.getString("application.name").get)
 
-@play.api.Play.current.configuration.getString("application.name") will never send HTML in emails. If you see any images, colours or stylized text in an email that claims to be from us, forward it to our security team: @play.api.Play.current.configuration.getString("email.security").
+@Messages("mails.signature.notice", play.api.Play.current.configuration.getString("application.name").get, play.api.Play.current.configuration.getString("email.security").get)

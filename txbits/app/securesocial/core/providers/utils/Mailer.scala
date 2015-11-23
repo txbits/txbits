@@ -38,7 +38,6 @@ object Mailer {
   val SignUpEmailSubject = "mails.sendSignUpEmail.subject"
   val WelcomeEmailSubject = "mails.welcomeEmail.subject"
   val PasswordResetSubject = "mails.passwordResetEmail.subject"
-  val UnknownEmailNoticeSubject = "mails.unknownEmail.subject"
   val PasswordResetOkSubject = "mails.passwordResetOk.subject"
 
   def sendWithdrawalConfirmEmail(email: String, amount: String, currency: String, destination: String, id: Long, token: String, pgp: Option[String])(implicit messages: Messages) {
@@ -119,7 +118,7 @@ object Mailer {
         case ex: Throwable => {
           // important: Print the bodies of emails in logs only if dealing with fake money
           if (Play.current.configuration.getBoolean("fakeexchange").get) {
-            Logger.debug("Failed to send email to %s, email body:\n%s".format(recipient, strBody))
+            Logger.debug("Failed to send email to %s, subject: %s, email body:\n%s".format(recipient, subject, strBody))
           }
           throw ex
         }

@@ -1,8 +1,8 @@
-@(email: String, url: String)
+@(email: String, url: String)(implicit messages: Messages)
 @import securesocial.core.UsernamePasswordProvider
-Hello,
+@Messages("mails.greeting")
 
-You tried to sign up but you already have an account with us. If you don't remember your password please go here to reset it.
+@Messages("mails.sendAlreadyRegisteredEmail.body")
 
 @url
 
