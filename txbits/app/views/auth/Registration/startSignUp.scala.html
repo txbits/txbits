@@ -34,13 +34,6 @@
             </div>
         </div>
 
-
-        @select(field = startForm(Registration.Language),
-            options = options(Lang.availables.map(l => l.code).toList),
-            '_label -> Messages("auth.signup.language"),
-            'class -> "form-control"
-        )
-
         <button type="submit" class="btn btn-primary">@Messages("auth.signup.createAccount")</button>
 
     </form>

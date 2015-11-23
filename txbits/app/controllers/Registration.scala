@@ -23,12 +23,11 @@ import play.api.data._
 import play.api.data.Forms._
 import play.api.data.validation.Constraints._
 import play.api.{ Play, Logger }
-import play.api.i18n.MessagesApi
+import play.api.i18n.{ Lang, MessagesApi, I18nSupport, Messages }
 import securesocial.core._
 import Play.current
 import securesocial.core.providers.utils._
 import org.joda.time.DateTime
-import play.api.i18n.{ I18nSupport, Messages }
 import scala.language.reflectiveCalls
 import securesocial.core.Token
 import scala.Some
@@ -68,11 +67,10 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
 
   val startForm = Form[StartRegistrationInfo](
     mapping(
-      Email -> email.verifying(nonEmpty),
-      Language -> text.verifying(nonEmpty)
+      Email -> email.verifying(nonEmpty)
     ) // binding
-    ((email, language) => StartRegistrationInfo(email, language)) // unbinding
-    (info => Some(info.email, info.language))
+    ((email) => StartRegistrationInfo(email)) // unbinding
+    (info => Some(info.email))
   )
 
   val changePasswordForm = Form(
@@ -105,7 +103,9 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
           BadRequest(views.html.auth.Registration.startSignUp(errors))
         },
         form => {
-          globals.userModel.trustedActionStart(form.email, isSignup = true, form.language)
+          // there seems to be no good way to get the language, so we do it manually
+          val lang = request.cookies.get(messagesApi.langCookieName).map(cookie => Lang.get(cookie.value).getOrElse(Lang.defaultLang)).getOrElse(Lang.defaultLang)
+          globals.userModel.trustedActionStart(form.email, isSignup = true, lang.code)
           Redirect(onHandleStartSignUpGoTo).flashing(Success -> Messages(ThankYouCheckEmail), Email -> form.email)
         }
       )
@@ -274,5 +274,5 @@ object Registration {
   }
 
   case class RegistrationInfo(mailingList: Boolean, password: String, pgp: String)
-  case class StartRegistrationInfo(email: String, language: String)
+  case class StartRegistrationInfo(email: String)
 }
