@@ -87,11 +87,11 @@ begin
   if a_email = '' then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  select true, language into valid_token, token_language from tokens where token = a_token and email = a_email and is_signup = true and expiration >= current_timestamp;;
+  select true, language into valid_token, token_language from tokens where token = a_token and lower(email) = lower(a_email) and is_signup = true and expiration >= current_timestamp;;
   if valid_token is null then
     return null;;
   end if;;
-  delete from tokens where email = a_email and is_signup = true;;
+  delete from tokens where lower(email) = lower(a_email) and is_signup = true;;
   return create_user(a_email, a_password, a_onMailingList, a_pgp, token_language);;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -130,12 +130,12 @@ declare
   email_exists boolean;;
   lang varchar(10);;
 begin
-  select true into email_exists from trusted_action_requests where email = a_email and is_signup = a_is_signup;;
+  select true into email_exists from trusted_action_requests where lower(email) = lower(a_email) and is_signup = a_is_signup;;
   if email_exists then
     return false;;
   end if;;
   if a_language = '' or a_language is null then
-    select language into lang from users where email = a_email;;
+    select language into lang from users where lower(email) = lower(a_email);;
   else
     select a_language into lang;;
   end if;;
