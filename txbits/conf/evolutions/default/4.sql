@@ -134,7 +134,7 @@ begin
   if email_exists then
     return false;;
   end if;;
-  if a_language = '' then
+  if a_language = '' or a_language is null then
     select language into lang from users where email = a_email;;
   else
     select a_language into lang;;
