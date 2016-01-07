@@ -26,13 +26,13 @@ import anorm._
 
 class UserTrustModel(val db: String = "default") {
   def getTrustedActionRequests = DB.withConnection(db) { implicit c =>
-    SQL"""select email, is_signup from trusted_action_requests"""().map(row =>
-      (row[String]("email"), row[Boolean]("is_signup"))
+    SQL"""select email, is_signup, language from trusted_action_requests"""().map(row =>
+      (row[String]("email"), row[Boolean]("is_signup"), row[String]("language"))
     ).toList
   }
 
   def getPendingWithdrawalRequests = DB.withConnection(db) { implicit c =>
-    SQL"""select w.*, u.email, u.pgp, wc.address as destination from withdrawals w
+    SQL"""select w.*, u.email, u.id as uid, u.pgp, wc.address as destination from withdrawals w
        inner join users u on w.user_id = u.id
        left join withdrawals_crypto wc on w.id = wc.id
        where confirmation_token is null
@@ -47,6 +47,7 @@ class UserTrustModel(val db: String = "default") {
           row[String]("currency")
         ),
           row[String]("email"),
+          row[Long]("uid"),
           row[Option[String]]("pgp"),
           row[Option[String]]("destination")
       )
@@ -63,8 +64,8 @@ class UserTrustModel(val db: String = "default") {
 
   def saveToken(token: Token) = DB.withConnection(db) { implicit c =>
     SQL"""
-    insert into tokens (token, email, creation, expiration, is_signup)
-    values (${token.uuid}, ${token.email}, ${new Timestamp(token.creationTime.getMillis)}, ${new Timestamp(token.expirationTime.getMillis)}, ${token.isSignUp})
+    insert into tokens (token, email, creation, expiration, is_signup, language)
+    values (${token.uuid}, ${token.email}, ${new Timestamp(token.creationTime.getMillis)}, ${new Timestamp(token.expirationTime.getMillis)}, ${token.isSignUp}, ${token.language})
     """.execute
   }
 }

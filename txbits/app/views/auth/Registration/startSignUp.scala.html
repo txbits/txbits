@@ -1,6 +1,7 @@
-@(startForm:Form[String])(implicit request: RequestHeader, messages: Messages)
+@(startForm:Form[controllers.Registration.StartRegistrationInfo])(implicit request: RequestHeader, messages: Messages)
 @import helper._
 @import securesocial.core.UsernamePasswordProvider
+@import play.api.Play.current
 @implicitFieldConstructor = @{ FieldConstructor(auth.inputFieldConstructor.f(_)(messages)) }
 
 @scripts = {
@@ -20,7 +21,7 @@
     >
         @CSRF.formField
         @helper.inputText(
-        startForm("email"),
+        startForm(Registration.Email),
         '_label -> Messages("auth.signup.email1"),
         'class -> "form-control"
         )

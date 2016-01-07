@@ -23,12 +23,11 @@ import play.api.data._
 import play.api.data.Forms._
 import play.api.data.validation.Constraints._
 import play.api.{ Play, Logger }
-import play.api.i18n.MessagesApi
+import play.api.i18n.{ Lang, MessagesApi, I18nSupport, Messages }
 import securesocial.core._
 import Play.current
 import securesocial.core.providers.utils._
 import org.joda.time.DateTime
-import play.api.i18n.{ I18nSupport, Messages }
 import scala.language.reflectiveCalls
 import securesocial.core.Token
 import scala.Some
@@ -62,8 +61,16 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
     (info => Some(true, info.mailingList, ("", ""), info.pgp))
   )
 
-  val startForm = Form(
+  val emailForm = Form(
     Email -> email.verifying(nonEmpty)
+  )
+
+  val startForm = Form[StartRegistrationInfo](
+    mapping(
+      Email -> email.verifying(nonEmpty)
+    ) // binding
+    ((email) => StartRegistrationInfo(email)) // unbinding
+    (info => Some(info.email))
   )
 
   val changePasswordForm = Form(
@@ -95,9 +102,11 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
         errors => {
           BadRequest(views.html.auth.Registration.startSignUp(errors))
         },
-        email => {
-          txbitsUserService.signupStart(email)
-          Redirect(onHandleStartSignUpGoTo).flashing(Success -> Messages(ThankYouCheckEmail), Email -> email)
+        form => {
+          // there seems to be no good way to get the language, so we do it manually
+          val lang = request.cookies.get(messagesApi.langCookieName).map(cookie => Lang.get(cookie.value).getOrElse(Lang.defaultLang)).getOrElse(Lang.defaultLang)
+          globals.userModel.trustedActionStart(form.email, isSignup = true, lang.code)
+          Redirect(onHandleStartSignUpGoTo).flashing(Success -> Messages(ThankYouCheckEmail), Email -> form.email)
         }
       )
     } else NotFound
@@ -155,6 +164,7 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
               -1, // this is a placeholder
               t.email,
               0, //not verified
+              t.language,
               info.mailingList
             ), info.password, token, info.pgp)
             txbitsUserService.deleteToken(t.uuid)
@@ -174,18 +184,18 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
   }
 
   def startResetPassword = Action { implicit request =>
-    Ok(views.html.auth.Registration.startResetPassword(startForm))
+    Ok(views.html.auth.Registration.startResetPassword(emailForm))
   }
 
   def handleStartResetPassword = Action { implicit request =>
-    startForm.bindFromRequest.fold(
+    emailForm.bindFromRequest.fold(
       errors => {
         BadRequest(views.html.auth.Registration.startResetPassword(errors))
       },
       email => {
         txbitsUserService.userExists(email) match {
           case true => {
-            txbitsUserService.resetPassStart(email)
+            globals.userModel.trustedActionStart(email, isSignup = false, "")
           }
           case false => {
             // The user wasn't registered. Oh, well.
@@ -246,6 +256,7 @@ object Registration {
   val Success = "success"
   val Error = "error"
   val Pgp = "pgp"
+  val Language = "language"
 
   val RegistrationEnabled = "securesocial.registrationEnabled"
 
@@ -263,4 +274,5 @@ object Registration {
   }
 
   case class RegistrationInfo(mailingList: Boolean, password: String, pgp: String)
+  case class StartRegistrationInfo(email: String)
 }

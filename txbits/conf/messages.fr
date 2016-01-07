@@ -2,5 +2,26 @@ hello=Bienvenue, {0}
 guest=invit�
 about.text=Nous somme awesome.
 
+terminology.language=Langue
 chrome.exchange.navigation.dashboard.title=Dashboard (fr)
 chrome.exchange.navigation.dashboard.label=Dashboard (fr)
+
+mails.sendWithdrawalConfirmEmail.subject=FR Confirm withdrawal
+mails.sendAlreadyRegisteredEmail.subject=FR Sign up instructions
+mails.sendSignUpEmail.subject=FR Sign up instructions
+mails.welcomeEmail.subject=FR Welcome
+mails.passwordResetEmail.subject=FR Password reset instructions
+mails.passwordResetOk.subject=FR Password change confirmation
+
+mails.greeting=FR Hello,
+mails.signature.start=FR Yours truly,
+mails.signature.from=FR The {0} team
+mails.signature.notice=FR {0} will never send HTML in emails. If you see any images, colours or stylized text in an email that claims to be from us, forward it to our security team: {1}.
+
+mails.sendWithdrawalConfirmEmail.body.confirm=FR Please confirm that you have requested a withdrawal for @amount @currency to @destination by clicking on the link below:
+mails.sendWithdrawalConfirmEmail.body.reject=FR If you have not requested this withdrawal, please click on the link below to cancel it:
+mails.sendAlreadyRegisteredEmail.body=FR You tried to sign up but you already have an account with us. If you don't remember your password please go here to reset it.
+mails.sendSignUpEmail.body=FR Please follow this link to complete your registration.
+mails.welcomeEmail.body=FR Your new account is ready. Click here to log in:
+mails.passwordResetEmail.body=FR Please follow this link to reset your password.
+mails.passwordResetOk.body=FR Your password was updated.  Please log in using your new password by clicking here.

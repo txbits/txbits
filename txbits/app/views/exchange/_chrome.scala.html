@@ -1,5 +1,6 @@
 @(title: String, icon: String= "", scripts: Html = Html(""), styles: Html = Html(""))(content: Html)(implicit request: RequestHeader, messages: Messages)
 @import securesocial.core.UsernamePasswordProvider
+@import play.api.Play.current
 
 @navItem(url: String, icon: String, title:String) = {
 @if(request.path==url) {
@@ -65,6 +66,17 @@
                 </ul>
 
                 <ul class="nav navbar-nav navbar-right">
+                    <li class="dropdown" id="fat-menu">
+                        <a aria-expanded="false" aria-haspopup="true" role="button" data-toggle="dropdown" class="dropdown-toggle" href="#" id="langdrop">
+                            @Messages("terminology.language")
+                            <span class="caret"></span>
+                        </a>
+                        <ul aria-labelledby="langdrop" class="dropdown-menu">
+                            @for(lang <- Lang.availables) {
+                                <li><a href="/chlang/@lang.code">@lang.language</a></li>
+                            }
+                        </ul>
+                    </li>
                     <li><a href="@controllers.routes.LoginPage.logout().absoluteURL(UsernamePasswordProvider.sslEnabled)">@Messages("chrome.logout")</a></li>
                 </ul>
             </div>

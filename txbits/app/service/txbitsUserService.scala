@@ -64,14 +64,6 @@ object txbitsUserService {
     globals.userModel.userResetPassComplete(email, token, password)
   }
 
-  def signupStart(email: String) {
-    globals.userModel.trustedActionStart(email, isSignup = true)
-  }
-
-  def resetPassStart(email: String) {
-    globals.userModel.trustedActionStart(email, isSignup = false)
-  }
-
   /**
    * Finds a token
    *

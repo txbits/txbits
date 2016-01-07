@@ -1,8 +1,8 @@
 @(user: securesocial.core.SocialUser)(implicit request: RequestHeader, messages: Messages)
 @import securesocial.core.UsernamePasswordProvider
-Welcome,
+@Messages("mails.greeting")
 
-Your new account is ready. Click here to log in:
+@Messages("mails.welcomeEmail.body")
 
 @controllers.routes.LoginPage.login.absoluteURL(UsernamePasswordProvider.sslEnabled)
 
