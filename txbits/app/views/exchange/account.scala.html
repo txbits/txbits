@@ -77,7 +77,7 @@
             <div class="panel panel-default">
                 <div class="panel-heading">@Messages("exchange.account.api_keys.title")</div>
                 <div class="panel-body">
-                    <button type="submit" class="btn btn-default" id="add-api-key">Add API Key</button>
+                    <button type="submit" class="btn btn-default" id="add-api-key">@Messages("exchange.account.api_keys.button.add")</button>
                     <div id="api-keys"></div>
                 </div>
             </div>
@@ -258,22 +258,22 @@
 
         <p>
             {{#onMailingList}}
-            <p>@Messages("exchange.account.mailinglist"): on</p>
+            <p>@Messages("exchange.account.mailinglist"): @Messages("terminology.on")</p>
             <button type="submit" class="btn btn-default" id="turnoff-emails">@Messages("emails.off.title")</button>
             {{/onMailingList}}
             {{^onMailingList}}
-            <p>@Messages("exchange.account.mailinglist"): off</p>
+            <p>@Messages("exchange.account.mailinglist"): @Messages("terminology.off")</p>
             <button type="submit" class="btn btn-default" id="turnon-emails">@Messages("emails.on.title")</button>
             {{/onMailingList}}
         </p>
 
         <p>
             {{#TFAEnabled}}
-                <p>@Messages("exchange.account.tfa_login"): on</p>
+                <p>@Messages("exchange.account.tfa_login"): @Messages("terminology.on")</p>
                 <button type="submit" class="btn btn-danger" id="turnoff-tfa">@Messages("tfa.off.title")</button>
             {{/TFAEnabled}}
             {{^TFAEnabled}}
-                <p>@Messages("exchange.account.tfa_login"): off</p>
+                <p>@Messages("exchange.account.tfa_login"): @Messages("terminology.off")</p>
                 <button type="submit" class="btn btn-primary" id="turnon-tfa">@Messages("tfa.on.title")</button>
             {{/TFAEnabled}}
         </p>
@@ -291,7 +291,7 @@
             <button type="submit" class="btn btn-danger" id="turnoff-pgp">@Messages("pgp.remove.title")</button>
             {{/pgp}}
             {{^pgp}}
-            <p>@Messages("terminology.pgp_public_key"): None</p>
+            <p>@Messages("terminology.pgp_public_key"): @Messages("terminology.none")</p>
             <button type="submit" class="btn btn-primary" id="turnon-pgp">@Messages("pgp.add.title")</button>
             {{/pgp}}
         </p>

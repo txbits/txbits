@@ -26,6 +26,7 @@ import play.api.libs.json.Reads._
 import play.api.libs.json.Writes._
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
+import play.api.i18n.{ Lang, MessagesApi, I18nSupport, Messages }
 
 class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
@@ -36,7 +37,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
     if (globals.metaModel.activeMarkets.contains(base, counter)) {
       Ok(globals.engineModel.recentTrades(base, counter))
     } else {
-      BadRequest(Json.obj("message" -> "Invalid pair."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.invalidpair")))
     }
   }
 
@@ -45,7 +46,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
     if (globals.metaModel.activeMarkets.contains(base, counter)) {
       Ok(globals.engineModel.ordersDepth(base, counter))
     } else {
-      BadRequest(Json.obj("message" -> "Invalid pair."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.invalidpair")))
     }
   }
 
@@ -66,7 +67,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
       })
       ))
     }).getOrElse(
-      BadRequest(Json.obj("message" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
     )
   }
 
@@ -87,24 +88,24 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
               if (res.isDefined) {
                 Ok(Json.toJson(res.get))
               } else {
-                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
+                BadRequest(Json.obj("message" -> Messages("messages.api.error.nonsufficientfunds")))
               }
             case Some((active, minAmount)) if active =>
-              BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.amountmustbeatleast").format(minAmount)))
             case Some((active, minAmount)) =>
-              BadRequest(Json.obj("message" -> "Trading suspended on %s/%s.".format(base, counter)))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.tradingsuspendedon").format(base, counter)))
             case _ =>
-              BadRequest(Json.obj("message" -> "Invalid pair."))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.invalidpair")))
           }
         } else {
-          BadRequest(Json.obj("message" -> "The price and amount must be positive."))
+          BadRequest(Json.obj("message" -> Messages("messages.api.error.thepriceandamountmustbepositive")))
         }
       }).getOrElse(
-        BadRequest(Json.obj("message" -> "Failed to parse input."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
       )
     } catch {
       case _: Throwable =>
-        BadRequest(Json.obj("message" -> "Failed to place ask."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoplaceask")))
     }
   }
 
@@ -125,24 +126,24 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
               if (res.isDefined) {
                 Ok(Json.toJson(res.get))
               } else {
-                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
+                BadRequest(Json.obj("message" -> Messages("messages.api.error.nonsufficientfunds")))
               }
             case Some((active, minAmount)) if active =>
-              BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.amountmustbeatleast").format(minAmount)))
             case Some((active, minAmount)) =>
-              BadRequest(Json.obj("message" -> "Trading suspended on %s/%s.".format(base, counter)))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.tradingsuspendedon").format(base, counter)))
             case _ =>
-              BadRequest(Json.obj("message" -> "Invalid pair."))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.invalidpair")))
           }
         } else {
-          BadRequest(Json.obj("message" -> "The price and amount must be positive."))
+          BadRequest(Json.obj("message" -> Messages("messages.api.error.thepriceandamountmustbepositive")))
         }
       }).getOrElse(
-        BadRequest(Json.obj("message" -> "Failed to parse input."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
       )
     } catch {
       case _: Throwable =>
-        BadRequest(Json.obj("message" -> "Failed to place bid."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoplacebid")))
     }
   }
 
@@ -156,10 +157,10 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
       if (res) {
         Ok(Json.obj())
       } else {
-        BadRequest(Json.obj("message" -> "Failed to cancel order."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtocancelorder")))
       }
     }).getOrElse(
-      BadRequest(Json.obj("message" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
     )
   }
 
@@ -173,7 +174,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
     ) yield {
       Ok(Json.toJson(globals.userModel.tradeHistory(None, Some(apiKey), before, limit, lastId)))
     }).getOrElse(
-      BadRequest(Json.obj("message" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
     )
   }
 
@@ -185,7 +186,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
       val orders = globals.engineModel.userPendingTrades(None, Some(apiKey))
       Ok(Json.toJson(orders))
     }).getOrElse(
-      BadRequest(Json.obj("message" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
     )
   }
 }

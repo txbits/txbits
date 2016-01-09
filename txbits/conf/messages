@@ -1,6 +1,9 @@
 hello=Coming soon...
 about.text=TODO
 
+terminology.off=off
+terminology.on=on
+terminology.none=none
 terminology.market=Market
 terminology.amount=Amount
 terminology.bought=Bought
@@ -112,6 +115,8 @@ exchange.account.api_keys.delete=Delete
 exchange.account.api_keys.delete.modal.title=Delete API key
 exchange.account.api_keys.save=Save
 exchange.account.api_keys.save.modal.title=Save API key permissions
+
+exchange.account.api_keys.button.add=Add API Key
 
 tfa.on.title=Enable 2FA
 tfa.off.title=Disable 2FA
@@ -253,4 +258,28 @@ mails.welcomeEmail.body=Your new account is ready. Click here to log in:
 mails.passwordResetEmail.body=Please follow this link to reset your password.
 mails.passwordResetOk.body=Your password was updated.  Please log in using your new password by clicking here.
 
+# API error messages
 
+messages.api.error.invalidpair=Invalid pair
+messages.api.error.failedtoparseinput=Failed to parse input.
+messages.api.error.nonsufficientfunds=Non-sufficient funds.
+messages.api.error.amountmustbeatleast=Amount must be at least %s.
+messages.api.error.tradingsuspendedon=Trading suspended on %s/%s.
+messages.api.error.thepriceandamountmustbepositive=The price and amount must be positive.
+messages.api.error.failedtoplaceask=Failed to place ask.
+messages.api.error.failedtoplacebid=Failed to place bid.
+messages.api.error.failedtocancelorder=Failed to cancel order.
+
+messages.api.error.failedtoturnofftwofactorauth=Failed to turn off two factor auth.
+messages.api.error.failedtoaddtomailinglist=Failed to add to mailing list.
+messages.api.error.failedtoremovefrommailinglist=Failed to remove from mailing list.
+messages.api.error.twofactorauthenticationisalready=Two factor authentication is already enabled.
+messages.api.error.failedtoturnontwofactorauth=Failed to turn on two factor auth.
+messages.api.error.failedtoaddpgpkey=Failed to add pgp key. Check your password and two factor auth code if you use two factor auth.
+messages.api.error.failedtoaddpgpkeynovalid=Failed to add pgp key. No valid key was found in the given input.
+messages.api.error.failedtoremovepgpkey=Failed to remove pgp key. Check your password and two factor auth code if you use two factor auth.
+messages.api.error.failedtoupdateapikey=Failed to update API key.
+messages.api.error.failedtodisableapikey=Failed to disable API key.
+messages.api.error.wrongtwofactorauthcode=Wrong two factor auth code.
+messages.api.error.failedtowithdraw=Failed to withdraw.
+messages.api.error.invalidaddress=Invalid address.

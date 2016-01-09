@@ -40,6 +40,7 @@ import anorm._
 import scala.Some
 import play.api.libs.json.JsObject
 import java.util.Date
+import play.api.i18n.{ Lang, MessagesApi, I18nSupport, Messages }
 
 case class Ticker(first: String, low: String, high: String, last: String, volume: String, base: String, counter: String)
 object Ticker {
@@ -82,7 +83,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with I18
     if (globals.metaModel.activeMarkets.contains(base, counter)) {
       Ok(Json.toJson(chartFromDB(base, counter)))
     } else {
-      BadRequest(Json.obj("message" -> "Invalid pair."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.invalidpair")))
     }
   }
 }
