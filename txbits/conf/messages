@@ -211,6 +211,7 @@ auth.signup.signUpDone=Thank you for signing up. You can log in now
 auth.signup.invalidPassword=Enter at least {0} characters
 auth.signup.pgp=PGP key (if you have one)
 auth.signup.language=Language
+auth.signup.errors.emailsdonotmatch=Emails do not match
 
 # Password reset
 auth.password.title=Reset Password
@@ -283,3 +284,18 @@ messages.api.error.failedtodisableapikey=Failed to disable API key.
 messages.api.error.wrongtwofactorauthcode=Wrong two factor auth code.
 messages.api.error.failedtowithdraw=Failed to withdraw.
 messages.api.error.invalidaddress=Invalid address.
+
+# Tickers
+
+bigtickers.Last=Last
+bigtickers.Low=Low
+bigtickers.High=High
+bigtickers.Vol=Vol
+
+# Meta errors
+
+metaerrors.badrequest=Error: Bad request
+metaerrors.clienterror=Error: Client Error
+metaerrors.servererror=Error: Server Error
+metaerrorserror.notfound=Error: Not Found
+

@@ -6,7 +6,7 @@
 @content._chrome(Messages("chrome.exchange.navigation.exchange.title"), scripts) {
     <div class="container" role="main">
         <div class="row-fluid">
-            Server Error: @error.getMessage
+            @Messages("metaerrors.servererror") @error.getMessage
         </div>
     </div>
 }
