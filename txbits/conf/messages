@@ -175,6 +175,12 @@ depositwithdraw.deposit.confirms=confirmations
 depositwithdraw.withdraw.fees=Withdrawal fees
 depositwithdraw.withdraw.limit.min=Minimum withdrawal
 depositwithdraw.withdraw.limit.max=Maximum withdrawal per day
+depositwithdraw.withdraw.modal.confirmwithdrawal=Confirm withdrawal
+depositwithdraw.withdraw.modal.areyousurewithdraw=Are you sure that you want to withdraw
+depositwithdraw.withdraw.modal.to=to
+depositwithdraw.withdraw.modal.andreceive=and receive
+depositwithdraw.withdraw.modal.afterthewithdrawalfeeof=after the withdrawal fee of
+depositwithdraw.withdraw.modal.requestwithdrawal=Request Withdrawal
 
 history.depositwithdrawhistory.title=Deposit / Withdraw History
 history.tradehistory.title=Trade History

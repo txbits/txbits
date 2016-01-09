@@ -176,6 +176,12 @@ depositwithdraw.deposit.confirms=подтверждений
 depositwithdraw.withdraw.fees=Комиссия за снятие
 depositwithdraw.withdraw.limit.min=Минимальная вывод
 depositwithdraw.withdraw.limit.max=Минимальная вывод в день
+depositwithdraw.withdraw.modal.confirmwithdrawal=Подтвердите вывод
+depositwithdraw.withdraw.modal.areyousurewithdraw=Вы уверены, что хотите вывести
+depositwithdraw.withdraw.modal.to=на
+depositwithdraw.withdraw.modal.andreceive=и получить
+depositwithdraw.withdraw.modal.afterthewithdrawalfeeof=после уплаты комиссии
+depositwithdraw.withdraw.modal.requestwithdrawal=Запросить вывод
 
 history.depositwithdrawhistory.title=История Депозитов / Снятий
 history.tradehistory.title=Торговая история
