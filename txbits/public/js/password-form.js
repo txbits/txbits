@@ -35,11 +35,11 @@ $(function(){
         var $fields = [$currentPasswordField, $password1Field, $password2Field];
         function check_form() {
             if ($password1.val().length == 0) {
-                show_error($fields, $password1Field, "Please enter a password.");
+                show_error($fields, $password1Field, Messages("java.api.messages.passform.pleaseenterapassword"));
             } else if ($password1.val().length < min_len) {
-                show_error($fields, $password1Field, "Password not long enough.");
+                show_error($fields, $password1Field,  Messages("java.api.messages.passform.passwordnotlongenough"));
             } else if ($password1.val() != $password2.val()) {
-                show_error($fields, $password2Field, "Passwords don't match.");
+                show_error($fields, $password2Field, Messages("java.api.messages.passform.passwordsdontmatch"));
             } else {
                 show_error($fields);
             }

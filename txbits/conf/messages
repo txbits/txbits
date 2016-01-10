@@ -305,3 +305,65 @@ metaerrors.clienterror=Error: Client Error
 metaerrors.servererror=Error: Server Error
 metaerrorserror.notfound=Error: Not Found
 
+# Java API error messages
+
+# Trade & History
+
+java.api.messages.trade.apierror=API Error
+java.api.messages.trade.tradecancelled=Trade cancelled.
+java.api.messages.trade.tradecancelledsuccessfully=Trade cancelled successfully.
+java.api.messages.trade.buyorder=Buy order
+java.api.messages.trade.sellorder=Sell order
+java.api.messages.trade.placed=placed.
+java.api.messages.trade.partiallyfilled=partially filled.
+java.api.messages.trade.filled=filled.
+java.api.messages.trade.market=Market:
+java.api.messages.trade.amount=Amount:
+java.api.messages.trade.remains=Remains:
+java.api.messages.trade.sell=Sell
+java.api.messages.trade.buy=Buy
+java.api.messages.trade.per=per
+java.api.messages.trade.volume=Volume
+java.api.messages.trade.last=Last
+java.api.messages.trade.low=Low
+java.api.messages.trade.high=High
+java.api.messages.trade.close=close
+java.api.messages.trade.vol=Vol
+java.api.messages.trade.open=open
+
+# Account
+
+java.api.messages.account.mailinglistsubscription=Mailing list subscription
+java.api.messages.account.mailinglistsubscriptionturnedoff=Mailing list subscription turned off.
+java.api.messages.account.mailinglistsubscriptionturnedon=Mailing list subscription turned on.
+java.api.messages.account.pgpkeyadded=PGP key added
+java.api.messages.account.pgpkeyaddedemailswillnowbeencrypted=PGP key added. Emails will now be encrypted.
+java.api.messages.account.pgpkeyremoved=PGP key removed
+java.api.messages.account.pgpkeyremovedemailswillnolongerbeencrypted=PGP key removed. Emails will no longer be encrypted.
+java.api.messages.account.twofactorauthentication=Two factor authentication
+java.api.messages.account.twofactorauthenticationturnedon=Two factor authentication turned on.
+java.api.messages.account.twofactorauthenticationturnedoff=Two factor authentication turned off.
+java.api.messages.account.apikeyadded=API key added
+java.api.messages.account.apikeyaddedsuccessfully=API key added successfully.
+java.api.messages.account.apikeydisabled=API key disabled.
+java.api.messages.account.apikeydisabledsuccessfully=API key disabled successfully.
+java.api.messages.account.apikeyupdated=API key updated.
+java.api.messages.account.apikeyupdatedsuccessfully=API key updated successfully.
+
+# DepositWithdraw & History
+
+java.api.messages.depositwithdraw.notgenerated=Not generated yet...
+java.api.messages.depositwithdraw.pending=Pending
+java.api.messages.depositwithdraw.checkemail=Check email
+java.api.messages.depositwithdraw.addressrequired=Address required.
+java.api.messages.depositwithdraw.withdrawalrequested=Withdrawal requested.
+java.api.messages.depositwithdraw.pleasecheckyouremail=Please check your email to confirm this withdrawal.
+java.api.messages.depositwithdraw.deposit=Deposit
+java.api.messages.depositwithdraw.withdrawal=Withdrawal
+
+# Password form
+
+java.api.messages.passform.pleaseenterapassword=Please enter a password.
+java.api.messages.passform.passwordnotlongenough=Password not long enough.
+java.api.messages.passform.passwordsdontmatch=Passwords don't match.
+

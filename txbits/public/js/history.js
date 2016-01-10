@@ -44,11 +44,11 @@ $(function(){
                 data[i].fee = zerosToSpaces(data[i].fee);
                 if (data[i].typ == "ask") {
                     data[i].fee_currency = data[i].counter;
-                    data[i].order_type = "Sell";
+                    data[i].order_type = Messages("java.api.messages.trade.sell");
                     data[i].klass = "danger";
                 } else {
                     data[i].fee_currency = data[i].base;
-                    data[i].order_type = "Buy";
+                    data[i].order_type = Messages("java.api.messages.trade.buy");
                     data[i].klass = "success";
                 }
             }
@@ -71,10 +71,10 @@ $(function(){
                 data[i].fee = zerosToSpaces(data[i].fee);
                 data[i].note = data[i].rejected ? "Cancelled" : "";
                 if (data[i].typ == 'd') {
-                    data[i].typ = "Deposit";
+                    data[i].typ = Messages("java.api.messages.depositwithdraw.deposit");
                     data[i].klass = "success";
                 } else {
-                    data[i].typ = "Withdrawal";
+                    data[i].typ = Messages("java.api.messages.depositwithdraw.withdrawal");
                     data[i].klass = "danger";
                 }
             }

@@ -307,3 +307,65 @@ metaerrors.clienterror=Ошибка: Ошибка клиента
 metaerrors.servererror=Ошибка: Ошибка сервера
 metaerrorserror.notfound=Ошибка: Не найдена
 
+# Java API error messages
+
+# Trade & History
+
+java.api.messages.trade.apierror=Ошибка API
+java.api.messages.trade.tradecancelled=Отмена ордера.
+java.api.messages.trade.tradecancelledsuccessfully=Ордер успешно отменен.
+java.api.messages.trade.buyorder=Ордер на покупку
+java.api.messages.trade.sellorder=Ордер на продажу
+java.api.messages.trade.placed=размещен.
+java.api.messages.trade.partiallyfilled=частично заполнен.
+java.api.messages.trade.filled=заполнен.
+java.api.messages.trade.market=Инструмент:
+java.api.messages.trade.amount=Количество:
+java.api.messages.trade.remains=Остаток:
+java.api.messages.trade.sell=Продажа
+java.api.messages.trade.buy=Покупка
+java.api.messages.trade.per=за
+java.api.messages.trade.volume=Объем
+java.api.messages.trade.last=Посл.
+java.api.messages.trade.low=Мин.
+java.api.messages.trade.high=Макс.
+java.api.messages.trade.close=закрытие
+java.api.messages.trade.vol=Объем
+java.api.messages.trade.open=открытие
+
+# Account
+
+java.api.messages.account.mailinglistsubscription=Подписка на рассылку
+java.api.messages.account.mailinglistsubscriptionturnedoff=Подписка на рассылку выключена.
+java.api.messages.account.mailinglistsubscriptionturnedon=Подписка на рассылку включена.
+java.api.messages.account.pgpkeyadded=PGP ключ добавлен
+java.api.messages.account.pgpkeyaddedemailswillnowbeencrypted=Добавлен ключ PGP. Теперь письма будет шифроваться.
+java.api.messages.account.pgpkeyremoved=PGP ключ удален
+java.api.messages.account.pgpkeyremovedemailswillnolongerbeencrypted=Ключ PGP удален. Письма не будет шифроваться.
+java.api.messages.account.twofactorauthentication=Двухфакторная аутентификация
+java.api.messages.account.twofactorauthenticationturnedon=Двухфакторная аутентификация включена.
+java.api.messages.account.twofactorauthenticationturnedoff=Двухфакторная аутентификация отключена.
+java.api.messages.account.apikeyadded=API ключ добавлен
+java.api.messages.account.apikeyaddedsuccessfully=API ключ добавлен успешно.
+java.api.messages.account.apikeydisabled=API ключ отключен.
+java.api.messages.account.apikeydisabledsuccessfully=API ключ отключен успешно.
+java.api.messages.account.apikeyupdated=API ключ обновлен.
+java.api.messages.account.apikeyupdatedsuccessfully=API ключ обновлен успешно.
+
+# DepositWithdraw & History
+
+java.api.messages.depositwithdraw.notgenerated=Еще не сгенерирован ...
+java.api.messages.depositwithdraw.pending=В ожидании
+java.api.messages.depositwithdraw.checkemail=Проверить электронную почту
+java.api.messages.depositwithdraw.addressrequired=Требуется адрес.
+java.api.messages.depositwithdraw.withdrawalrequested=Запрос вывода.
+java.api.messages.depositwithdraw.pleasecheckyouremail=Пожалуйста, проверьте свою электронную почту, чтобы подтвердить вывод.
+java.api.messages.depositwithdraw.deposit=Депозит
+java.api.messages.depositwithdraw.withdrawal=Снятие
+
+# Password form
+
+java.api.messages.passform.pleaseenterapassword=Пожалуйста, введите пароль.
+java.api.messages.passform.passwordnotlongenough=Не достаточная длинна пароля.
+java.api.messages.passform.passwordsdontmatch=Пароли не совпадают.
+

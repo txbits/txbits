@@ -2,6 +2,7 @@
 var exchangeModel = {};
 
 $(function(){
+    console.log(Messages("hello"));
     var pp_template = Handlebars.compile($("#pair-picker-template").html());
     var bid_template = Handlebars.compile($("#bid-template").html());
     var ask_template = Handlebars.compile($("#ask-template").html());
@@ -39,10 +40,10 @@ $(function(){
                 trades[i].price = zerosToSpaces(trades[i].price);
                 trades[i].created = moment(Number(trades[i].created)).format("YYYY-MM-DD HH:mm:ss");
                 if (trades[i].typ == "ask") {
-                    trades[i].order_type = "Sell";
+                    trades[i].order_type = Messages("java.api.messages.sell");
                     trades[i].klass = "danger";
                 } else {
-                    trades[i].order_type = "Buy";
+                    trades[i].order_type = Messages("java.api.messages.buy");
                     trades[i].klass = "success";
                 }
             }
@@ -51,8 +52,8 @@ $(function(){
                 var id = $this.attr('exchange-trade-id');
                 API.cancel(id).success(function(){
                     $.pnotify({
-                        title: 'Trade cancelled.',
-                        text: 'Trade cancelled successfully.',
+                        title: Messages("java.api.messages.trade.tradecancelled"),
+                        text: Messages("java.api.messages.trade.tradecancelledsuccessfully"),
                         styling: 'bootstrap',
                         type: 'success',
                         text_escape: true
@@ -124,8 +125,8 @@ $(function(){
                         API.bid(base, counter, amount, price).success(function(data){
                             var remains = Number(data.remains);
                             $.pnotify({
-                                title: 'Buy order ' + (remains > 0 ? (remains == amount ? 'placed.' : 'partially filled.') : 'filled.'),
-                                text: 'Market: ' + base + "/" + counter + ', Amount: ' + amount + ', Remains: ' + remains,
+                                title: Messages("java.api.messages.trade.buyorder") + " " + (remains > 0 ? (remains == amount ? Messages("java.api.messages.trade.placed") : Messages("java.api.messages.trade.partiallyfilled")) : Messages("java.api.messages.trade.filled")),
+                                text: Messages("java.api.messages.trade.market")+ " " + base + "/" + counter + ', ' + Messages("java.api.messages.trade.amount") + amount + ', ' + Messages("java.api.messages.trade.remains") + remains,
                                 styling: 'bootstrap',
                                 type: 'success',
                                 text_escape: true
@@ -146,8 +147,8 @@ $(function(){
                         API.ask(base, counter, amount, price).success(function(data){
                             var remains = Number(data.remains);
                             $.pnotify({
-                                title: 'Sell order ' + (remains > 0 ? (remains == amount ? 'placed.' : 'partially filled.') : 'filled.'),
-                                text: 'Market: ' + base + "/" + counter + ', Amount: ' + amount + ', Remains: ' + remains,
+                                title: Messages("java.api.messages.trade.sellorder") + " " +(remains > 0 ? (remains == amount ? Messages("java.api.messages.trade.placed") : Messages("java.api.messages.trade.partiallyfilled")) : Messages("java.api.messages.trade.filled")),
+                                text: Messages("java.api.messages.trade.market") + " " + base + "/" + counter + ', ' + Messages("java.api.messages.trade.amount") + amount + ', ' + Messages("java.api.messages.trade.remains") + remains,
                                 styling: 'bootstrap',
                                 type: 'success',
                                 text_escape: true
@@ -201,10 +202,10 @@ $(function(){
                 trades.orders[i].price = zerosToSpaces(trades.orders[i].price);
                 trades.orders[i].created = moment(Number(trades.orders[i].created)).format("YYYY-MM-DD HH:mm:ss");
                 if (trades.orders[i].typ == "ask") {
-                    trades.orders[i].order_type = "Sell";
+                    trades.orders[i].order_type = Messages("java.api.messages.trade.sell");
                     trades.orders[i].klass = "danger";
                 } else {
-                    trades.orders[i].order_type = "Buy";
+                    trades.orders[i].order_type = Messages("java.api.messages.trade.buy");
                     trades.orders[i].klass = "success";
                 }
             }
@@ -245,7 +246,7 @@ $(function(){
 
             function trackFormatter1(data){
                 var point = data.series.data[data.index];
-                return "open " + point[1] + " high " + point[2] + " low " + point[3] + " close " + point[4];
+                return Messages("java.api.messages.trade.open") + point[1] + Messages("java.api.messages.trade.high") + point[2] + Messages("java.api.messages.trade.low") + point[3] + Messages("java.api.messages.trade.close") + point[4];
             }
             function trackFormatter2(data){
                 return data.y + " " + base;
@@ -283,7 +284,7 @@ $(function(){
                     }
                 }
             ], {
-                title: base + "/" + counter + " (last: " + last + ")",
+                title: base + "/" + counter + " (" + Messages("java.api.messages.trade.last") + last + ")",
                 xaxis: {
                     noTicks: 8,
                     mode: "time"
@@ -292,10 +293,10 @@ $(function(){
                     // XXX: setting these makes the axis labels disappear
                     //max: max + (max-min) * 0.2,
                     //min: min - (max-min) * 0.2,
-                    title: counter + ' per ' + base
+                    title: counter + " " + Messages("java.api.messages.trade.per") + " " + base
                 },
                 y2axis: {
-                    title: base + ' Volume',
+                    title: base + " " + Messages("java.api.messages.trade.volume"),
                     min: 0,
                     tickFormatter: ticksFn
                 },

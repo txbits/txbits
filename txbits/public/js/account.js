@@ -14,8 +14,8 @@ $(function(){
             $('#turnoff-emails').click(function(e){
                 API.turnoff_emails().success(function(){
                     $.pnotify({
-                        title: 'Mailing list subscription',
-                        text: 'Mailing list subscription turned off.',
+                        title: Messages("java.api.messages.account.mailinglistsubscription"),
+                        text: Messages("java.api.messages.account.mailinglistsubscriptionturnedoff"),
                         styling: 'bootstrap',
                         type: 'success',
                         text_escape: true
@@ -28,8 +28,8 @@ $(function(){
             $('#turnon-emails').click(function(e){
                 API.turnon_emails().success(function(){
                     $.pnotify({
-                        title: 'Mailing list subscription',
-                        text: 'Mailing list subscription turned on.',
+                        title: Messages("java.api.messages.account.mailinglistsubscription"),
+                        text: Messages("java.api.messages.account.mailinglistsubscriptionturnedon"),
                         styling: 'bootstrap',
                         type: 'success',
                         text_escape: true
@@ -46,8 +46,8 @@ $(function(){
                     //TODO: internationalize javascript messages
                     API.add_pgp(password, tfa_code, pgp).success(function(){
                         $.pnotify({
-                            title: 'PGP key added',
-                            text: 'PGP key added. Emails will now be encrypted.',
+                            title: Messages("java.api.messages.account.pgpkeyadded"),
+                            text: Messages("java.api.messages.account.pgpkeyaddedemailswillnowbeencrypted"),
                             styling: 'bootstrap',
                             type: 'success',
                             text_escape: true
@@ -73,8 +73,8 @@ $(function(){
                     //TODO: internationalize javascript messages
                     API.remove_pgp(password, tfa_code).success(function(){
                         $.pnotify({
-                            title: 'PGP key removed',
-                            text: 'PGP key removed. Emails will no longer be encrypted.',
+                            title: Messages("java.api.messages.account.pgpkeyremoved"),
+                            text: Messages("java.api.messages.account.pgpkeyremovedemailswillnolongerbeencrypted"),
                             styling: 'bootstrap',
                             type: 'success',
                             text_escape: true
@@ -108,8 +108,8 @@ $(function(){
                             //TODO: internationalize javascript messages
                             API.turnon_tfa(code, password).success(function(){
                                 $.pnotify({
-                                    title: 'Two factor authentication',
-                                    text: 'Two factor authentication turned on.',
+                                    title: Messages("java.api.messages.account.twofactorauthentication"),
+                                    text: Messages("java.api.messages.account.twofactorauthenticationturnedon"),
                                     styling: 'bootstrap',
                                     type: 'success',
                                     text_escape: true
@@ -136,8 +136,8 @@ $(function(){
                     var password = $("#tfa-disable-modal").find('.password').val();
                     API.turnoff_tfa(code, password).success(function(){
                         $.pnotify({
-                            title: 'Two factor authentication',
-                            text: 'Two factor authentication turned off.',
+                            title: Messages("java.api.messages.account.twofactorauthentication"),
+                            text: Messages("java.api.messages.account.twofactorauthenticationturnedoff"),
                             styling: 'bootstrap',
                             type: 'success',
                             text_escape: true
@@ -155,8 +155,8 @@ $(function(){
             $('#add-api-key').off('click').click(function(e){
                 API.add_api_key().success(function(){
                     $.pnotify({
-                        title: 'API key added',
-                        text: 'API key added successfully.',
+                        title: Messages("java.api.messages.account.apikeyadded"),
+                        text: Messages("java.api.messages.account.apikeyaddedsuccessfully"),
                         styling: 'bootstrap',
                         type: 'success',
                         text_escape: true
@@ -187,8 +187,8 @@ $(function(){
                         var tfa_code = tfa_code_ele ? tfa_code_ele.val() : '';
                         API.disable_api_key(tfa_code, key).success(function(){
                             $.pnotify({
-                                title: 'API key disabled.',
-                                text: 'API key disabled successfully.',
+                                title: Messages("java.api.messages.account.apikeydisabled"),
+                                text: Messages("java.api.messages.account.apikeydisabledsuccessfully"),
                                 styling: 'bootstrap',
                                 type: 'success',
                                 text_escape: true
@@ -218,8 +218,8 @@ $(function(){
                         var tfa_code = tfa_code_ele ? tfa_code_ele.val() : '';
                         API.update_api_key(tfa_code, key, comment, trading, trade_history, list_balance).success(function(){
                             $.pnotify({
-                                title: 'API key updated.',
-                                text: 'API key updated successfully.',
+                                title: Messages("java.api.messages.account.apikeyupdated"),
+                                text: Messages("java.api.messages.account.apikeyupdatedsuccessfully"),
                                 styling: 'bootstrap',
                                 type: 'success',
                                 text_escape: true

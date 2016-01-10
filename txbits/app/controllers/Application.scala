@@ -24,8 +24,9 @@ import play.api.Play.current
 import play.api.i18n.MessagesApi
 import play.i18n.Langs
 import scala.language.postfixOps
+import jsmessages.JsMessagesFactory
 
-class Application @Inject() (val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
+class Application @Inject() (jsMessagesFactory: JsMessagesFactory, val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
 
   def index = UserAwareAction { implicit request =>
     Ok(views.html.content.index(request.user.isDefined))
@@ -56,5 +57,11 @@ class Application @Inject() (val messagesApi: MessagesApi) extends Controller wi
       globals.userModel.changeLanguage(request.user.get.id, lang)
     }
     Redirect(request.headers.get("referer").getOrElse("/")).withLang(Lang.get(lang).getOrElse(Lang.defaultLang))
+  }
+
+  val messages = jsMessagesFactory.all
+
+  val jsMessages = Action { implicit request =>
+    Ok(messages(Some("window.Messages")))
   }
 }

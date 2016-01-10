@@ -22,7 +22,7 @@ var API;
                     err_text = res.responseText;
                 }
                 $.pnotify({
-                    title: 'API Error',
+                    title: Messages("java.api.messages.trade.apierror"),
                     text: err_text,
                     styling: 'bootstrap',
                     type: 'error',
