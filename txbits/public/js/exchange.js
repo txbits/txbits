@@ -2,7 +2,6 @@
 var exchangeModel = {};
 
 $(function(){
-    console.log(Messages("hello"));
     var pp_template = Handlebars.compile($("#pair-picker-template").html());
     var bid_template = Handlebars.compile($("#bid-template").html());
     var ask_template = Handlebars.compile($("#ask-template").html());
@@ -40,10 +39,10 @@ $(function(){
                 trades[i].price = zerosToSpaces(trades[i].price);
                 trades[i].created = moment(Number(trades[i].created)).format("YYYY-MM-DD HH:mm:ss");
                 if (trades[i].typ == "ask") {
-                    trades[i].order_type = Messages("java.api.messages.sell");
+                    trades[i].order_type = Messages("java.api.messages.trade.sell");
                     trades[i].klass = "danger";
                 } else {
-                    trades[i].order_type = Messages("java.api.messages.buy");
+                    trades[i].order_type = Messages("java.api.messages.trade.buy");
                     trades[i].klass = "success";
                 }
             }
