@@ -181,6 +181,8 @@ depositwithdraw.withdraw.modal.to=to
 depositwithdraw.withdraw.modal.andreceive=and receive
 depositwithdraw.withdraw.modal.afterthewithdrawalfeeof=after the withdrawal fee of
 depositwithdraw.withdraw.modal.requestwithdrawal=Request Withdrawal
+depositwithdraw.deposit.modal.confirmdeposit=Confirm deposit
+depositwithdraw.deposit.modal.areyousurethatyouwanttodeposit=Are you sure that you want to deposit
 
 history.depositwithdrawhistory.title=Deposit / Withdraw History
 history.tradehistory.title=Trade History
