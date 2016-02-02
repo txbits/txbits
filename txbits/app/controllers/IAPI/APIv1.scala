@@ -367,7 +367,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
         } catch {
           case e: PSQLException => {
             BadRequest(Json.obj("message" -> (e.getServerErrorMessage.getMessage match {
-              case "new row for relation \"balances\" violates check constraint \"no_hold_above_balance\"" => "Non-sufficient funds."
+              case "new row for relation \"balances\" violates check constraint \"no_hold_above_balance\"" => Messages("messages.api.error.nonsufficientfunds")
               case _: String => {
                 Logger.error(e.toString + e.getStackTrace)
                 e.getServerErrorMessage.getMessage

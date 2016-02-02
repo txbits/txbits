@@ -358,7 +358,7 @@ java.api.messages.account.apikeyupdatedsuccessfully=API ключ обновле�
 
 java.api.messages.depositwithdraw.notgenerated=Еще не сгенерирован ...
 java.api.messages.depositwithdraw.pending=В ожидании
-java.api.messages.depositwithdraw.checkemail=Проверить электронную почту
+java.api.messages.depositwithdraw.checkemail=Проверьте электронную почту
 java.api.messages.depositwithdraw.addressrequired=Требуется адрес.
 java.api.messages.depositwithdraw.withdrawalrequested=Запрос вывода.
 java.api.messages.depositwithdraw.pleasecheckyouremail=Пожалуйста, проверьте свою электронную почту, чтобы подтвердить вывод.
