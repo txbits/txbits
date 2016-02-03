@@ -43,7 +43,6 @@ $(function(){
                     var password = $("#pgp-add-modal").find('.password').val();
                     var tfa_code = $("#pgp-add-modal").find('.code').val();
                     var pgp = $("#pgp-add-modal").find('.pgpkey').val();
-                    //TODO: internationalize javascript messages
                     API.add_pgp(password, tfa_code, pgp).success(function(){
                         $.pnotify({
                             title: Messages("java.api.messages.account.pgpkeyadded"),
@@ -105,7 +104,6 @@ $(function(){
                         function enable(e) {
                             var code = $("#tfa-enable-modal").find('.code').val();
                             var password = $("#tfa-enable-modal").find('.password').val();
-                            //TODO: internationalize javascript messages
                             API.turnon_tfa(code, password).success(function(){
                                 $.pnotify({
                                     title: Messages("java.api.messages.account.twofactorauthentication"),
@@ -129,7 +127,6 @@ $(function(){
                 e.preventDefault();
             });
 
-            //TODO: internationalize javascript messages
             $('#turnoff-tfa').click(function(e) {
                 function disable(e) {
                     var code = $("#tfa-disable-modal").find('.code').val();

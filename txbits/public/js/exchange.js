@@ -245,7 +245,21 @@ $(function(){
 
             function trackFormatter1(data){
                 var point = data.series.data[data.index];
-                return Messages("java.api.messages.trade.open") + point[1] + Messages("java.api.messages.trade.high") + point[2] + Messages("java.api.messages.trade.low") + point[3] + Messages("java.api.messages.trade.close") + point[4];
+                return Messages("java.api.messages.trade.open")
+                    + " "
+                    + point[1]
+                    + " "
+                    + Messages("java.api.messages.trade.high")
+                    + " "
+                    + point[2]
+                    + " "
+                    + Messages("java.api.messages.trade.low")
+                    + " "
+                    + point[3]
+                    + " "
+                    + Messages("java.api.messages.trade.close")
+                    + " "
+                    + point[4];
             }
             function trackFormatter2(data){
                 return data.y + " " + base;

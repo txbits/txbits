@@ -300,6 +300,16 @@ bigtickers.Low=Low
 bigtickers.High=High
 bigtickers.Vol=Vol
 
+# zxvbn
+
+zxvbn.instant=instant
+zxvbn.minutes=minutes
+zxvbn.hours=hours
+zxvbn.days=days
+zxvbn.months=months
+zxvbn.years=years
+zxvbn.centuries=centuries
+
 # Meta errors
 
 metaerrors.badrequest=Error: Bad request
