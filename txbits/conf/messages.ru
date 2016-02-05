@@ -305,11 +305,23 @@ bigtickers.Vol=Объем
 # zxvbn
 
 zxvbn.instant=мгновенно
+zxvbn.minute=минута
+zxvbn.minute1=минут
 zxvbn.minutes=минуты
-zxvbn.hours=часы
-zxvbn.days=дни
-zxvbn.months=месяца
-zxvbn.years=годы
+zxvbn.hour=час
+zxvbn.hour1=часа
+zxvbn.hours=часов
+zxvbn.day=день
+zxvbn.day1=дня
+zxvbn.days=дней
+zxvbn.month=месяц
+zxvbn.month1=месяца
+zxvbn.months=месяцев
+zxvbn.year=год
+zxvbn.year1=года
+zxvbn.years=лет
+zxvbn.centurie=век
+zxvbn.centurie1=веков
 zxvbn.centuries=века
 
 # Meta errors

@@ -303,11 +303,23 @@ bigtickers.Vol=Vol
 # zxvbn
 
 zxvbn.instant=instant
+zxvbn.minute=minute
+zxvbn.minute1=minutes
 zxvbn.minutes=minutes
+zxvbn.hour=hour
+zxvbn.hour1=hours
 zxvbn.hours=hours
+zxvbn.day=day
+zxvbn.day1=days
 zxvbn.days=days
+zxvbn.month=month
+zxvbn.month1=months
 zxvbn.months=months
+zxvbn.year=year
+zxvbn.year1=years
 zxvbn.years=years
+zxvbn.centurie=centurie
+zxvbn.centurie1=centuries
 zxvbn.centuries=centuries
 
 # Meta errors
