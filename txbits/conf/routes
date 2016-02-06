@@ -20,6 +20,7 @@
 
 # Home page
 GET         /                                          controllers.Application.index
+GET         /messages.js                               controllers.Application.jsMessages
 
 # Exchange pages
 GET         /dashboard                                 controllers.Application.dashboard

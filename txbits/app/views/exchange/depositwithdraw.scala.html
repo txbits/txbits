@@ -9,7 +9,7 @@
     <div class="panel panel-default">
         <div class="panel-heading">
             <h4 class="panel-title clickable" data-toggle="collapse" data-parent="#depositwithdraw" href="#panel-{{currency}}">
-                {{currency}} - Available: <span class="money">{{balance.available}}</span>
+                {{currency}} - @Messages("terminology.available"): <span class="money">{{balance.available}}</span>
             </h4>
         </div>
         @if(collapsed){
@@ -43,19 +43,18 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-            <h4 class="modal-title">Confirm withdrawal</h4>
+            <h4 class="modal-title">@Messages("depositwithdraw.withdraw.modal.confirmwithdrawal")</h4>
           </div>
           <div class="modal-body">
-            <!-- TODO: translate! -->
-            <p>Are you sure that you want to withdraw
+            <p>@Messages("depositwithdraw.withdraw.modal.areyousurewithdraw")
                 <span id="withdraw-confirm-amount"></span>
                 <span id="withdraw-confirm-currency1"></span>
-                to
+                @Messages("depositwithdraw.withdraw.modal.to")
                 <span id="withdraw-confirm-address"></span>
-                and receive
+                @Messages("depositwithdraw.withdraw.modal.andreceive")
                 <span id="withdraw-confirm-value"></span>
                 <span id="withdraw-confirm-currency2"></span>
-                after the withdrawal fee of
+                @Messages("depositwithdraw.withdraw.modal.afterthewithdrawalfeeof")
                 <span id="withdraw-confirm-fee"></span>
                 <span id="withdraw-confirm-currency3"></span>?
             </p>
@@ -68,8 +67,8 @@
             <div class="clearfix"></div>
           </div>
           <div class="modal-footer">
-            <button type="button" id="withdraw-confirm-cancel" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button type="button" id="withdraw-confirm-submit" class="btn btn-primary">Request Withdrawal</button>
+            <button type="button" id="withdraw-confirm-cancel" class="btn btn-default" data-dismiss="modal">@Messages("terminology.cancel")</button>
+            <button type="button" id="withdraw-confirm-submit" class="btn btn-primary">@Messages("depositwithdraw.withdraw.modal.requestwithdrawal")</button>
           </div>
         </div><!-- /.modal-content -->
       </div><!-- /.modal-dialog -->

@@ -1,6 +1,9 @@
 hello=Coming soon...
 about.text=TODO
 
+terminology.off=off
+terminology.on=on
+terminology.none=none
 terminology.market=Market
 terminology.amount=Amount
 terminology.bought=Bought
@@ -113,6 +116,8 @@ exchange.account.api_keys.delete.modal.title=Delete API key
 exchange.account.api_keys.save=Save
 exchange.account.api_keys.save.modal.title=Save API key permissions
 
+exchange.account.api_keys.button.add=Add API Key
+
 tfa.on.title=Enable 2FA
 tfa.off.title=Disable 2FA
 tfa.submit.title=Submit
@@ -170,6 +175,14 @@ depositwithdraw.deposit.confirms=confirmations
 depositwithdraw.withdraw.fees=Withdrawal fees
 depositwithdraw.withdraw.limit.min=Minimum withdrawal
 depositwithdraw.withdraw.limit.max=Maximum withdrawal per day
+depositwithdraw.withdraw.modal.confirmwithdrawal=Confirm withdrawal
+depositwithdraw.withdraw.modal.areyousurewithdraw=Are you sure that you want to withdraw
+depositwithdraw.withdraw.modal.to=to
+depositwithdraw.withdraw.modal.andreceive=and receive
+depositwithdraw.withdraw.modal.afterthewithdrawalfeeof=after the withdrawal fee of
+depositwithdraw.withdraw.modal.requestwithdrawal=Request Withdrawal
+depositwithdraw.deposit.modal.confirmdeposit=Confirm deposit
+depositwithdraw.deposit.modal.areyousurethatyouwanttodeposit=Are you sure that you want to deposit
 
 history.depositwithdrawhistory.title=Deposit / Withdraw History
 history.tradehistory.title=Trade History
@@ -206,6 +219,7 @@ auth.signup.signUpDone=Thank you for signing up. You can log in now
 auth.signup.invalidPassword=Enter at least {0} characters
 auth.signup.pgp=PGP key (if you have one)
 auth.signup.language=Language
+auth.signup.errors.emailsdonotmatch=Emails do not match
 
 # Password reset
 auth.password.title=Reset Password
@@ -253,4 +267,127 @@ mails.welcomeEmail.body=Your new account is ready. Click here to log in:
 mails.passwordResetEmail.body=Please follow this link to reset your password.
 mails.passwordResetOk.body=Your password was updated.  Please log in using your new password by clicking here.
 
+# API error messages
+
+messages.api.error.invalidpair=Invalid pair
+messages.api.error.failedtoparseinput=Failed to parse input.
+messages.api.error.nonsufficientfunds=Non-sufficient funds.
+messages.api.error.amountmustbeatleast=Amount must be at least %s.
+messages.api.error.tradingsuspendedon=Trading suspended on %s/%s.
+messages.api.error.thepriceandamountmustbepositive=The price and amount must be positive.
+messages.api.error.failedtoplaceask=Failed to place ask.
+messages.api.error.failedtoplacebid=Failed to place bid.
+messages.api.error.failedtocancelorder=Failed to cancel order.
+
+messages.api.error.failedtoturnofftwofactorauth=Failed to turn off two factor auth.
+messages.api.error.failedtoaddtomailinglist=Failed to add to mailing list.
+messages.api.error.failedtoremovefrommailinglist=Failed to remove from mailing list.
+messages.api.error.twofactorauthenticationisalready=Two factor authentication is already enabled.
+messages.api.error.failedtoturnontwofactorauth=Failed to turn on two factor auth.
+messages.api.error.failedtoaddpgpkey=Failed to add pgp key. Check your password and two factor auth code if you use two factor auth.
+messages.api.error.failedtoaddpgpkeynovalid=Failed to add pgp key. No valid key was found in the given input.
+messages.api.error.failedtoremovepgpkey=Failed to remove pgp key. Check your password and two factor auth code if you use two factor auth.
+messages.api.error.failedtoupdateapikey=Failed to update API key.
+messages.api.error.failedtodisableapikey=Failed to disable API key.
+messages.api.error.wrongtwofactorauthcode=Wrong two factor auth code.
+messages.api.error.failedtowithdraw=Failed to withdraw.
+messages.api.error.invalidaddress=Invalid address.
+
+# Tickers
+
+bigtickers.Last=Last
+bigtickers.Low=Low
+bigtickers.High=High
+bigtickers.Vol=Vol
+
+# zxvbn
+
+zxvbn.instant=instant
+zxvbn.minute=minute
+zxvbn.minute1=minutes
+zxvbn.minutes=minutes
+zxvbn.hour=hour
+zxvbn.hour1=hours
+zxvbn.hours=hours
+zxvbn.day=day
+zxvbn.day1=days
+zxvbn.days=days
+zxvbn.month=month
+zxvbn.month1=months
+zxvbn.months=months
+zxvbn.year=year
+zxvbn.year1=years
+zxvbn.years=years
+zxvbn.centurie=centurie
+zxvbn.centurie1=centuries
+zxvbn.centuries=centuries
+
+# Meta errors
+
+metaerrors.badrequest=Error: Bad request
+metaerrors.clienterror=Error: Client Error
+metaerrors.servererror=Error: Server Error
+metaerrorserror.notfound=Error: Not Found
+
+# Java API error messages
+
+# Trade & History
+
+java.api.messages.trade.apierror=API Error
+java.api.messages.trade.tradecancelled=Trade cancelled.
+java.api.messages.trade.tradecancelledsuccessfully=Trade cancelled successfully.
+java.api.messages.trade.buyorder=Buy order
+java.api.messages.trade.sellorder=Sell order
+java.api.messages.trade.placed=placed.
+java.api.messages.trade.partiallyfilled=partially filled.
+java.api.messages.trade.filled=filled.
+java.api.messages.trade.market=Market:
+java.api.messages.trade.amount=Amount:
+java.api.messages.trade.remains=Remains:
+java.api.messages.trade.sell=Sell
+java.api.messages.trade.buy=Buy
+java.api.messages.trade.per=per
+java.api.messages.trade.volume=Volume
+java.api.messages.trade.last=Last
+java.api.messages.trade.low=Low
+java.api.messages.trade.high=High
+java.api.messages.trade.close=close
+java.api.messages.trade.vol=Vol
+java.api.messages.trade.open=open
+
+# Account
+
+java.api.messages.account.mailinglistsubscription=Mailing list subscription
+java.api.messages.account.mailinglistsubscriptionturnedoff=Mailing list subscription turned off.
+java.api.messages.account.mailinglistsubscriptionturnedon=Mailing list subscription turned on.
+java.api.messages.account.pgpkeyadded=PGP key added
+java.api.messages.account.pgpkeyaddedemailswillnowbeencrypted=PGP key added. Emails will now be encrypted.
+java.api.messages.account.pgpkeyremoved=PGP key removed
+java.api.messages.account.pgpkeyremovedemailswillnolongerbeencrypted=PGP key removed. Emails will no longer be encrypted.
+java.api.messages.account.twofactorauthentication=Two factor authentication
+java.api.messages.account.twofactorauthenticationturnedon=Two factor authentication turned on.
+java.api.messages.account.twofactorauthenticationturnedoff=Two factor authentication turned off.
+java.api.messages.account.apikeyadded=API key added
+java.api.messages.account.apikeyaddedsuccessfully=API key added successfully.
+java.api.messages.account.apikeydisabled=API key disabled.
+java.api.messages.account.apikeydisabledsuccessfully=API key disabled successfully.
+java.api.messages.account.apikeyupdated=API key updated.
+java.api.messages.account.apikeyupdatedsuccessfully=API key updated successfully.
+
+# DepositWithdraw & History
+
+java.api.messages.depositwithdraw.notgenerated=Not generated yet...
+java.api.messages.depositwithdraw.pending=Pending
+java.api.messages.depositwithdraw.checkemail=Check email
+java.api.messages.depositwithdraw.addressrequired=Address required.
+java.api.messages.depositwithdraw.withdrawalrequested=Withdrawal requested.
+java.api.messages.depositwithdraw.pleasecheckyouremail=Please check your email to confirm this withdrawal.
+java.api.messages.depositwithdraw.deposit=Deposit
+java.api.messages.depositwithdraw.withdrawal=Withdrawal
+
+# Password form
+
+java.api.messages.passform.pleaseenterapassword=Please enter a password.
+java.api.messages.passform.passwordnotlongenough=Password not long enough.
+java.api.messages.passform.passwordsdontmatch=Passwords don't match.
 

@@ -52,7 +52,7 @@ $(function(){
                                     pending_w[currency][i].created = moment(Number(pending_w[currency][i].created)).format("YYYY-MM-DD HH:mm:ss");
                                     pending_w[currency][i].amount = zerosToSpaces(pending_w[currency][i].amount);
                                     pending_w[currency][i].fee = zerosToSpaces(pending_w[currency][i].fee);
-                                    pending_w[currency][i].status = pending_w[currency][i].confirmed ? "Pending" : "Check email";
+                                    pending_w[currency][i].status = pending_w[currency][i].confirmed ? Messages("java.api.messages.depositwithdraw.pending") : Messages("java.api.messages.depositwithdraw.checkemail");
                                 }
                             }
                             API.deposit_crypto_all().success(function(addresses) {
@@ -69,7 +69,7 @@ $(function(){
                                     var main_addresses = {};
                                     for(i = 0; i < currencies.length; i++) {
                                         currency = currencies[i];
-                                        var main_address = addresses[currency] ? addresses[currency][0] : "Not generated yet...";
+                                        var main_address = addresses[currency] ? addresses[currency][0] : Messages("java.api.messages.depositwithdraw.notgenerated");
                                         main_addresses[currency] = main_address;
                                         var other_addresses = addresses[currency] ? addresses[currency].splice(1) : [];
                                         try{
@@ -93,7 +93,7 @@ $(function(){
                                     $('#depositwithdraw').html(all).find("form");
                                     for(i = 0; i < currencies.length; i++) {
                                         currency = currencies[i];
-                                        if (main_addresses[currency] != "Not generated yet...") {
+                                        if (main_addresses[currency] != Messages("java.api.messages.depositwithdraw.notgenerated")) {
                                             $("#deposit-"+currency+"-qr").qrcode({render: "div", size: 200, text: main_addresses[currency]});
                                         }
                                         var $form = $('#withdraw-'+currency);
@@ -120,8 +120,8 @@ $(function(){
                                                 if (address == '') {
                                                     //TODO: translate!
                                                     $.pnotify({
-                                                        title: 'Address required.',
-                                                        text: "Address required.",
+                                                        title: Messages("java.api.messages.depositwithdraw.addressrequired"),
+                                                        text: Messages("java.api.messages.depositwithdraw.addressrequired"),
                                                         styling: 'bootstrap',
                                                         type: 'error',
                                                         text_escape: true
@@ -152,8 +152,8 @@ $(function(){
                                                     API.withdraw(currency, amount, address, $('#withdraw-confirm-tfa').val()).success(function(){
                                                         //TODO: translate!
                                                         $.pnotify({
-                                                            title: 'Withdrawal requested.',
-                                                            text: "Please check your email to confirm this withdrawal.",
+                                                            title: Messages("java.api.messages.depositwithdraw.withdrawalrequested"),
+                                                            text: Messages("java.api.messages.depositwithdraw.pleasecheckyouremail"),
                                                             styling: 'bootstrap',
                                                             type: 'success',
                                                             text_escape: true

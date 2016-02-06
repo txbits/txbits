@@ -27,6 +27,8 @@ libraryDependencies ++= Seq(
   "org.bouncycastle" % "bcmail-jdk15on" % "1.51"
 )
 
+libraryDependencies += "org.julienrf" %% "play-jsmessages" % "2.0.0"
+
 resolvers ++= Seq(
   "Spy Repository" at "https://files.couchbase.com/maven2",
   Resolver.url("sbt-plugin-releases", new URL("https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),

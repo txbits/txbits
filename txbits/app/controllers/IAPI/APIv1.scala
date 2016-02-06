@@ -30,6 +30,7 @@ import service.{ PGP, TOTPUrl }
 import org.postgresql.util.PSQLException
 import org.apache.commons.codec.binary.Base64.encodeBase64
 import java.security.SecureRandom
+import play.api.i18n.{ Lang, MessagesApi, I18nSupport, Messages }
 
 class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with securesocial.core.SecureSocial with I18nSupport {
   // Json serializable case classes have implicit definitions in their companion objects
@@ -94,24 +95,24 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
               if (res.isDefined) {
                 Ok(Json.toJson(res.get))
               } else {
-                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
+                BadRequest(Json.obj("message" -> Messages("messages.api.error.nonsufficientfunds")))
               }
             case Some((active, minAmount)) if active =>
-              BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.amountmustbeatleast").format(minAmount)))
             case Some((active, minAmount)) =>
-              BadRequest(Json.obj("message" -> "Trading suspended on %s/%s.".format(base, counter)))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.tradingsuspendedon").format(base, counter)))
             case _ =>
-              BadRequest(Json.obj("message" -> "Invalid pair."))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.invalidpair")))
           }
         } else {
-          BadRequest(Json.obj("message" -> "The price and amount must be positive."))
+          BadRequest(Json.obj("message" -> Messages("messages.api.error.thepriceandamountmustbepositive")))
         }
       }).getOrElse(
-        BadRequest(Json.obj("message" -> "Failed to parse input."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
       )
     } catch {
       case _: Throwable =>
-        BadRequest(Json.obj("message" -> "Failed to place ask."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoplaceask")))
     }
   }
 
@@ -131,24 +132,24 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
               if (res.isDefined) {
                 Ok(Json.toJson(res.get))
               } else {
-                BadRequest(Json.obj("message" -> "Non-sufficient funds."))
+                BadRequest(Json.obj("message" -> Messages("messages.api.error.nonsufficientfunds")))
               }
             case Some((active, minAmount)) if active =>
-              BadRequest(Json.obj("message" -> "Amount must be at least %s.".format(minAmount)))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.amountmustbeatleast").format(minAmount)))
             case Some((active, minAmount)) =>
-              BadRequest(Json.obj("message" -> "Trading suspended on %s/%s.".format(base, counter)))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.tradingsuspendedon").format(base, counter)))
             case _ =>
-              BadRequest(Json.obj("message" -> "Invalid pair."))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.invalidpair")))
           }
         } else {
-          BadRequest(Json.obj("message" -> "The price and amount must be positive."))
+          BadRequest(Json.obj("message" -> Messages("messages.api.error.thepriceandamountmustbepositive")))
         }
       }).getOrElse(
-        BadRequest(Json.obj("message" -> "Failed to parse input."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
       )
     } catch {
       case _: Throwable =>
-        BadRequest(Json.obj("message" -> "Failed to place bid."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoplacebid")))
     }
   }
 
@@ -159,10 +160,10 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
         if (res) {
           Ok(Json.obj())
         } else {
-          BadRequest(Json.obj("message" -> "Failed to cancel order."))
+          BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtocancelorder")))
         }
     }.getOrElse(
-      BadRequest(Json.obj("message" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
     )
   }
 
@@ -217,7 +218,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
     if (globals.userModel.turnOffTFA(request.user.id, tfa_code, password)) {
       Ok(Json.obj())
     } else {
-      BadRequest(Json.obj("message" -> "Failed to turn off two factor auth."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoturnofftwofactorauth")))
     }
   }
 
@@ -225,7 +226,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
     if (globals.userModel.turnOnEmails(request.user.id)) {
       Ok(Json.obj())
     } else {
-      BadRequest(Json.obj("message" -> "Failed to add to mailing list."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoaddtomailinglist")))
     }
   }
 
@@ -233,7 +234,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
     if (globals.userModel.turnOffEmails(request.user.id)) {
       Ok(Json.obj())
     } else {
-      BadRequest(Json.obj("message" -> "Failed to remove from mailing list."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoremovefrommailinglist")))
     }
   }
 
@@ -244,12 +245,12 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
     if (!request.user.TFAEnabled) {
       val secret = globals.userModel.genTFASecret(request.user.id)
       if (secret.isEmpty) {
-        BadRequest(Json.obj("message" -> "Two factor authentication is already enabled."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.twofactorauthenticationisalready")))
       } else {
         Ok(Json.obj("secret" -> secret.get._1.toBase32, "otps" -> secret.get._2, "otpauth" -> TOTPUrl.totpSecretToUrl(request.user.email, secret.get._1)))
       }
     } else {
-      BadRequest(Json.obj("message" -> "Two factor authentication is already enabled."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.twofactorauthenticationisalready")))
     }
   }
 
@@ -260,7 +261,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
     if (globals.userModel.turnOnTFA(request.user.id, tfa_code, password)) {
       Ok(Json.obj())
     } else {
-      BadRequest(Json.obj("message" -> "Failed to turn on two factor auth."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoturnontwofactorauth")))
     }
   }
 
@@ -275,13 +276,13 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
         if (globals.userModel.addPGP(request.user.id, password, tfa_code, parsedKey.get._2)) {
           Ok(Json.obj())
         } else {
-          BadRequest(Json.obj("message" -> "Failed to add pgp key. Check your password and two factor auth code if you use two factor auth."))
+          BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoaddpgpkey")))
         }
       } else {
-        BadRequest(Json.obj("message" -> "Failed to add pgp key. No valid key was found in the given input."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoaddpgpkeynovalid")))
       }
     }).getOrElse(
-      BadRequest(Json.obj("message" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
     )
   }
 
@@ -291,7 +292,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
     if (globals.userModel.removePGP(request.user.id, password, tfa_code)) {
       Ok(Json.obj())
     } else {
-      BadRequest(Json.obj("message" -> "Failed to remove pgp key. Check your password and two factor auth code if you use two factor auth."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoremovepgpkey")))
     }
   }
 
@@ -316,10 +317,10 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
       if (globals.userModel.updateApiKey(request.user.id, tfa_code, apiKey, comment.take(32), trading, tradeHistory, listBalance)) {
         Ok(Json.obj())
       } else {
-        BadRequest(Json.obj("message" -> "Failed to update API key."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoupdateapikey")))
       }
     }).getOrElse(
-      BadRequest(Json.obj("message" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
     )
   }
 
@@ -331,10 +332,10 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
       if (globals.userModel.disableApiKey(request.user.id, tfa_code, apiKey)) {
         Ok(Json.obj())
       } else {
-        BadRequest(Json.obj("message" -> "Failed to disable API key."))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtodisableapikey")))
       }
     }).getOrElse(
-      BadRequest(Json.obj("message" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
     )
   }
 
@@ -358,15 +359,15 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
             if (res.get != -1) {
               Ok(Json.obj())
             } else {
-              BadRequest(Json.obj("message" -> "Wrong two factor auth code."))
+              BadRequest(Json.obj("message" -> Messages("messages.api.error.wrongtwofactorauthcode")))
             }
           } else {
-            BadRequest(Json.obj("message" -> "Failed to withdraw."))
+            BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtowithdraw")))
           }
         } catch {
           case e: PSQLException => {
             BadRequest(Json.obj("message" -> (e.getServerErrorMessage.getMessage match {
-              case "new row for relation \"balances\" violates check constraint \"no_hold_above_balance\"" => "Non-sufficient funds."
+              case "new row for relation \"balances\" violates check constraint \"no_hold_above_balance\"" => Messages("messages.api.error.nonsufficientfunds")
               case _: String => {
                 Logger.error(e.toString + e.getStackTrace)
                 e.getServerErrorMessage.getMessage
@@ -375,10 +376,10 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
           }
         }
       } else {
-        BadRequest(Json.obj("message" -> "Invalid address"))
+        BadRequest(Json.obj("message" -> Messages("messages.api.error.invalidaddress")))
       }
     }).getOrElse(
-      BadRequest(Json.obj("message" -> "Failed to parse input."))
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
     )
   }
 
