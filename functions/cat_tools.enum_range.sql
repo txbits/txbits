@@ -1,3 +1,5 @@
+-- This is a db_tools file!
+
 CREATE OR REPLACE FUNCTION cat_tools.enum_range(
     enum regtype
 ) RETURNS text[] LANGUAGE plpgsql STABLE AS $body$
