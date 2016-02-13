@@ -1,3 +1,5 @@
+-- This is a db_tools file!
+
 CREATE SCHEMA ddl_tools;
 CREATE FUNCTION ddl_tools.exec(
   sql text
@@ -29,6 +31,8 @@ BEGIN
   END LOOP;
 END
 $body$;
+
+-- This is a db_tools file!
 
 CREATE FUNCTION ddl_tools.role__create(
   role_name  name
@@ -68,6 +72,9 @@ BEGIN
   END IF;
 END
 $f$;
+
+
+-- This is a db_tools file!
 
 
 SELECT ddl_tools.role__create( 'su', 'SUPERUSER' );

@@ -1,3 +1,5 @@
+-- This is a db_tools file!
+
 CREATE OR REPLACE FUNCTION cat_tools.enum_range_srf(
   enum regtype
 ) RETURNS SETOF text LANGUAGE sql AS $body$
