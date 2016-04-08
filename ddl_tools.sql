@@ -1,5 +1,8 @@
 -- This is a db_tools file!
 
+SELECT CASE WHEN :'DB_DIR' = '' THEN '.' ELSE :'DB_DIR' END AS DB_DIR
+\gset
+
 CREATE SCHEMA ddl_tools;
 CREATE FUNCTION ddl_tools.exec(
   sql text
@@ -88,6 +91,6 @@ ALTER FUNCTION ddl_tools.role__create(name, text, text) OWNER TO su;
 
 CREATE SCHEMA _ddl_tools;
 CREATE SCHEMA _test_ddl_tools;
-\i functions/ddl_tools.test_function.sql
+\i :DB_DIR/functions/ddl_tools.test_function.sql
 
 -- vi: expandtab ts=2 sw=2
