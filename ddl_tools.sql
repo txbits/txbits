@@ -91,6 +91,7 @@ ALTER FUNCTION ddl_tools.role__create(name, text, text) OWNER TO su;
 
 CREATE SCHEMA _ddl_tools;
 CREATE SCHEMA _test_ddl_tools;
+\i :DB_DIR/functions/ddl_tools.schema__drop.sql
 \i :DB_DIR/functions/ddl_tools.test_function.sql
 
 -- vi: expandtab ts=2 sw=2
