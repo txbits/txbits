@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION ddl_tools.schema__drop(
     schema_name name
-) RETURNS void LANGUAGE plpgsql SET client_min_messages = 'DEBUG' AS $body$
+) RETURNS void LANGUAGE plpgsql SET client_min_messages = 'WARNING' AS $body$
 DECLARE
   prefix name;
 BEGIN
