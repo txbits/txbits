@@ -19,31 +19,34 @@ fi
 old=$1
 new=$2
 
-if ![ -z "`git status --porcelain`" ]; then
+sqitch_dir=`sqitch config --get core.top_dir`
+base_re="s/[[:<:]]$old[[:>:]]/$new/"
+base_grep="[[:<:]]$old[[:>:]]"
+base_file="$sqitch_dir/*/*.$old"
+
+if ! [ -z "`git status --porcelain`" ]; then
   echo 'Untracked changes!'
   echo
   git status
   exit 1
 fi
 
-sqitch_dir=`sqitch config --get core.top_dir`
-
 if [ -z "$sqitch_dir" ]; then
   echo unable to find sqitch top directory
   exit 1
 fi
 
-if [ -z "ls $sqitch_dir/*/*$old@*.sql/" ]; then
+if [ -z "ls $base_file@*.sql/" ]; then
   echo found tagged files that match $old:
-  ls -la $sqitch_dir/*/*$old@*.sql
+  ls -la $sqitch_dir/*/*.$old@*.sql
 
   echo Unable to modify tagged files
   exit 1
 fi
 
-for f in `ls $sqitch_dir/*/*$old*.sql`; do
-  new_name=`echo $f | sed -e "s/$old/$new/"`
-  if (echo $new_name | grep $old); then
+for f in `ls $base_file.sql`; do
+  new_name=`echo $f | sed -e "$bse_re"`
+  if (echo $new_name | egrep $base_grep); then
     echo "something went wrong building new name ($new_name) for $f"
     exit 2
   fi
@@ -51,6 +54,9 @@ for f in `ls $sqitch_dir/*/*$old*.sql`; do
   git mv $f $new_name
 done
 
-sed -e 's/$old/$new/g' -i '' `git grep $old | cut -d: -f1 | uniq`
+files=`git grep -E "$base_grep" | cut -d: -f1 | uniq`
+sed -e "${base_re}g" -i '' $files
+
+git status
 
 # vi: expandtab ts=2 sw=2
