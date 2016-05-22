@@ -1,0 +1,56 @@
+#!/bin/sh
+
+if [ $# -ne 2 ]; then
+  cat << _EOF_
+Renames a sqitch object file as well as all references to it.
+
+Usage:
+rename old_pattern new_pattern
+
+old_pattern and new_pattern will be checked against sqitch file names *as well
+as* used in a regular expression to rename all references in files.
+
+This means you don't want to include something like "TABLE." in the pattern
+(assuming you use a naming scheme of OBJECT_TYPE.schema.object_name for sqitch
+patches).
+_EOF_
+fi
+
+old=$1
+new=$2
+
+if ![ -z "`git status --porcelain`" ]; then
+  echo 'Untracked changes!'
+  echo
+  git status
+  exit 1
+fi
+
+sqitch_dir=`sqitch config --get core.top_dir`
+
+if [ -z "$sqitch_dir" ]; then
+  echo unable to find sqitch top directory
+  exit 1
+fi
+
+if [ -z "ls $sqitch_dir/*/*$old@*.sql/" ]; then
+  echo found tagged files that match $old:
+  ls -la $sqitch_dir/*/*$old@*.sql
+
+  echo Unable to modify tagged files
+  exit 1
+fi
+
+for f in `ls $sqitch_dir/*/*$old*.sql`; do
+  new_name=`echo $f | sed -e "s/$old/$new/"`
+  if (echo $new_name | grep $old); then
+    echo "something went wrong building new name ($new_name) for $f"
+    exit 2
+  fi
+
+  git mv $f $new_name
+done
+
+sed -e 's/$old/$new/g' -i '' `git grep $old | cut -d: -f1 | uniq`
+
+# vi: expandtab ts=2 sw=2
