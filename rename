@@ -21,14 +21,14 @@ new=$2
 
 sqitch_dir=`sqitch config --get core.top_dir`
 base_re="s/[[:<:]]$old[[:>:]]/$new/"
-base_grep="[[:<:]]$old[[:>:]]"
+base_grep="\<$old\>"
 base_file="$sqitch_dir/*/*.$old"
 
 if ! [ -z "`git status --porcelain`" ]; then
   echo 'Untracked changes!'
   echo
   git status
-  exit 1
+  #exit 1
 fi
 
 if [ -z "$sqitch_dir" ]; then
@@ -55,7 +55,8 @@ for f in `ls $base_file.sql`; do
 done
 
 files=`git grep -E "$base_grep" | cut -d: -f1 | uniq`
-sed -e "${base_re}g" -i '' $files
+sed -Ee "${base_re}g" -i '' $files
+get add $files
 
 git status
 
