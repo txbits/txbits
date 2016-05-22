@@ -45,8 +45,8 @@ if [ -z "ls $base_file@*.sql/" ]; then
 fi
 
 for f in `ls $base_file.sql`; do
-  new_name=`echo $f | sed -e "$bse_re"`
-  if (echo $new_name | egrep $base_grep); then
+  new_name=`echo $f | sed -e "$base_re"`
+  if (echo $new_name | egrep -q $base_grep); then
     echo "something went wrong building new name ($new_name) for $f"
     exit 2
   fi
