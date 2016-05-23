@@ -38,12 +38,17 @@ if [ -z "$sqitch_dir" ]; then
   exit 1
 fi
 
-if [ -z "ls $base_file@*.sql/" ]; then
+if [ -z `ls $base_file.sql` ]; then
+  echo "No files found matching $base_file.sql"
+  exit 2
+fi
+
+if [ -z `ls $base_file@*.sql/` ]; then
   echo found tagged files that match $old:
   ls -la $sqitch_dir/*/*.$old@*.sql
 
   echo Unable to modify tagged files
-  exit 1
+  exit 2
 fi
 
 for f in `ls $base_file.sql`; do
