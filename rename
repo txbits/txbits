@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 if [ $# -ne 2 ]; then
   cat << _EOF_
 Renames a sqitch object file as well as all references to it.
@@ -55,9 +57,13 @@ for f in `ls $base_file.sql`; do
 done
 
 files=`git grep -E "$base_grep" | cut -d: -f1 | uniq`
-sed -Ee "${base_re}g" -i '' $files
-get add $files
+if [ -z "$files" ]; then
+  echo "WARNING! No files found with pattern $base_grep"
+else
+  sed -Ee "${base_re}g" -i '' $files
+  git add $files
+  git status
+fi
 
-git status
 
 # vi: expandtab ts=2 sw=2
