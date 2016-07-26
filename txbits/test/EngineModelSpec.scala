@@ -327,6 +327,54 @@ class EngineModelSpec extends Specification with Mockito {
       orders_res should be equalTo orderBookEmpty
     }
 
+    "be able to cancel a partially filled order at different price from sale price" in new WithCleanTestDbApplication {
+      val asker = globals.userModel.create("test@test.test", "", false).get
+      val bidder = globals.userModel.create("test2@test.test", "", false).get
+
+      // don't use fees for this test; TODO: write a version of this test with fees
+      globals.engineModel.setTradeFees(0)
+
+      globals.userModel.addFakeMoney(asker, "LTC", 1000)
+      globals.userModel.addFakeMoney(bidder, "USD", 1000)
+
+      // selling 10 ltc for 10 usd (price: 1)
+      globals.engineModel.askBid(Some(asker), None, "LTC", "USD", 10, 1, false)
+      val asker_hold_bal = globals.engineModel.balance(Some(asker), None)
+      asker_hold_bal should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
+        .updated("LTC", (BigDecimal("1000.00000000"), BigDecimal("10.00000000")))
+
+      // buying 20 ltc with 40 usd (price: 2)
+      globals.engineModel.askBid(Some(bidder), None, "LTC", "USD", 20, 2, true)
+      val bidder_hold_bal2 = globals.engineModel.balance(Some(bidder), None)
+      bidder_hold_bal2 should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
+        .updated("USD", (BigDecimal("990.00000000"), BigDecimal("20.00000000")))
+        .updated("LTC", (BigDecimal("10.00000000"), BigDecimal("0")))
+
+      val asker_hold_bal2 = globals.engineModel.balance(Some(asker), None)
+      asker_hold_bal2 should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
+        .updated("USD", (BigDecimal("10.00000000"), BigDecimal("0")))
+        .updated("LTC", (BigDecimal("990.00000000"), BigDecimal("0")))
+
+      val id = globals.engineModel.userPendingTrades(Some(bidder), None).head.id
+      val cancel_res = globals.engineModel.cancel(Some(bidder), None, id)
+      cancel_res should beTrue
+
+      val bidder_res = globals.engineModel.balance(Some(bidder), None)
+      bidder_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
+        .updated("USD", (BigDecimal("990.00000000"), BigDecimal("0")))
+        .updated("LTC", (BigDecimal("10.00000000"), BigDecimal("0")))
+
+      val asker_res = globals.engineModel.balance(Some(asker), None)
+      asker_res should be equalTo globals.metaModel.currencies.map(_ -> (BigDecimal(0), BigDecimal(0))).toMap
+        .updated("USD", (BigDecimal("10.00000000"), BigDecimal("0")))
+        .updated("LTC", (BigDecimal("990.00000000"), BigDecimal("0")))
+
+      val orders_res = globals.engineModel.ordersDepth("LTC", "USD")
+      orders_res should be equalTo orderBookEmpty
+
+      globals.engineModel.setTradeFees(fee)
+    }
+
     "be able to make withdraw request with fees" in new WithCleanTestDbApplication {
       val uid = globals.userModel.create("test@test.test", "", false).get
 
