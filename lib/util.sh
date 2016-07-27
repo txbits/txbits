@@ -49,6 +49,7 @@ error() {
 
 die() {
   return=$1
+  debug_vars 99 return
   shift
   error "$@"
   [ $DEBUG -gt 0 ] && stacktrace 1
