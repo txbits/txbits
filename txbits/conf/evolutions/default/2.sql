@@ -243,7 +243,7 @@ begin
 
     -- make sure the ask order is of type ask and the bid order is of type bid
     if bid.is_bid <> true or ask.is_bid <> false then
-      raise 'Tried to match orders of wrong types! Bid: % Ask: %', new.amount, bid.order_id, ask.order_id;;
+      raise 'Tried to match orders of wrong types! Amount: % Bid: % Ask: %', new.amount, bid.order_id, ask.order_id;;
     end if;;
 
     -- make sure the two orders are on the same market
@@ -1032,7 +1032,7 @@ begin
     elsif byte >= 97 and byte <= 122 then
       select byte - 97 into tmp;;
     else
-      raise 'Failed to base32 decode due to invalid character %s, code: ', chr(byte), byte;;
+      raise 'Failed to base32 decode due to invalid character %s, code: %', chr(byte), byte;;
     end if;;
     select result || tmp::bit(5) into result;;
   end loop;;
