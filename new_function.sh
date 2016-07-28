@@ -27,7 +27,8 @@ file="$BASEDIR/functions/$name.sql"
 [ -e "$file" ] && die 2 "ERROR: $file already exists"
 
 cat << _EOF_ >> $file # Be paranoid about not over-writing
-CREATE OR REPLACE FUNCTION $name(
+\set function_name $name
+CREATE OR REPLACE FUNCTION :function_name(
 ) RETURNS  LANGUAGE plpgsql AS \$body$
 DECLARE
 BEGIN
@@ -35,7 +36,7 @@ END
 \$body$;
 
 SELECT ddl_tools.test_function(
-  '_test_$name'
+  '_test_' || :'function_name'
   , \$body$
   s CONSTANT name := bs;
   f CONSTANT name := fn;
