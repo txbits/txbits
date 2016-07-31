@@ -258,11 +258,11 @@ begin
     update balances set hold = hold - new_amount
     where currency = ask.base and user_id = ask.user_id;;
 
-    update balances set hold = hold - new_amount * new_price
+    update balances set hold = hold - new_amount * bid.price
     where currency = bid.counter and user_id = bid.user_id;;
 
     update markets set total_base = total_base - new_amount,
-    total_counter = total_counter - new_amount * new_price
+    total_counter = total_counter - new_amount * bid.price
     where base = bid.base and counter = bid.counter;;
 
     -- reducing order volumes and reducing remaining volumes
