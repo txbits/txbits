@@ -104,6 +104,10 @@ class EngineModel(val db: String = "default") {
     SQL"""update trade_fees set one_way=true""".execute()
   )
 
+  def setTradeFees(linear: BigDecimal) = DB.withConnection(db)(implicit c =>
+    SQL"""update trade_fees set linear = ${linear.bigDecimal}""".execute()
+  )
+
   def setFees(currency: String, method: String, depositConstant: BigDecimal, depositLinear: BigDecimal, withdrawConstant: BigDecimal, withdrawLinear: BigDecimal) = DB.withConnection(db)(implicit c =>
     SQL"""update dw_fees set
          deposit_constant = ${depositConstant.bigDecimal},
