@@ -53,7 +53,7 @@ class WalletModel(val db: String = "default") {
       row[Boolean]("active"),
       row[Int]("min_deposit_confirmations"),
       row[Int]("min_withdrawal_confirmations")
-    )).head
+    )).headOption.getOrElse(false, 0, 0)
   }
 
   def getNodeInfo(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
@@ -63,18 +63,18 @@ class WalletModel(val db: String = "default") {
       row[BigDecimal]("balance_warn"),
       row[BigDecimal]("balance_target"),
       row[BigDecimal]("balance_max")
-    )).head
+    )).headOption.getOrElse(false, BigDecimal("0"), BigDecimal("0"), BigDecimal("0"), BigDecimal("0"))
   }
 
   def getBalance(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
-    SQL""" select get_balance(${currency.toString}, $nodeId) """().map(row => row[BigDecimal]("get_balance")).head
+    SQL""" select get_balance(${currency.toString}, $nodeId) """().map(row => row[BigDecimal]("get_balance")).headOption.getOrElse(BigDecimal("0"))
   }
 
   def getLastBlockRead(currency: CryptoCurrency, nodeId: Int) = DB.withConnection(db) { implicit c =>
     SQL""" select * from get_last_block_read(${currency.toString}, $nodeId) """().map(row => (
       row[Option[Int]]("last_block_read").getOrElse(0),
       row[Option[Int]]("last_withdrawal_time_received").getOrElse(0)
-    )).head
+    )).headOption.getOrElse((0, 0))
   }
 
   def setLastBlockRead(currency: CryptoCurrency, nodeId: Int, blockCount: Int, lastWithdrawalTimeReceived: Int) = DB.withConnection(db) { implicit c =>
