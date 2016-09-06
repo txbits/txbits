@@ -294,7 +294,7 @@ class UserModel(val db: String = "default") {
 
   def removePGP(uid: Long, password: String, tfa_code: Option[String]) = DB.withConnection(db) { implicit c =>
     SQL"""
-    select user_remove_pgp as success from user_remove_pgp($uid, $password, ${optStrToInt(tfa_code)};
+    select user_remove_pgp as success from user_remove_pgp($uid, $password, ${optStrToInt(tfa_code)});
     """().map(row =>
       row[Boolean]("success")
     ).head
