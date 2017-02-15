@@ -80,7 +80,7 @@ class MetaModel(val db: String = "default") {
         row[BigDecimal]("linear").bigDecimal.toPlainString,
         row[Boolean]("one_way")
       )
-    ).head
+    ).headOption.getOrElse(TradeFee("0", false))
   })
 
   val dwLimits = DB.withConnection(db)(implicit c => {
