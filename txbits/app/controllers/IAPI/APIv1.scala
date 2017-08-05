@@ -38,6 +38,7 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
   import globals._
 
   implicit val rds_cancel = (__ \ 'order).read[Long]
+  implicit val rds_uname = (__ \ 'username).read[String]
 
   def index = SecuredAction(ajaxCall = true)(parse.anyContent) { implicit request =>
     Ok(Json.obj())
@@ -151,6 +152,20 @@ class APIv1 @Inject() (val messagesApi: MessagesApi) extends Controller with sec
       case _: Throwable =>
         BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoplacebid")))
     }
+  }
+
+  def changeUsername = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>
+    request.request.body.validate(rds_uname).map {
+      case (username) =>
+        val res = globals.userModel.saveUser(request.user.id, request.user.email, request.user.onMailingList, username)
+        if (res) {
+          Ok(Json.obj())
+        } else {
+          BadRequest(Json.obj("message" -> Messages("messages.api.error.invalidusername")))
+        }
+    }.getOrElse(
+      BadRequest(Json.obj("message" -> Messages("messages.api.error.failedtoparseinput")))
+    )
   }
 
   def cancel = SecuredAction(ajaxCall = true)(parse.json) { implicit request =>

@@ -36,9 +36,9 @@ object txbitsUserService {
     globals.userModel.userExists(email)
   }
 
-  def create(user: SocialUser, password: String, token: String, pgp: String): SocialUser = {
+  def create(user: SocialUser, password: String, token: String, pgp: String, username: String): SocialUser = {
     val pgp_key = PGP.parsePublicKey(pgp).map(_._2)
-    val user_id = globals.userModel.create(user.email, password, user.onMailingList, pgp_key, token)
+    val user_id = globals.userModel.create(user.email, password, user.onMailingList, pgp_key, token, username)
 
     user_id match {
       case Some(id) => {
@@ -55,7 +55,7 @@ object txbitsUserService {
   }
 
   def save(user: SocialUser): SocialUser = {
-    globals.userModel.saveUser(user.id, user.email, user.onMailingList)
+    globals.userModel.saveUser(user.id, user.email, user.onMailingList, user.username)
     user
   }
 

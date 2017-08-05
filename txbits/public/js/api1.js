@@ -80,6 +80,15 @@ var API;
             });
         }),
 
+        change_username: APIWrap(function(new_username) {
+            return $.ajax(iapi_prefix+'change_username', {
+                type: 'POST',
+                data: JSON.stringify({ 'username': new_username }),
+                dataType: 'json',
+                contentType: 'application/json'
+            });
+        }),
+
         pairs: APIWrap(function() {
             return $.get(iapi_prefix+'pairs', 'json');
         }),

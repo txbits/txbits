@@ -85,6 +85,7 @@ GET         /iapi/1/get_api_keys                        controllers.IAPI.APIv1.g
 POST        /iapi/1/add_api_key                         controllers.IAPI.APIv1.addApiKey
 POST        /iapi/1/update_api_key                      controllers.IAPI.APIv1.updateApiKey
 POST        /iapi/1/disable_api_key                     controllers.IAPI.APIv1.disableApiKey
+POST        /iapi/1/change_username                     controllers.IAPI.APIv1.changeUsername
 
 # Login page
 GET         /login                                     controllers.LoginPage.login
@@ -107,3 +108,8 @@ POST        /password                                  controllers.PasswordChang
 POST        /authenticate                              controllers.ProviderController.loginPost
 POST        /tfa                                       controllers.ProviderController.tfaPost
 GET         /not-authorized                            controllers.ProviderController.notAuthorized
+
+# Trollbox
+GET         /trollbox                                  controllers.TrollBox.getMessages
+POST        /trollbox                                  controllers.TrollBox.postMessage
+POST        /trollbox_upvote                           controllers.TrollBox.upvote
