@@ -1,6 +1,7 @@
 @(title: String, icon: String= "", scripts: Html = Html(""), styles: Html = Html(""))(content: Html)(implicit request: RequestHeader, messages: Messages)
 @import securesocial.core.UsernamePasswordProvider
 @import play.api.Play.current
+@import helper._
 
 @navItem(url: String, icon: String, title:String) = {
 @if(request.path==url) {
@@ -63,6 +64,12 @@
                     @navItem(routes.Application.depositwithdraw().url, "credit-card", Messages("chrome.exchange.navigation.depositwithdraw.title"))
                     @navItem(routes.Application.history().url, "list", Messages("chrome.exchange.navigation.history.title"))
                     @navItem(routes.Application.account().url, "user", Messages("chrome.exchange.navigation.account.title"))
+                    <li>
+                      <a href="#" id="trollbox-activate">
+                        <i class="glyphicon glyphicon-envelope"></i>
+                        @Messages("chrome.exchange.navigation.trollbox")
+                      </a>
+                    </li>
                 </ul>
 
                 <ul class="nav navbar-nav navbar-right">
@@ -83,6 +90,41 @@
         </div>
     </nav>
 
+    <div class="trollbox-gray" id="trollbox-wrapper">
+      <div class="trollbox-header-gray">
+        <div class="container">
+          <div id="trollbox-header">
+            @Messages("chrome.exchange.navigation.trollbox")
+          </div>
+        </div>
+      </div>    
+
+      <div class="container">
+        <div id="trollbox-chat-window">
+          
+        </div>
+      </div>
+      <div id="trollbox-input-window">
+        <div class="container">
+          @CSRF.formField
+          <label for="trollbox-input">&gt;</label>
+          <input type="text" id="trollbox-input" placeholder="Type your message"/>
+        </div>
+        <script id="trollbox-message-template" type="text/x-handlebars-template">
+          <div class="trollbox-message">
+            <span class="trollbox-upvote-button {{upvoted}}" data-message_id="{{messageID}}">
+              <i class="glyphicon glyphicon-heart"></i>
+            </span>
+            <span class="trollbox-upvote-count">{{upvoteCount}}</span>
+            <span class="trollbox-username" style="background: {{colorBin}}">{{user}}</span>
+            <span class="trollbox-message-body">{{body}}</span>
+          </div>
+        </script>
+      </div>
+    </div>
+    </div>
+
+    
     <div class="container" role="main">
         @if(request.path != routes.Application.dashboard().url){
             <div class="row ticker-row">

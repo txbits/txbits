@@ -108,8 +108,9 @@ package object globals {
       insert into users(id, email) values (0, '');
       insert into balances (user_id, currency) select 0, currency from currencies;
 
-      select create_user('me@viktorstanchev.com', 'password', true, null, 'en');
-      select create_user('a@a.com', 'qwerty123', false, null, 'en');
+      select create_user('me@viktorstanchev.com', 'password', true, null, 'en', 'stanchev');
+      select create_user('a@a.com', 'qwerty123', false, null, 'en', 'SuperCoolAdminGuy');
+      select create_user('b@b.com', '123qwe', false, null, 'en', 'StuzerTheLuzer');
 
       update balances set balance = 1000 where user_id in (select id from users where email in ('me@viktorstanchev.com', 'a@a.com')) and currency in ('USD', 'CAD');
       commit;
@@ -125,6 +126,7 @@ package object globals {
   val userModel = new UserModel(masterDB)
   val metaModel = new MetaModel(masterDB)
   val engineModel = new EngineModel(masterDB)
+  val trollBoxModel = new TrollBoxModel(masterDB)
   val logModel = new LogModel(masterDB)
 
   val walletModel = new WalletModel(masterDBWallet)

@@ -52,16 +52,16 @@ object ApiKey {
 
 class UserModel(val db: String = "default") {
 
-  def create(email: String, password: String, onMailingList: Boolean, pgp: Option[String], token: String) = DB.withConnection(db) { implicit c =>
+  def create(email: String, password: String, onMailingList: Boolean, pgp: Option[String], token: String, username: String) = DB.withConnection(db) { implicit c =>
     SQL"""
-    select create_user_complete as id from create_user_complete($email, $password, $onMailingList, $pgp, $token)
+    select create_user_complete as id from create_user_complete($email, $password, $onMailingList, $pgp, $token, $username)
     """.map(row => row[Option[Long]]("id")).list.head
   }
 
   // insecure version, usable only in tests
-  def create(email: String, password: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
+  def create(email: String, password: String, onMailingList: Boolean, username: String) = DB.withConnection(db) { implicit c =>
     SQL"""
-    select create_user as id from create_user($email, $password, $onMailingList, null, 'en')
+    select create_user as id from create_user($email, $password, $onMailingList, null, 'en', $username)
     """.map(row => row[Long]("id")).list.headOption
   }
 
@@ -101,7 +101,8 @@ class UserModel(val db: String = "default") {
           row[String]("language"),
           row[Boolean]("on_mailing_list"),
           row[Boolean]("tfa_enabled"),
-          row[Option[String]]("pgp")
+          row[Option[String]]("pgp"),
+          row[String]("username")
         )
       ).headOption
     }
@@ -135,15 +136,17 @@ class UserModel(val db: String = "default") {
       row[Option[Boolean]]("on_mailing_list"),
       row[Option[Boolean]]("tfa_enabled"),
       row[Option[String]]("pgp"),
-      row[String]("language")) match {
+      row[String]("language"),
+      row[Option[String]]("username")) match {
         case (Some(id: Long),
           Some(email: String),
           Some(verification: Int),
           Some(on_mailing_list: Boolean),
           Some(tfa_enabled: Boolean),
           pgp: Option[String],
-          language: String) =>
-          Some(SocialUser(id, email, verification, language, on_mailing_list, tfa_enabled, pgp))
+          language: String,
+          Some(username: String)) =>
+          Some(SocialUser(id, email, verification, language, on_mailing_list, tfa_enabled, pgp, username))
         case _ =>
           None
       }
@@ -159,15 +162,19 @@ class UserModel(val db: String = "default") {
       row[Option[Boolean]]("on_mailing_list"),
       row[Option[Boolean]]("tfa_enabled"),
       row[Option[String]]("pgp"),
-      row[String]("language")) match {
-        case (Some(id: Long),
+      row[String]("language"),
+      row[Option[String]]("username")) match {
+        case (
+          Some(id: Long),
           Some(email: String),
           Some(verification: Int),
           Some(on_mailing_list: Boolean),
           Some(tfa_enabled: Boolean),
           pgp: Option[String],
-          language: String) =>
-          Some(SocialUser(id, email, verification, language, on_mailing_list, tfa_enabled, pgp))
+          language: String,
+          Some(username: String)
+          ) =>
+          Some(SocialUser(id, email, verification, language, on_mailing_list, tfa_enabled, pgp, username))
         case _ =>
           None
       }
@@ -229,8 +236,8 @@ class UserModel(val db: String = "default") {
     """.execute()
   }
 
-  def saveUser(id: Long, email: String, onMailingList: Boolean) = DB.withConnection(db) { implicit c =>
-    SQL"select * from update_user($id, $email, $onMailingList)".execute()
+  def saveUser(id: Long, email: String, onMailingList: Boolean, username: String) = DB.withConnection(db) { implicit c =>
+    SQL"select * from update_user($id, $email, $onMailingList, $username)".execute()
   }
 
   def userChangePass(id: Long, oldPassword: String, newPassword: String) = DB.withConnection(db) { implicit c =>

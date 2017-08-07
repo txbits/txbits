@@ -48,6 +48,7 @@ create table users (
     id bigint primary key,
     created timestamp(3) default current_timestamp not null,
     email varchar(256) not null,
+    username varchar(256) unique,
     on_mailing_list bool default false not null,
     tfa_enabled bool default false not null,
     verification int default 0 not null,
