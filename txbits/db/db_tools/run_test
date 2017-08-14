@@ -1,0 +1,92 @@
+#!/usr/bin/env sh
+
+BASEDIR=`dirname $0`
+if ! . $BASEDIR/lib/util.sh; then
+  echo "FATAL: error sourcing $BASEDIR/lib/util.sh" 1>&2
+  exit 99
+fi
+debug 19 "Arguments: $@"
+
+usage() {
+  cat << _EOF_
+Usage:
+
+$0 [options] [database_name | psql options]
+
+where options are
+
+  -r      rebuild database
+  -s service_name  specify a servicename for $PGSERVICE
+  -t      regex of test suites to run
+  -h      display this message
+_EOF_
+}
+
+while getopts hrs:t: arg
+do
+  case "$arg" in
+    r)  rebuild=1;;
+    s)  export PGSERVICE="$OPTARG";;
+    t)  tests="$OPTARG";;
+
+    h)
+      usage
+      exit 0
+      ;;
+    ?)
+      usage
+      exit 1
+      ;;
+  esac
+done
+if [ $OPTIND -gt 1 ]; then
+  shift $(($OPTIND-1))
+fi
+psql_opts=$@
+
+
+if [ -n "$tests" ]; then
+  # TODO: Use bound parameters
+  # TODO: Switch to _test_
+  tests="AND regexp_replace(nspname, '^_test', '') ~ '$tests' -- Strip out leading _test from schema name"
+fi
+
+if [ -n "$rebuild" ]; then
+  ./rebuild $psql_opts || exit $?
+fi
+
+
+DBNAME=`psql -qtc 'SELECT current_database()' $psql_opts | sed -e 's/^ //'` || exit $?
+TEST_SCHEMA_SQL=\
+"SELECT nspname
+	FROM
+		pg_namespace n
+	WHERE nspname LIKE '_test%'
+		AND EXISTS( SELECT 1 FROM pg_proc WHERE pronamespace = n.oid )
+    $tests
+;"
+
+TEST_SCHEMAS=`psql -qtc "$TEST_SCHEMA_SQL" $psql_opts | sed -e 's/^ //'` || exit $?
+
+TAP_SCHEMA_SQL=\
+"SELECT nspname
+  FROM pg_extension e
+    JOIN pg_namespace n ON n.oid = e.extnamespace
+  WHERE extname='pgtap'
+;"
+TAP_SCHEMA=`psql -qtc "$TAP_SCHEMA_SQL" $psql_opts | sed -e 's/^ //'` || exit $?
+debug_vars 9 DBNAME TAP_SCHEMA TEST_SCHEMAS
+
+[ -n "$TAP_SCHEMA" ] || die 2 "pgTap extension is not installed in database $DBNAME"
+
+fail=0
+for schema in $TEST_SCHEMAS; do
+  PGOPTIONS="-c search_path=$TAP_SCHEMA" pg_prove --trap --state hot,all,save --failures --runtests --match '^(?!__)' --jobs 9 --schema $schema -d $psql_opts
+  if [ $? -gt 0 ]; then
+    fail=1
+  fi
+done
+
+exit $fail
+
+# vi: expandtab sw=2 ts=2
