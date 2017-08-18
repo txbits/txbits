@@ -14,13 +14,14 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Initial database
-
-# --- !Ups
+BEGIN;
+--SET ROLE txbits__owner;
 
 create extension pgcrypto;
 
-grant select on play_evolutions to public;
+-- This is presumably a scala config table that won't exist in a new instal
+--grant select on play_evolutions to public;
+
 revoke create on schema public from public;
 
 create table currencies (
@@ -361,43 +362,4 @@ create table stats_30_min (
     primary key (base, counter, start_of_period)
 );
 
-# --- !Downs
-
-drop table if exists balances cascade;
-drop table if exists orders cascade;
-drop table if exists currencies cascade;
-drop table if exists deposits cascade;
-drop table if exists deposits_crypto cascade;
-drop table if exists deposits_other cascade;
-drop table if exists matches cascade;
-drop table if exists stats_30_min cascade;
-drop table if exists markets cascade;
-drop table if exists tokens cascade;
-drop table if exists users cascade;
-drop table if exists users_passwords cascade;
-drop table if exists users_api_keys cascade;
-drop table if exists users_backup_otps cascade;
-drop table if exists users_tfa_secrets cascade;
-drop table if exists users_addresses cascade;
-drop table if exists withdrawals cascade;
-drop table if exists withdrawals_other cascade;
-drop table if exists withdrawals_crypto cascade;
-drop table if exists withdrawals_crypto_tx cascade;
-drop table if exists withdrawals_crypto_tx_cold_storage cascade;
-drop table if exists withdrawals_crypto_tx_mutated cascade;
-drop table if exists currencies_crypto cascade;
-drop table if exists wallets_crypto cascade;
-drop table if exists dw_fees cascade;
-drop table if exists trade_fees cascade;
-drop table if exists totp_tokens_blacklist cascade;
-drop table if exists event_log cascade;
-drop table if exists withdrawal_limits cascade;
-drop table if exists trusted_action_requests cascade;
-drop sequence if exists order_id_seq cascade;
-drop sequence if exists match_id_seq cascade;
-drop sequence if exists deposit_withdraw_id_seq cascade;
-drop sequence if exists market_id_seq cascade;
-drop sequence if exists event_log_id_seq cascade;
-drop sequence if exists withdrawals_crypto_tx_id_seq cascade;
-drop sequence if exists address_id_seq cascade;
-drop extension pgcrypto;
+COMMIT;

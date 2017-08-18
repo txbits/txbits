@@ -1,0 +1,93 @@
+-- Deploy [% project %]:[% change %] to [% engine %]
+[% FOREACH item IN requires -%]
+-- requires: [% item %]
+[% END -%]
+[% FOREACH item IN conflicts -%]
+-- conflicts: [% item %]
+[% END -%]
+
+BEGIN;
+SET ROLE txbits__owner;
+
+CREATE TABLE [% table %](
+  [%table %]_id     SERIAL    PRIMARY KEY
+  , 
+);
+
+--COMMENT ON TABLE [% table %] IS $$ $$;
+--COMMENT ON COLUMN [% table %].COLUMN IS $$ $$;
+
+/* TEST DATA
+SELECT tf.register(
+	'[% table %]'
+	, array[
+	row(
+		'base'
+		, $$
+			INSERT INTO [% table %] VALUES
+        ( DEFAULT, 'Test ... 1' )
+        , ( DEFAULT, 'Test ... 2' )
+				RETURNING *
+			$$
+		)::tf.test_set
+	]
+);
+*/
+
+SELECT ddl_tools.test_function(
+	'_test_[% table %]'
+	, $body$
+	s CONSTANT name = bs;
+	t CONSTANT name = fn;
+    tt CONSTANT text := bs || '.' || fn;
+BEGIN
+RETURN NEXT tf.tap(tt);
+
+RETURN NEXT table_owner_is(
+  s, t
+  , 'txbits__owner'::name
+);
+
+RETURN NEXT col_is_pk(
+  s, t
+  , (t || '_id')::name
+  , format('Column %I should be a primary key', t || '_id')
+);
+
+/*
+RETURN NEXT col_is_unique(
+  s, t
+  , 'batch_name'::name
+);
+*/
+
+-- TODO: Trigger denying update and delete
+
+RETURN QUERY SELECT table_privs_are(
+    s, t
+    , role_name
+    , '{SELECT}'
+  )
+  FROM unnest('{txbits__read, txbits__dev}'::name[]) role_name
+;
+
+SET ROLE txbits__read;
+RETURN NEXT lives_ok(
+  format( $$SELECT EXISTS(SELECT 1 FROM %I.%I)$$, s, t )
+  , 'Ensure txbits__read role can SELECT'
+);
+/*
+RETURN NEXT throws_ok(
+  format( $$UPDATE %I.%I SET batch_name = batch_name || 'x'$$, s, t )
+  , '42501' -- insufficient_privilege
+  , NULL
+  , 'Ensure txbits__read can not update'
+);
+*/
+END
+$body$
+);
+
+COMMIT;
+
+-- vi: expandtab ts=2 sw=2

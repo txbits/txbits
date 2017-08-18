@@ -1,0 +1,206 @@
+#!/bin/bash
+
+BASEDIR=`dirname $0`
+if ! . $BASEDIR/lib/util.sh; then
+  echo "FATAL: error sourcing $BASEDIR/lib/util.sh" 1>&2
+  exit 99
+fi
+
+# Tons of stuff depends on us being in the db directory
+cd $BASEDIR
+
+usage() {
+  cat << _EOF_
+Usage:
+
+$0 [options] database_name [psql options]
+
+where options are
+
+  -D      load test data
+  -f      force drop of database even if users are connected
+  -n      do not run tests
+  -s service_name  specify a servicename for $PGSERVICE
+  -t tests      specify regular expression of test suites to run
+  -x options    specify options for pgxn
+  -h      display this message
+_EOF_
+}
+
+pgxn_install() {
+  local name
+  local version
+  local options
+  local control
+  if [ "$1" == "-v" ]; then
+    version=$2
+    shift 2
+  fi
+
+  spec=$1
+  shift
+  options=$@
+
+  name=`echo $spec | sed -e 's/[<=>].*//'`
+
+  # Bounce out if already installed
+  control=$EXTDIR/${name}.control
+  if [ -f $control ]; then
+    if [ -n "$version" ]; then
+      if grep -q "$version" $control; then
+        debug 1 "pgxn_install: $name installed at correct version $version"
+        return
+      fi
+      debug 1 "pgxn_install: $name installed but $version not found in $control"
+    else
+      debug 1 pgxn_install: $name already installed
+      return
+    fi
+  else
+    debug 11 "pgxn_install: control file $control not found"
+  fi
+
+  # If EXTDIR isn't writable, add sudo option
+  if [ ! -w $EXTDIR ]; then
+    # Add only if --sudo not already specified
+    if echo $PGXN_OPTS | grep -qv -- --sudo; then
+      PGXN_OPTS="--sudo sudo $PGXN_OPTS"
+    fi
+  fi
+
+  echo -n "Installing $name with spec $spec from pgxn"
+  [ -n "$options" ] && echo -n " with options '$options'"
+  echo
+
+  debug 3 $PGXN install $name $options $PGXN_OPTS
+  $PGXN install $name $options $PGXN_OPTS || die 3 $'\nERROR: pgxn returned' $?
+  echo done
+  echo
+}
+
+pip_install () {
+  module=$1
+  #if ! $PIP --disable-pip-version-check list|grep -q $module; then
+  # We have to do this the hard way to prevent pip from bitching about a broken pipe
+  if [ -z "`$PIP list|grep $module`" ]; then
+      echo "Installing $module via sudo -H $PIP"
+      sudo -H $PIP install $module || die 1 "Unable to install $module"
+  fi
+}
+
+db_exists() {
+  local exists
+  exists=`psql -qtc "SELECT EXISTS( SELECT 1 FROM pg_database WHERE datname = '$dbname' )" postgres $psql_opts | tr -d ' '`
+  if [ "$exists" == "t" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+run_test=0
+while getopts Dfhnst:x: arg
+do
+  case "$arg" in
+    D)  test_data=y;;
+    f)  force=y;;
+    n)  unset run_test;;
+    s)  export PGSERVICE="$OPTARG";;
+    t)  tests="$OPTARG";;
+    x)  PGXN_OPTS="$OPTARG";;
+    h)
+      usage
+      exit 0
+      ;;
+    ?)
+      usage
+      exit 1
+      ;;
+  esac
+done
+if [ $OPTIND -gt 1 ]; then
+  shift $(($OPTIND-1))
+fi
+
+if [ $# -lt 1 ]; then
+  dbname=txbits
+else
+  dbname=$1
+  shift
+fi
+
+psql_opts=$@
+
+if [ -n "$tests" ]; then
+  [ -n "$run_test" ] || die 1 "Can not specify -n and -t together"
+  tests="-t $tests"
+else
+  if echo "$dbname" | grep -q _prod; then
+    echo "$dbname looks like a production environment, skipping unit tests"
+    unset run_test
+  fi
+fi
+
+if [ -z ${PGCONFIG+x} ]; then
+  PGCONFIG=`which pg_config`
+fi
+[ -n "$PGCONFIG" ] || die 1 "Unable to find pg_config; add it to PATH or set PGCONFIG"
+
+# PGXN
+if [ -z ${PGXN+x} ]; then
+  PGXN=`which pgxn`
+fi
+[ -n "$PGXN" ] || die 1 "Unable to find pgxn; add it to PATH or set \$PGXN to it's location.
+
+PGXN install instructions are at http://pgxnclient.projects.pgfoundry.org/install.html
+
+or simply do
+
+sudo easy_install pgxnclient"
+
+# pgxn_install depends on this
+EXTDIR=`$PGCONFIG --sharedir`/extension || die 1 "$PGCONFIG returned $?"
+
+#pgxn_install pgtap
+#pgxn_install test_factory
+
+debug_vars 9 dbname psql_opts test_data force tests PGXN_OPTS
+
+if [ -z ${force+x} ]; then
+  psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$dbname' AND pid <> pg_backend_pid()" \
+    postgres $psql_opts > /dev/null || exit 1
+fi
+dropdb --if-exists $dbname $psql_opts || exit 2
+
+createdb $dbname $psql_opts || exit 2
+
+# Make sure we have sqitch available
+if [ -z ${SQITCH+x} ]; then
+  SQITCH=`which sqitch`
+fi
+[ -n "$SQITCH" ] || die 1 "Unable to find sqitch; add it to PATH or set \$SQITCH to it's location.
+
+See http://sqitch.org/ for installation instructions."
+
+# Do the actual deployment
+($SQITCH --engine pg -d $dbname deploy && $SQITCH --engine pg -d $dbname rebase -y --onto-change 1) || die 2 "sqitch failed"
+
+if [ -n "$run_test" ]; then
+  # Note that PGSERVICE is already exported, so should get picked up
+  #./run_test $tests $dbname $psql_opts || exit $?
+
+  # Don't bother if we're just going to load the test data for real down below
+  if [ -z "$test_data" -a -x test_data__load ]; then
+    echo
+    echo "Testing ability to load test data"
+    ./test_data__load -n $dbname || die 1 "Loading test data failed"
+  fi
+fi
+
+if [ -n "$test_data" -a -x test_data__load ]; then
+  echo
+  echo "Loading test data"
+  ./test_data__load $dbname || die 1 "Loading test data failed"
+fi
+
+# vi: expandtab ts=2 sw=2
