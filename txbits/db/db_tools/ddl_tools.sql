@@ -48,10 +48,17 @@ $f$;
 
 -- This is a db_tools file!
 
-
+/*
+ * This bit assumes that either session user is already a superuser, or that at
+ * least the su role already exists (and is superuser) and the current user has
+ * been granted access to su (either directly or via su_access).
+ */
 SELECT ddl_tools.role__create( 'su', 'SUPERUSER' );
 SET ROLE su;
 SELECT ddl_tools.role__create( 'su_access', 'NOINHERIT', 'su' );
+SELECT ddl_tools.exec($$GRANT su_access TO SESSION_USER;$$)
+  WHERE NOT pg_has_role(SESSION_USER,'su_access','usage')
+;
 
 -- Fix existing objects
 ALTER SCHEMA ddl_tools OWNER TO su;
