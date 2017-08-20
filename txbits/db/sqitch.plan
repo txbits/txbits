@@ -12,3 +12,4 @@ INIT.ddl_tools [5] 2017-08-20T22:47:26Z Jim Nasby <Jim.Nasby@ReddereDevelopment.
 INIT.pgtap [INIT.ddl_tools] 2017-08-20T22:57:10Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Add pgTap
 INIT.test_factory [INIT.pgtap] 2017-08-20T23:23:23Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Add extension test_factory
 INIT.roles [INIT.ddl_tools] 2017-08-20T23:32:42Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Add txbits roles
+@tool_and_role_setup 2017-08-20T23:38:04Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Setup of various tools and system roles
