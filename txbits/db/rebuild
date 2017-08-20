@@ -161,7 +161,7 @@ sudo easy_install pgxnclient"
 # pgxn_install depends on this
 EXTDIR=`$PGCONFIG --sharedir`/extension || die 1 "$PGCONFIG returned $?"
 
-#pgxn_install pgtap
+pgxn_install pgtap
 #pgxn_install test_factory
 
 debug_vars 9 dbname psql_opts test_data force tests PGXN_OPTS

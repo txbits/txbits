@@ -9,3 +9,4 @@
 @initial 2017-08-20T22:22:28Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Initial conversion of schema to sqitch.
 
 INIT.ddl_tools [5] 2017-08-20T22:47:26Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Create ddl_tools schema
+INIT.pgtap [INIT.ddl_tools] 2017-08-20T22:57:10Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Add pgTap
