@@ -3,7 +3,7 @@
 BEGIN;
 SET ROLE su;
 
-SELECT 'tap.ok'::regproc;
+SELECT 'tap.ok(boolean)'::regprocedure;
 
 ROLLBACK;
 

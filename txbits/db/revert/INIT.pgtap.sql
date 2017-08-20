@@ -3,7 +3,8 @@
 BEGIN;
 SET ROLE su;
 
-DROP SCHEMA tap CASCADE;
+DROP EXTENSION pgtap;
+DROP SCHEMA tap;
 COMMIT;
 
 -- vi: expandtab ts=2 sw=2
