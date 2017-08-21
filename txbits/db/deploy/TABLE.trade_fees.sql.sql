@@ -10,16 +10,18 @@ ALTER TABLE trade_fees
     CONSTRAINT trade_fees_may_only_have_on_row CHECK(one_row_only)
 ;
 
+SET client_min_messages = WARNING; -- Squelch %TYPE noise
 CREATE OR REPLACE FUNCTION _test_public.__trade_fees__set(
   linear public.trade_fees.linear%TYPE
   , one_way public.trade_fees.one_way%TYPE
-) RETURNS void LANGUAGE sql AS $body$
+) RETURNS SETOF public.trade_fees LANGUAGE sql AS $body$
 INSERT INTO public.trade_fees(linear, one_way)
   VALUES($1, $2)
   ON CONFLICT (one_row_only) DO UPDATE
     SET
       linear = $1
       , one_way = $2
+  RETURNING *
 ;
 $body$;
 COMMENT ON FUNCTION  _test_public.__trade_fees__set(
@@ -27,22 +29,34 @@ COMMENT ON FUNCTION  _test_public.__trade_fees__set(
   , one_way public.trade_fees.one_way%TYPE
 ) IS $$A simple helper function to ensure there is a value in the trade_fees table. NOT MEANT FOR PRODUCTION USE.$$;
 
+SELECT tf.register(
+  'trade_fees'
+  , array[
+  row(
+    'base'
+    , $tf$
+    SELECT * FROM _test_public.__trade_fees__set(.42, false)
+    $tf$
+  )::tf.test_set
+  ]
+);
+
 SELECT ddl_tools.test_function(
   '_test_public.trade_fees'
   , $body$
 	s CONSTANT name = bs;
 	t CONSTANT name = fn;
+  full_name CONSTANT text = format('%I.%I', s, t);
 
-  update_template CONSTANT text = format(
-    $$UPDATE %I.%I SET one_row_only = %%L$$ -- Remember %% for use of later format's!
-    , s, t
-  );
+  update_template CONSTANT text =
+    $$UPDATE $$ || full_name || $$ SET one_row_only = %L$$
+  ;
 BEGIN
   -- Ensure there's already a row in the table
-  PERFORM _test_public.__trade_fees__set(.42,false);
+  PERFORM tf.tap(full_name);
 
   RETURN NEXT throws_ok(
-    format( $$INSERT INTO %I.%I VALUES(1,true)$$, s, t )
+    format( $$INSERT INTO %s VALUES(1,true)$$, full_name )
     , '23505' -- Duplicate key value
     , 'duplicate key value violates unique constraint "trade_fees__pk_one_row_only"'
     , 'inserting additional row fails'
