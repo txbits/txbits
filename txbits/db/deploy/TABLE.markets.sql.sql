@@ -31,6 +31,28 @@ SELECT tf.register(
         RETURNING *
       $tf$
     )::tf.test_set
+    , row(
+      'fee override'
+      , $tf$
+      INSERT INTO markets (base, counter, limit_min, position, fee_linear, fee_one_way)
+        SELECT 'TST1', 'TST2', 1, -1
+            -- Make sure market limits are different
+            , trade_fees.linear + 1
+            , NOT trade_fees.one_way
+          FROM tf.get(NULL::trade_fees, 'base') AS trade_fees
+          /*
+           * Normally this would actually *use* the results of tf.get(). In
+           * this case, we just hard-code TST1 and TST2, BUT we still have to
+           * ensure that the test currencies are there. This WHERE clause does
+           * that.
+           *
+           * NOTE: This is intentionally coded to attempt the insert no matter
+           * what comes back from tf.get()!
+           */
+          WHERE (SELECT count(*) FROM tf.get(NULL::currencies,'base')) > -1
+        RETURNING *
+      $tf$
+    )::tf.test_set
   ]
 );
     
