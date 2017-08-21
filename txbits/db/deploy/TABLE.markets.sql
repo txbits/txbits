@@ -35,7 +35,9 @@ SELECT tf.register(
       'fee override'
       , $tf$
       INSERT INTO markets (base, counter, limit_min, position, fee_linear, fee_one_way)
-        SELECT 'TST1', 'TST2', 1, -1
+        SELECT
+            'TST2', 'TST1' -- a bit bogus, but works for now..
+            , 1, -1
             -- Make sure market limits are different
             , trade_fees.linear + 1
             , NOT trade_fees.one_way
