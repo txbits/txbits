@@ -9,6 +9,11 @@ SELECT ddl_tools.role__create( 'txbits__' || suffix )
 	FROM unnest( '{owner, read, app, dev}'::text[] ) AS suffix
 ;
 
+SET ROLE su;
+
+-- TODO: Instead of this, add the application user to txbits__app and change the OWNER to txbits__owner
+GRANT ALL ON SCHEMA public TO txbits__owner;
+
 /*
  * NOTE: this is normally done by some functions that make it easy to create
  * new schemas, so some of it's a bit redundant.
