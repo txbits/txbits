@@ -14,6 +14,10 @@ SET ROLE su;
 -- TODO: Instead of this, add the application user to txbits__app and change the OWNER to txbits__owner
 GRANT ALL ON SCHEMA public TO txbits__owner;
 
+-- Allow owner to use tools...
+GRANT USAGE ON SCHEMA ddl_tools TO txbits__owner;
+GRANT USAGE ON SCHEMA _ddl_tools TO txbits__owner;
+
 /*
  * NOTE: this is normally done by some functions that make it easy to create
  * new schemas, so some of it's a bit redundant.
