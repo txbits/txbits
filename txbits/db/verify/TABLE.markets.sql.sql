@@ -3,7 +3,7 @@
 BEGIN;
 --SET ROLE txbits__owner;
 
-SELECT fee_linear, fee_one_way FROM markets WHERE false;
+SELECT 1/count(*) FROM tf.get(NULL::markets, 'base');
 ROLLBACK;
 
 -- vi: expandtab ts=2 sw=2

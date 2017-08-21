@@ -9,6 +9,31 @@ ALTER TABLE markets
   ADD fee_linear numeric(23,8) CONSTRAINT markets_fee_linear_check CHECK(fee_linear IS NULL OR fee_linear >= 0)
   , ADD fee_one_way boolean
 ;
+
+SELECT tf.register(
+  'markets'
+  , array[
+    row(
+      'base'
+      , $tf$
+      INSERT INTO markets (base, counter, limit_min, position)
+        SELECT 'TST1', 'TST2', 1, -1
+          /*
+           * Normally this would actually *use* the results of tf.get(). In
+           * this case, we just hard-code TST1 and TST2, BUT we still have to
+           * ensure that the test currencies are there. This WHERE clause does
+           * that.
+           *
+           * NOTE: This is intentionally coded to attempt the insert no matter
+           * what comes back from tf.get()!
+           */
+          WHERE (SELECT count(*) FROM tf.get(NULL::currencies,'base')) > -1
+        RETURNING *
+      $tf$
+    )::tf.test_set
+  ]
+);
+    
 COMMIT;
 
 -- vi: expandtab ts=2 sw=2
