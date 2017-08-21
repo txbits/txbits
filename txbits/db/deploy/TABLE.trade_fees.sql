@@ -2,7 +2,13 @@
 -- requires: 2
 
 BEGIN;
---SET ROLE txbits__owner;
+SET ROLE su;
+
+-- TODO: Instead of this, add the application user to txbits__app and change the OWNER to txbits__owner
+GRANT ALL ON public.trade_fees TO txbits__owner;
+
+-- TODO: uncommend after above is fixed.. (only an owner can alter :() SET ROLE txbits__owner;
+
 
 ALTER TABLE trade_fees
   ADD one_row_only boolean NOT NULL DEFAULT true
@@ -11,6 +17,7 @@ ALTER TABLE trade_fees
 ;
 
 SET client_min_messages = WARNING; -- Squelch %TYPE noise
+SET ROLE txbits__owner;
 CREATE OR REPLACE FUNCTION _test_public.__trade_fees__set(
   linear public.trade_fees.linear%TYPE
   , one_way public.trade_fees.one_way%TYPE

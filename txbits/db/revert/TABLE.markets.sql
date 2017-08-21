@@ -3,12 +3,15 @@
 BEGIN;
 --SET ROLE txbits__owner;
 
+DROP FUNCTION _test_public.markets();
+
+-- TODO: remove test factory registration
+
 ALTER TABLE markets
   DROP fee_linear
   , DROP fee_one_way
 ;
 
--- TODO: remove test factory registration
 COMMIT;
 
 -- vi: expandtab ts=2 sw=2

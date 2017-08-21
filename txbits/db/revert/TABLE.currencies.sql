@@ -3,6 +3,8 @@
 BEGIN;
 SET ROLE txbits__owner;
 
+DROP FUNCTION _test_public.currencies();
+
 -- TODO: delete test factory registration
 COMMIT;
 
