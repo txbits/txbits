@@ -187,7 +187,7 @@ See http://sqitch.org/ for installation instructions."
 
 if [ -n "$run_test" ]; then
   # Note that PGSERVICE is already exported, so should get picked up
-  #./run_test $tests $dbname $psql_opts || exit $?
+  ./run_test $tests $dbname $psql_opts || exit $?
 
   # Don't bother if we're just going to load the test data for real down below
   if [ -z "$test_data" -a -x test_data__load ]; then
