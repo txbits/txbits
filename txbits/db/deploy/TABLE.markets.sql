@@ -2,7 +2,12 @@
 -- requires: 2
 
 BEGIN;
---SET ROLE txbits__owner;
+SET ROLE su;
+
+-- TODO: Instead of this, add the application user to txbits__app and change the OWNER to txbits__owner
+GRANT ALL ON markets TO txbits__owner;
+
+-- TODO: uncommend after above is fixed.. (only an owner can alter :() SET ROLE txbits__owner;
 
 -- Allow for per-market fee configuration
 ALTER TABLE markets
@@ -10,6 +15,7 @@ ALTER TABLE markets
   , ADD fee_one_way boolean
 ;
 
+SET ROLE txbits__owner;
 SELECT tf.register(
   'markets'
   , array[
