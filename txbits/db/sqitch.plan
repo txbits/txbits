@@ -15,5 +15,5 @@ INIT.roles [INIT.ddl_tools] 2017-08-20T23:32:42Z Jim Nasby <Jim.Nasby@ReddereDev
 INIT.schemas [INIT.roles] 2017-08-21T00:13:26Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Add test and private schemas for public
 @tool_and_role_setup 2017-08-20T23:38:04Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Setup of various tools and system roles
 
-TABLE.trade_fees.sql [2] 2017-08-20T22:33:37Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Enforce trade_fees having at most one row
-TABLE.markets.sql [2] 2017-08-20T22:24:28Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Add optional per-market fees
+TABLE.trade_fees.sql [INIT.schemas] 2017-08-20T22:33:37Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Enforce trade_fees having at most one row
+TABLE.markets.sql [INIT.schemas] 2017-08-20T22:24:28Z Jim Nasby <Jim.Nasby@ReddereDevelopment.com> # Add optional per-market fees
