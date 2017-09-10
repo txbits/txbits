@@ -41,6 +41,7 @@ DECLARE
 BEGIN
   -- The market should definitely exist, even if there's no override
   -- TODO: create markets__get() that does the STRICT
+  -- Note: this is slightly less efficient than a single select would be, but it's better factored
   SELECT INTO STRICT v_fee_linear, v_fee_one_way
       m.fee_linear , m.fee_one_way
     FROM
