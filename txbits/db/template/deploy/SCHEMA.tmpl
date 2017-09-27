@@ -1,0 +1,16 @@
+-- Deploy [% project %]:[% change %] to [% engine %]
+[% FOREACH item IN requires -%]
+-- requires: [% item %]
+[% END -%]
+[% FOREACH item IN conflicts -%]
+-- conflicts: [% item %]
+[% END -%]
+
+BEGIN;
+SET ROLE su;
+
+SELECT ddl_tools.schema__create('[% schema %]', '[% read_role %]');
+COMMIT;
+
+-- vi: expandtab ts=2 sw=2
+

@@ -14,9 +14,8 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Functions
-
-# --- !Ups
+BEGIN;
+--SET ROLE txbits__owner;
 
 -- when a new order is placed we try to match it
 create or replace function 
@@ -32,63 +31,63 @@ order_new(
   out new_remains numeric(23,8))
 returns record as $$
 declare
-    o orders%rowtype;; -- first order (chronologically)
-    o2 orders%rowtype;; -- second order (chronologically)
-    v numeric(23,8);; -- volume of the match (when it happens)
-    f numeric(23,8);; -- fee % for first order (maker)
-    f2 numeric(23,8);; -- fee % for second order (taker)
-    fee trade_fees%rowtype;;
-    new_user_id bigint;;
+    o orders%rowtype; -- first order (chronologically)
+    o2 orders%rowtype; -- second order (chronologically)
+    v numeric(23,8); -- volume of the match (when it happens)
+    f numeric(23,8); -- fee % for first order (maker)
+    f2 numeric(23,8); -- fee % for second order (taker)
+    fee trade_fees%rowtype;
+    new_user_id bigint;
 begin
     if a_uid = 0 then
-      raise 'User id 0 is not allowed to use this function.';;
-    end if;;
+      raise 'User id 0 is not allowed to use this function.';
+    end if;
 
     if a_api_key is not null then
       select user_id into new_user_id from users_api_keys
-      where api_key = a_api_key and active = true and trading = true;;
+      where api_key = a_api_key and active = true and trading = true;
     else
-      new_user_id := a_uid;;
-    end if;;
+      new_user_id := a_uid;
+    end if;
 
     if new_user_id is null then
-      return;;
-    end if;;
+      return;
+    end if;
 
     -- increase holds
     if new_is_bid then
       update balances set hold = hold + new_amount * new_price
       where currency = new_counter and user_id = new_user_id and
-      balance >= hold + new_amount * new_price;;
+      balance >= hold + new_amount * new_price;
     else
       update balances set hold = hold + new_amount
       where currency = new_base and user_id = new_user_id and
-      balance >= hold + new_amount;;
-    end if;;
+      balance >= hold + new_amount;
+    end if;
 
     -- insufficient funds
     if not found then
-      return;;
-    end if;;
+      return;
+    end if;
 
     -- trade fees
-    select * into strict fee from trade_fees;;
+    select * into strict fee from trade_fees;
     if fee.one_way then
-      f := 0;;
+      f := 0;
     else
-      f := fee.linear;;
-    end if;;
-    f2 := fee.linear;;
+      f := fee.linear;
+    end if;
+    f2 := fee.linear;
 
-    perform pg_advisory_xact_lock(-1, id) from markets where base = new_base and counter = new_counter;;
+    perform pg_advisory_xact_lock(-1, id) from markets where base = new_base and counter = new_counter;
 
     insert into orders(user_id, base, counter, original, remains, price, is_bid)
     values (new_user_id, new_base, new_counter, new_amount, new_amount, new_price, new_is_bid)
-    returning * into strict o2;;
+    returning * into strict o2;
 
     if new_is_bid then
       update markets set total_counter = total_counter + new_amount * new_price
-      where base = new_base and counter = new_counter;;
+      where base = new_base and counter = new_counter;
 
       for o in select * from orders oo
         where
@@ -104,17 +103,17 @@ begin
           oo.id asc
       loop
         -- the volume is the minimum of the two volumes
-        v := least(o.remains, o2.remains);;
+        v := least(o.remains, o2.remains);
 
-        perform match_new(o2.id, o.id, o2.is_bid, f2 * v, f * o.price * v, v, o.price);;
+        perform match_new(o2.id, o.id, o2.is_bid, f2 * v, f * o.price * v, v, o.price);
 
         -- if order was completely filled, stop matching
-        select * into strict o2 from orders where id = o2.id;;
-        exit when o2.remains = 0;;
-      end loop;;
+        select * into strict o2 from orders where id = o2.id;
+        exit when o2.remains = 0;
+      end loop;
     else
       update markets set total_base = total_base + new_amount
-      where base = new_base and counter = new_counter;;
+      where base = new_base and counter = new_counter;
 
       for o in select * from orders oo
         where
@@ -130,20 +129,20 @@ begin
           oo.id asc
       loop
         -- the volume is the minimum of the two volumes
-        v := least(o.remains, o2.remains);;
+        v := least(o.remains, o2.remains);
 
-        perform match_new(o.id, o2.id, o2.is_bid, f * v, f2 * o.price * v, v, o.price);;
+        perform match_new(o.id, o2.id, o2.is_bid, f * v, f2 * o.price * v, v, o.price);
 
         -- if order was completely filled, stop matching
-        select * into strict o2 from orders where id = o2.id;;
-        exit when o2.remains = 0;;
-      end loop;;
-    end if;;
+        select * into strict o2 from orders where id = o2.id;
+        exit when o2.remains = 0;
+      end loop;
+    end if;
 
-    new_id := o2.id;;
-    new_remains := o2.remains;;
-    return;;
-end;;
+    new_id := o2.id;
+    new_remains := o2.remains;
+    return;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- cancel an order and release any holds left open
@@ -154,59 +153,59 @@ order_cancel(
   o_id bigint
   ) returns orders as $$
 declare
-    o orders%rowtype;;
-    b varchar(4);;
-    c varchar(4);;
-    o_user_id bigint;;
+    o orders%rowtype;
+    b varchar(4);
+    c varchar(4);
+    o_user_id bigint;
 begin
     if a_uid = 0 then
-      raise 'User id 0 is not allowed to use this function.';;
-    end if;;
+      raise 'User id 0 is not allowed to use this function.';
+    end if;
 
     if a_api_key is not null then
       select user_id into o_user_id from users_api_keys
-      where api_key = a_api_key and active = true and trading = true;;
+      where api_key = a_api_key and active = true and trading = true;
     else
-      o_user_id := a_uid;;
-    end if;;
+      o_user_id := a_uid;
+    end if;
 
     if o_user_id is null then
-      return null;;
-    end if;;
+      return null;
+    end if;
 
     select base, counter into b, c from orders
-    where id = o_id and user_id = o_user_id and closed = false and remains > 0;;
+    where id = o_id and user_id = o_user_id and closed = false and remains > 0;
 
     if not found then
-      return null;;
-    end if;;
+      return null;
+    end if;
 
-    perform pg_advisory_xact_lock(-1, id) from markets where base = b and counter = c;;
+    perform pg_advisory_xact_lock(-1, id) from markets where base = b and counter = c;
 
     update orders set closed = true
     where id = o_id and user_id = o_user_id and closed = false and remains > 0
-    returning * into o;;
+    returning * into o;
 
     if not found then
-      return null;;
-    end if;;
+      return null;
+    end if;
 
     if o.is_bid then
       update balances set hold = hold - o.remains * o.price
-      where currency = o.counter and user_id = o.user_id;;
+      where currency = o.counter and user_id = o.user_id;
 
       update markets set total_counter = total_counter - o.remains * o.price
-      where base = o.base and counter = o.counter;;
+      where base = o.base and counter = o.counter;
     else
       update balances set hold = hold - o.remains
-      where currency = o.base and user_id = o.user_id;;
+      where currency = o.base and user_id = o.user_id;
 
       update markets set total_base = total_base - o.remains
-      where base = o.base and counter = o.counter;;
-    end if;;
+      where base = o.base and counter = o.counter;
+    end if;
 
-    return o;;
-end;;
+    return o;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- when a new match is inserted, we reduce the orders and release the holds
@@ -221,73 +220,73 @@ match_new(
   new_price numeric(23,8))
 returns void as $$
 declare
-    bid orders%rowtype;;
-    ask orders%rowtype;;
-    ucount int;; -- used for debugging
+    bid orders%rowtype;
+    ask orders%rowtype;
+    ucount int; -- used for debugging
 begin
-    select * into strict bid from orders where id = new_bid_order_id;;
-    select * into strict ask from orders where id = new_ask_order_id;;
+    select * into strict bid from orders where id = new_bid_order_id;
+    select * into strict ask from orders where id = new_ask_order_id;
 
     if (new_is_bid = true and new_price <> ask.price) or (new_is_bid = false and new_price <> bid.price) then
-      raise 'Attempted to match two orders but the match has the wrong price. Bid: % Ask: % Price: %', bid.order_id, ask.order_id, new.price;;
-    end if;;
+      raise 'Attempted to match two orders but the match has the wrong price. Bid: % Ask: % Price: %', bid.order_id, ask.order_id, new.price;
+    end if;
 
     if bid.price < ask.price then
-      raise 'Attempted to match two orders that do not agree on the price. Bid: % Ask: %', bid.order_id, ask.order_id;;
-    end if;;
+      raise 'Attempted to match two orders that do not agree on the price. Bid: % Ask: %', bid.order_id, ask.order_id;
+    end if;
 
     -- make sure the amount is the whole of one or the other order
     if not (new_amount = bid.remains or new_amount = ask.remains) then
-      raise 'Match must be complete. Failed to match whole order. Amount: % Bid: % Ask: %', new.amount, bid.order_id, ask.order_id;;
-    end if;;
+      raise 'Match must be complete. Failed to match whole order. Amount: % Bid: % Ask: %', new.amount, bid.order_id, ask.order_id;
+    end if;
 
     -- make sure the ask order is of type ask and the bid order is of type bid
     if bid.is_bid <> true or ask.is_bid <> false then
-      raise 'Tried to match orders of wrong types! Amount: % Bid: % Ask: %', new.amount, bid.order_id, ask.order_id;;
-    end if;;
+      raise 'Tried to match orders of wrong types! Amount: % Bid: % Ask: %', new.amount, bid.order_id, ask.order_id;
+    end if;
 
     -- make sure the two orders are on the same market
     if bid.base <> ask.base or bid.counter <> ask.counter then
-      raise 'Matching two orders from different markets. Bid: %/% Ask: %/%', bid.base, bid.counter, ask.base, ask.counter;;
-    end if;;
+      raise 'Matching two orders from different markets. Bid: %/% Ask: %/%', bid.base, bid.counter, ask.base, ask.counter;
+    end if;
 
     insert into matches (bid_user_id, ask_user_id, bid_order_id, ask_order_id, is_bid, bid_fee, ask_fee, amount, price, base, counter)
-    values (bid.user_id, ask.user_id, bid.id, ask.id, new_is_bid, new_bid_fee, new_ask_fee, new_amount, new_price, bid.base, bid.counter);;
+    values (bid.user_id, ask.user_id, bid.id, ask.id, new_is_bid, new_bid_fee, new_ask_fee, new_amount, new_price, bid.base, bid.counter);
 
     -- release holds on the amount that was matched
     update balances set hold = hold - new_amount
-    where currency = ask.base and user_id = ask.user_id;;
+    where currency = ask.base and user_id = ask.user_id;
 
     update balances set hold = hold - new_amount * bid.price
-    where currency = bid.counter and user_id = bid.user_id;;
+    where currency = bid.counter and user_id = bid.user_id;
 
     update markets set total_base = total_base - new_amount,
     total_counter = total_counter - new_amount * bid.price
-    where base = bid.base and counter = bid.counter;;
+    where base = bid.base and counter = bid.counter;
 
     -- reducing order volumes and reducing remaining volumes
     update orders set remains = remains - new_amount,
       closed = (remains - new_amount = 0)
-      where id in (ask.id, bid.id);;
+      where id in (ask.id, bid.id);
 
-    get diagnostics ucount = row_count;;
+    get diagnostics ucount = row_count;
 
     if ucount <> 2 then
-      raise 'Expected 2 order updates, did %.', ucount;;
-    end if;;
+      raise 'Expected 2 order updates, did %.', ucount;
+    end if;
 
     perform transfer_funds(
         ask.user_id,
         bid.user_id,
         bid.base,
         new_amount
-    );;
+    );
     perform transfer_funds(
         bid.user_id,
         ask.user_id,
         bid.counter,
         new_amount * new_price
-    );;
+    );
 
     -- fees
     if new_ask_fee > 0 then
@@ -296,20 +295,20 @@ begin
           0,
           ask.counter,
           new_ask_fee
-      );;
-    end if;;
+      );
+    end if;
     if new_bid_fee > 0 then
       perform transfer_funds(
           bid.user_id,
           0,
           bid.base,
           new_bid_fee
-      );;
-    end if;;
+      );
+    end if;
 
-    perform stats_new(bid.base, bid.counter, new_amount, new_price);;
+    perform stats_new(bid.base, bid.counter, new_amount, new_price);
 
-end;;
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 
@@ -322,48 +321,48 @@ withdrawal_insert (
   a_fee numeric(23,8)
 ) returns bigint as $$
 declare
-  underflow boolean;;
-  overflow boolean;;
-  withdrawal_id bigint;;
+  underflow boolean;
+  overflow boolean;
+  withdrawal_id bigint;
 begin
-  perform 1 from balances where user_id = a_uid and currency = a_currency for update;;
+  perform 1 from balances where user_id = a_uid and currency = a_currency for update;
 
   insert into withdrawals(amount, user_id, currency, fee)
     values (a_amount, a_uid, a_currency, a_fee)
-    returning id into strict withdrawal_id;;
+    returning id into strict withdrawal_id;
 
-  select limit_min > a_amount into underflow from withdrawal_limits where currency = a_currency;;
+  select limit_min > a_amount into underflow from withdrawal_limits where currency = a_currency;
 
   if underflow then
-    raise 'Below lower limit for withdrawal. Tried to withdraw %.', a_amount;;
-  end if;;
+    raise 'Below lower limit for withdrawal. Tried to withdraw %.', a_amount;
+  end if;
 
   select ((limit_max < a_amount + (
     select coalesce(sum(amount), 0)
     from withdrawals
     where currency = a_currency and user_id = a_uid and created >= (current_timestamp - interval '24 hours' )
-  )) and limit_max != -1) into overflow from withdrawal_limits where currency = a_currency;;
+  )) and limit_max != -1) into overflow from withdrawal_limits where currency = a_currency;
 
   if overflow then
-    raise 'Over upper limit for withdrawal. Tried to withdraw %.', a_amount;;
-  end if;;
+    raise 'Over upper limit for withdrawal. Tried to withdraw %.', a_amount;
+  end if;
 
     perform transfer_funds(
         a_uid,
         null,
         a_currency,
         a_amount - a_fee
-      );;
+      );
 
     perform transfer_funds(
         a_uid,
         0,
         a_currency,
         a_fee
-      );;
+      );
 
-  return withdrawal_id;;
-end;;
+  return withdrawal_id;
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 
@@ -376,23 +375,23 @@ withdrawal_refund (
   a_fee numeric(23,8)
 ) returns void as $$
 declare
-  underflow boolean;;
-  overflow boolean;;
+  underflow boolean;
+  overflow boolean;
 begin
   perform transfer_funds(
       null,
       a_uid,
       a_currency,
       a_amount - a_fee
-    );;
+    );
 
   perform transfer_funds(
       0,
       a_uid,
       a_currency,
       a_fee
-    );;
-end;;
+    );
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 -- to transfer funds, update the balances
@@ -404,23 +403,23 @@ create or replace function
       new_amount numeric(23,8))
     returns void as $$
 declare
-    ucount int;;
+    ucount int;
 begin
     if new_from_user_id is not null then
-      update balances set balance = balance - new_amount where user_id = new_from_user_id and currency = new_currency;;
-      get diagnostics ucount = row_count;;
+      update balances set balance = balance - new_amount where user_id = new_from_user_id and currency = new_currency;
+      get diagnostics ucount = row_count;
       if ucount <> 1 then
-        raise 'Expected 1 balance update, did %.', ucount;;
-      end if;;
-    end if;;
+        raise 'Expected 1 balance update, did %.', ucount;
+      end if;
+    end if;
     if new_to_user_id is not null then
-      update balances set balance = balance + new_amount where user_id = new_to_user_id and currency = new_currency;;
-      get diagnostics ucount = row_count;;
+      update balances set balance = balance + new_amount where user_id = new_to_user_id and currency = new_currency;
+      get diagnostics ucount = row_count;
       if ucount <> 1 then
-        raise 'Expected 1 balance update, did %.', ucount;;
-      end if;;
-    end if;;
-end;;
+        raise 'Expected 1 balance update, did %.', ucount;
+      end if;
+    end if;
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -431,13 +430,13 @@ wallets_crypto_retire (
 declare
 begin
   update wallets_crypto set retired = true
-  where currency = a_currency and node_id = a_node_id and retired = false;;
+  where currency = a_currency and node_id = a_node_id and retired = false;
 
   if found then
     update users_addresses set assigned = current_timestamp
-    where user_id = 0 and assigned is null and currency = a_currency and node_id = a_node_id;;
-  end if;;
-end;;
+    where user_id = 0 and assigned is null and currency = a_currency and node_id = a_node_id;
+  end if;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- create balances associated with currencies
@@ -448,9 +447,9 @@ currency_insert (
 ) returns void as $$
 declare
 begin
-  insert into currencies (currency, position) values (a_currency, a_position);;
-  insert into balances (user_id, currency) select id, a_currency from users;;
-end;;
+  insert into currencies (currency, position) values (a_currency, a_position);
+  insert into balances (user_id, currency) select id, a_currency from users;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 
@@ -459,7 +458,7 @@ $$ language plpgsql volatile security definer set search_path = public, pg_temp 
 -- create a function that always returns the first non-null item
 create or replace function first_agg ( anyelement, anyelement )
 returns anyelement language sql immutable strict as $$
-        select $1;;
+        select $1;
 $$;
 
 -- and then wrap an aggregate around it
@@ -472,7 +471,7 @@ create aggregate first (
 -- create a function that always returns the last non-null item
 create or replace function last_agg ( anyelement, anyelement )
 returns anyelement language sql immutable strict as $$
-        select $2;;
+        select $2;
 $$;
 
 -- and then wrap an aggregate around it
@@ -485,10 +484,11 @@ create aggregate last (
 create or replace function
 generate_random_user_id(
 ) returns bigint as $$
-  select abs((right(b::text, 17))::bit(64)::bigint) as id from gen_random_bytes(8) as b;;
+  select abs((right(b::text, 17))::bit(64)::bigint) as id from gen_random_bytes(8) as b;
 $$ language sql volatile security invoker set search_path = public, pg_temp cost 100;
 
 -- NOT "security definer", must be privileged user to use this function directly
+-- NOTE! This is not the original version of this function!
 create or replace function
 create_user (
   a_email varchar(256),
@@ -498,7 +498,7 @@ create_user (
   a_username varchar(256)
 ) returns bigint as $$
 declare
-  new_user_id bigint;;
+  new_user_id bigint;
 begin
   insert into users(id, email, on_mailing_list, pgp, username) values (
       generate_random_user_id(),
@@ -506,15 +506,15 @@ begin
       a_onMailingList,
       a_pgp,
       a_username
-    ) returning id into new_user_id;;
+    ) returning id into new_user_id;
   -- create balances associated with users  
-  insert into balances (user_id, currency) select new_user_id, currency from currencies;;
+  insert into balances (user_id, currency) select new_user_id, currency from currencies;
   insert into users_passwords (user_id, password) values (
     new_user_id,
     crypt(a_password, gen_salt('bf', 8))
-  );;
-  return new_user_id;;
-end;;
+  );
+  return new_user_id;
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -527,20 +527,21 @@ create_user_complete (
   a_username varchar(256)
 ) returns bigint as $$
 declare
-  valid_token boolean;;
+  valid_token boolean;
 begin
   if a_email = '' then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
-  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = true and expiration >= current_timestamp;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
+  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = true and expiration >= current_timestamp;
   if valid_token is null then
-    return null;;
-  end if;;
-  delete from tokens where email = a_email and is_signup = true;;
-  return create_user(a_email, a_password, a_onMailingList, a_pgp, a_username);;
-end;;
+    return null;
+  end if;
+  delete from tokens where email = a_email and is_signup = true;
+  return create_user(a_email, a_password, a_onMailingList, a_pgp, a_username);
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
+-- NOTE! This is not the original version of this function!
 create or replace function
 update_user (
   a_id bigint,
@@ -550,11 +551,11 @@ update_user (
 ) returns void as $$
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
-  update users set email=a_email, on_mailing_list=a_onMailingList, username=a_username where id=a_id;;
-  return;;
-end;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
+  update users set email=a_email, on_mailing_list=a_onMailingList, username=a_username where id=a_id;
+  return;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -563,18 +564,18 @@ check_password(
   a_password text
 ) returns boolean as $$
 declare
-  password_tmp text;;
+  password_tmp text;
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
-  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
+  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;
   if not found or a_password is null or password_tmp != crypt(a_password, password_tmp) then
-    return false;;
-  end if;;
-  return true;;
-end;;
+    return false;
+  end if;
+  return true;
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -584,18 +585,18 @@ user_change_password (
   a_new_password text
 ) returns boolean as $$
 declare
-  password_tmp text;;
+  password_tmp text;
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
   if not check_password(a_uid, a_old_password) then
-    return false;;
-  end if;;
-  insert into users_passwords (user_id, password) values (a_uid, crypt(a_new_password, gen_salt('bf', 8)));;
-  return true;;
-end;;
+    return false;
+  end if;
+  insert into users_passwords (user_id, password) values (a_uid, crypt(a_new_password, gen_salt('bf', 8)));
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 
@@ -607,30 +608,30 @@ user_add_pgp (
   a_pgp text
 ) returns boolean as $$
 declare
-  password_tmp text;;
-  enabled boolean;;
+  password_tmp text;
+  enabled boolean;
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
-  select tfa_enabled into enabled from users where id = a_uid;;
+  select tfa_enabled into enabled from users where id = a_uid;
 
   if enabled then
       if not user_totp_check(a_uid, a_tfa_code) then
-      return false;;
-    end if;;
-  end if;;
+      return false;
+    end if;
+  end if;
 
-  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
+  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;
 
   if password_tmp != crypt(a_password, password_tmp) then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
-  update users set pgp = a_pgp where id = a_uid;;
-  return true;;
-end;;
+  update users set pgp = a_pgp where id = a_uid;
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 
@@ -641,30 +642,30 @@ user_remove_pgp (
   a_tfa_code int
 ) returns boolean as $$
 declare
-  password_tmp text;;
-  enabled boolean;;
+  password_tmp text;
+  enabled boolean;
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
-  select tfa_enabled into enabled from users where id = a_uid;;
+  select tfa_enabled into enabled from users where id = a_uid;
 
   if enabled then
     if not user_totp_check(a_uid, a_tfa_code) then
-      return false;;
-    end if;;
-  end if;;
+      return false;
+    end if;
+  end if;
 
-  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;;
+  select "password" into password_tmp from users_passwords where user_id = a_uid order by created desc limit 1;
 
   if password_tmp != crypt(a_password, password_tmp) then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
-  update users set pgp = null where id = a_uid;;
-  return true;;
-end;;
+  update users set pgp = null where id = a_uid;
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 
@@ -674,15 +675,15 @@ trusted_action_start (
   a_is_signup boolean
 ) returns boolean as $$
 declare
-  email_exists boolean;;
+  email_exists boolean;
 begin
-  select true into email_exists from trusted_action_requests where email = a_email and is_signup = a_is_signup;;
+  select true into email_exists from trusted_action_requests where email = a_email and is_signup = a_is_signup;
   if email_exists then
-    return false;;
-  end if;;
-  insert into trusted_action_requests values (a_email, a_is_signup);;
-  return true;;
-end;;
+    return false;
+  end if;
+  insert into trusted_action_requests values (a_email, a_is_signup);
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -692,19 +693,19 @@ user_reset_password_complete (
   a_new_password text
 ) returns boolean as $$
 declare
-  valid_token boolean;;
+  valid_token boolean;
 begin
   if a_email = '' then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
-  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = false and expiration >= current_timestamp;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
+  select true into valid_token from tokens where token = a_token and email = a_email and is_signup = false and expiration >= current_timestamp;
   if valid_token is null then
-    return false;;
-  end if;;
-  delete from tokens where email = a_email and is_signup = false;;
-  insert into users_passwords (user_id, password) select id, crypt(a_new_password, gen_salt('bf', 8)) from users where email = a_email;;
-  return true;;
-end;;
+    return false;
+  end if;
+  delete from tokens where email = a_email and is_signup = false;
+  insert into users_passwords (user_id, password) select id, crypt(a_new_password, gen_salt('bf', 8)) from users where email = a_email;
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -714,11 +715,11 @@ add_api_key (
 ) returns void as $$
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
-  insert into users_api_keys(user_id, api_key) values (a_id, a_api_key);;
-end;;
+  insert into users_api_keys(user_id, api_key) values (a_id, a_api_key);
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -732,25 +733,25 @@ update_api_key (
   a_list_balance bool
 ) returns boolean as $$
 declare
-  enabled boolean;;
+  enabled boolean;
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
-  select tfa_enabled into strict enabled from users where id = a_id;;
+  select tfa_enabled into strict enabled from users where id = a_id;
 
   if enabled then
     if user_totp_check(a_id, a_totp) = false then
-      return false;;
-    end if;;
-  end if;;
+      return false;
+    end if;
+  end if;
 
   update users_api_keys set trading = a_trading,
   trade_history = a_trade_history, list_balance = a_list_balance, comment = a_comment
-  where user_id = a_id and api_key = a_api_key and active = true;;
-  return true;;
-end;;
+  where user_id = a_id and api_key = a_api_key and active = true;
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -760,24 +761,24 @@ disable_api_key (
   a_api_key text
 ) returns boolean as $$
 declare
-  enabled boolean;;
+  enabled boolean;
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
-  select tfa_enabled into strict enabled from users where id = a_id;;
+  select tfa_enabled into strict enabled from users where id = a_id;
 
   if enabled then
     if user_totp_check(a_id, a_totp) = false then
-      return false;;
-    end if;;
-  end if;;
+      return false;
+    end if;
+  end if;
 
   update users_api_keys set active = false
-  where user_id = a_id and api_key = a_api_key and active = true;;
-  return true;;
-end;;
+  where user_id = a_id and api_key = a_api_key and active = true;
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -792,12 +793,12 @@ get_api_keys (
 ) returns setof record as $$
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
   return query select uak.api_key, uak.comment, uak.created, uak.trading, uak.trade_history, uak.list_balance
-  from users_api_keys uak where user_id = a_id and active = true;;
-end;;
+  from users_api_keys uak where user_id = a_id and active = true;
+end;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -808,20 +809,20 @@ turnon_tfa (
 ) returns boolean as $$
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
   if not check_password(a_id, a_password) then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
   if user_totp_check(a_id, a_totp) then
-    update users set tfa_enabled = true where id = a_id;;
-    return true;;
+    update users set tfa_enabled = true where id = a_id;
+    return true;
   else
-    return false;;
-  end if;;
-end;;
+    return false;
+  end if;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -831,28 +832,28 @@ update_tfa_secret (
   a_otps text
 ) returns boolean as $$
 declare
-  enabled boolean;;
-  otps_arr int[10];;
+  enabled boolean;
+  otps_arr int[10];
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
-  select tfa_enabled into enabled from users where id = a_id;;
+  select tfa_enabled into enabled from users where id = a_id;
   if enabled then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
-  delete from users_backup_otps where user_id = a_id;;
+  delete from users_backup_otps where user_id = a_id;
   -- We assume that we are given 10 otps. Any less is an error, any more are ignored
-  otps_arr = string_to_array(a_otps, ',');;
+  otps_arr = string_to_array(a_otps, ',');
   for i in 1..10 loop
-    insert into users_backup_otps(user_id, otp) values (a_id, otps_arr[i]);;
-  end loop;;
+    insert into users_backup_otps(user_id, otp) values (a_id, otps_arr[i]);
+  end loop;
 
-  insert into users_tfa_secrets(user_id, tfa_secret) values (a_id, a_secret);;
-  return true;;
-end;;
+  insert into users_tfa_secrets(user_id, tfa_secret) values (a_id, a_secret);
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -863,20 +864,20 @@ turnoff_tfa (
 ) returns boolean as $$
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
   if not check_password(a_id, a_password) then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
   if user_totp_check(a_id, a_totp) then
-    update users set tfa_enabled = false where id = a_id;;
-    return true;;
+    update users set tfa_enabled = false where id = a_id;
+    return true;
   else
-    return false;;
-  end if;;
-end;;
+    return false;
+  end if;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -885,32 +886,32 @@ confirm_withdrawal (
   a_token text
 ) returns boolean as $$
 declare
-  success boolean not null default false;;
+  success boolean not null default false;
 begin
   -- check if the token is not issued yet (null) or is expired
-  select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;;
+  select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;
 
   if not success then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
   -- check if a decision is already made
-  select user_confirmed or user_rejected into strict success from withdrawals where id = a_id;;
+  select user_confirmed or user_rejected into strict success from withdrawals where id = a_id;
 
   if success then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
   -- check if the token is correct
-  select confirmation_token = a_token into strict success from withdrawals where id = a_id;;
+  select confirmation_token = a_token into strict success from withdrawals where id = a_id;
 
   if success then
-    update withdrawals set user_confirmed = true where id = a_id;;
-    return true;;
-  end if;;
+    update withdrawals set user_confirmed = true where id = a_id;
+    return true;
+  end if;
 
-  return false;;
-end;;
+  return false;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -919,34 +920,34 @@ reject_withdrawal (
   a_token text
 ) returns boolean as $$
 declare
-  success boolean not null default false;;
-  w withdrawals%rowtype;;
+  success boolean not null default false;
+  w withdrawals%rowtype;
 begin
   -- check if the token is not issued yet (null) or is expired
-  select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;;
+  select token_expiration is not null and token_expiration > current_timestamp into strict success from withdrawals where id = a_id;
 
   if not success then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
   -- check if a decision is already made
-  select user_confirmed or user_rejected into strict success from withdrawals where id = a_id;;
+  select user_confirmed or user_rejected into strict success from withdrawals where id = a_id;
 
   if success then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
   -- check if the token is correct
-  select confirmation_token = a_token into strict success from withdrawals where id = a_id;;
+  select confirmation_token = a_token into strict success from withdrawals where id = a_id;
 
   if success then
-    update withdrawals set user_rejected = true where id = a_id returning * into strict w;;
-    perform withdrawal_refund(w.amount, w.user_id, w.currency, w.fee);;
-    return true;;
-  end if;;
+    update withdrawals set user_rejected = true where id = a_id returning * into strict w;
+    perform withdrawal_refund(w.amount, w.user_id, w.currency, w.fee);
+    return true;
+  end if;
 
-  return false;;
-end;;
+  return false;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -955,12 +956,12 @@ turnon_emails (
 ) returns boolean as $$
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
   update users set on_mailing_list=true
-  where id=a_id;;
-  return true;;
-end;;
+  where id=a_id;
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -969,12 +970,12 @@ turnoff_emails (
 ) returns boolean as $$
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
   update users set on_mailing_list=false
-  where id=a_id;;
-  return true;;
-end;;
+  where id=a_id;
+  return true;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- THIS FUNCTION MUST NOT HAVE "security definer"!!!
@@ -985,12 +986,12 @@ add_fake_money (
   a_amount numeric(23,8)
 ) returns void as $$
 declare
-  deposit_id bigint;;
+  deposit_id bigint;
 begin
-  insert into deposits(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0) returning id into deposit_id;;
-  insert into deposits_other(id, reason) values (deposit_id, 'fake money');;
-  perform transfer_funds(null, a_uid, a_currency, a_amount);;
-end;;
+  insert into deposits(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0) returning id into deposit_id;
+  insert into deposits_other(id, reason) values (deposit_id, 'fake money');
+  perform transfer_funds(null, a_uid, a_currency, a_amount);
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 -- THIS FUNCTION MUST NOT HAVE "security definer"!!!
@@ -1001,12 +1002,12 @@ remove_fake_money (
   a_amount numeric(23,8)
 ) returns void as $$
 declare
-  withdrawal_id bigint;;
+  withdrawal_id bigint;
 begin
-  insert into withdrawals(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0) returning id into withdrawal_id;;
-  insert into withdrawals_other(id, reason) values (withdrawal_id, 'fake money');;
-  perform transfer_funds(a_uid, null, a_currency, a_amount);;
-end;;
+  insert into withdrawals(amount, user_id, currency, fee) values (a_amount, a_uid, a_currency, 0) returning id into withdrawal_id;
+  insert into withdrawals_other(id, reason) values (withdrawal_id, 'fake money');
+  perform transfer_funds(a_uid, null, a_currency, a_amount);
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1014,40 +1015,40 @@ base32_decode (
   a_in text
 ) returns bytea as $$
 declare
-  byte bigint;;
-  tmp bigint;;
-  result bit varying(200);;
-  out bytea;;
+  byte bigint;
+  tmp bigint;
+  result bit varying(200);
+  out bytea;
 begin
   if length(a_in) % 8 != 0 then
-    raise 'Failed to base32 decode a string that is not a multiple of 8 bytes long. The string is % bytes long.', length(a_in);;
-  end if;;
+    raise 'Failed to base32 decode a string that is not a multiple of 8 bytes long. The string is % bytes long.', length(a_in);
+  end if;
 
-  select B'' into result;;
+  select B'' into result;
   for i in 0..(length(a_in)-1) loop
-    select get_byte(a_in::bytea, i) into byte;;
+    select get_byte(a_in::bytea, i) into byte;
     -- handle upper case letters
     if byte >= 65 and byte <= 90 then
-      select byte - 65 into tmp;;
+      select byte - 65 into tmp;
     -- handle numbers
     elsif byte >= 50 and byte <= 55 then
-      select byte - 24 into tmp;;
+      select byte - 24 into tmp;
     -- handle lowercase letters
     elsif byte >= 97 and byte <= 122 then
-      select byte - 97 into tmp;;
+      select byte - 97 into tmp;
     else
-      raise 'Failed to base32 decode due to invalid character %s, code: %', chr(byte), byte;;
-    end if;;
-    select result || tmp::bit(5) into result;;
-  end loop;;
+      raise 'Failed to base32 decode due to invalid character %s, code: %', chr(byte), byte;
+    end if;
+    select result || tmp::bit(5) into result;
+  end loop;
 
   -- convert the bit string to a bytea 4 bytes at a time
-  select '\x'::bytea into out;;
+  select '\x'::bytea into out;
   for i in 1..(length(a_in)*5/8) loop
-    select out || substring(int4send(substring(result, ((i-1)*8+1), 8)::int), 4) into out;;
-  end loop;;
-  return out;;
-end;;
+    select out || substring(int4send(substring(result, ((i-1)*8+1), 8)::int), 4) into out;
+  end loop;
+  return out;
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1056,13 +1057,13 @@ hotp (
   a_c bigint  -- counter
 ) returns bigint as $$
 declare
-  hs bytea;;
-  off int;;
+  hs bytea;
+  off int;
 begin
-  select hmac(int8send(a_c), a_k, 'sha1') into hs;;
-  select (get_byte(hs, length(hs)-1) & 'x0f'::bit(8)::int) into off;;
-  return (substring(substring(hs from off+1 for 4)::text, 2)::bit(32)::int & ('x7ffffffff'::bit(32)::int)) % (1000000);;
-end;;
+  select hmac(int8send(a_c), a_k, 'sha1') into hs;
+  select (get_byte(hs, length(hs)-1) & 'x0f'::bit(8)::int) into off;
+  return (substring(substring(hs from off+1 for 4)::text, 2)::bit(32)::int & ('x7ffffffff'::bit(32)::int)) % (1000000);
+end;
 $$ language plpgsql immutable strict security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1071,46 +1072,46 @@ user_totp_check (
   a_totp int
 ) returns boolean as $$
 declare
-  tc bigint;;
-  totp text;;
-  secret bytea;;
-  totpvalue bigint;;
-  success boolean not null default false;;
-  found_otp boolean;;
+  tc bigint;
+  totp text;
+  secret bytea;
+  totpvalue bigint;
+  success boolean not null default false;
+  found_otp boolean;
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
-  success = false;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
+  success = false;
 
   if totp_token_is_blacklisted(a_uid, a_totp) then
-    return false;;
-  end if;;
+    return false;
+  end if;
 
   -- We use the same size of windows as Google: 30 seconds
-  select round(extract(epoch from now()) / 30) into tc;;
-  select base32_decode(tfa_secret) into strict secret from users_tfa_secrets where user_id = a_uid order by created desc limit 1;;
+  select round(extract(epoch from now()) / 30) into tc;
+  select base32_decode(tfa_secret) into strict secret from users_tfa_secrets where user_id = a_uid order by created desc limit 1;
 
   -- We use a (5+5+1) * 30 = 330 seconds = 5:30 minutes window to account for inaccurate clocks
   for i in (tc-5)..(tc+5) loop
     if hotp(secret, i) = a_totp then
-        select true into success;;
-    end if;;
-  end loop;;
+        select true into success;
+    end if;
+  end loop;
 
   if success then
-    insert into totp_tokens_blacklist(user_id, token, expiration) values (a_uid, a_totp, current_timestamp + interval '24 hours');;
+    insert into totp_tokens_blacklist(user_id, token, expiration) values (a_uid, a_totp, current_timestamp + interval '24 hours');
   else
     -- check the backup otps
-    select (count(*) > 0) into found_otp from users_backup_otps where user_id = a_uid and otp = a_totp;;
+    select (count(*) > 0) into found_otp from users_backup_otps where user_id = a_uid and otp = a_totp;
 
     if found_otp then
-      delete from users_backup_otps where user_id = a_uid and otp = a_totp;;
-      success = true;;
-    end if;;
-  end if;;
-  return success;;
-end;;
+      delete from users_backup_otps where user_id = a_uid and otp = a_totp;
+      success = true;
+    end if;
+  end if;
+  return success;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1120,11 +1121,11 @@ find_user_by_id (
 ) returns setof users as $$
 begin
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
   return query select * from users
-  where id = a_id;;
-end;;
+  where id = a_id;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1133,7 +1134,7 @@ user_exists (
   out user_exists boolean
 ) returns boolean as $$
   select (case when count(*) > 0 then true else false end) from users
-  where lower(email) = lower(a_email);;
+  where lower(email) = lower(a_email);
 $$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1141,14 +1142,14 @@ user_pgp_by_email (
   a_email varchar(256),
   out pgp text
 ) returns text as $$
-  select pgp from users where lower(email) = lower(a_email);;
+  select pgp from users where lower(email) = lower(a_email);
 $$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 user_has_totp (
   a_email varchar(256)
 ) returns boolean as $$
-  select tfa_enabled from users where lower(email) = lower(a_email);;
+  select tfa_enabled from users where lower(email) = lower(a_email);
 $$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- null on failure
@@ -1160,17 +1161,17 @@ totp_login_step1 (
   a_ip inet
 ) returns text as $$
 declare
-  u users%rowtype;;
-  sec text;;
+  u users%rowtype;
+  sec text;
 begin
-  select * into u from find_user_by_email_and_password_invoker(a_email, a_password, a_browser_headers, a_ip, true);;
+  select * into u from find_user_by_email_and_password_invoker(a_email, a_password, a_browser_headers, a_ip, true);
   if u is null then
-    return null;;
-  end if;;
+    return null;
+  end if;
 
-  select tfa_secret into strict sec from users_tfa_secrets where user_id = u.id order by created desc limit 1;;
-  return crypt(sec, gen_salt('bf', 8));;
-end;;
+  select tfa_secret into strict sec from users_tfa_secrets where user_id = u.id order by created desc limit 1;
+  return crypt(sec, gen_salt('bf', 8));
+end;
 $$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
 
 -- null on failure
@@ -1183,24 +1184,24 @@ totp_login_step2 (
   a_ip inet
 ) returns users as $$
 declare
-  u users%rowtype;;
-  matched boolean;;
+  u users%rowtype;
+  matched boolean;
 begin
-  select * into strict u from users where lower(email) = lower(a_email);;
+  select * into strict u from users where lower(email) = lower(a_email);
 
-  select a_secret_hash = crypt(tfa_secret, a_secret_hash) into matched from users_tfa_secrets where user_id = u.id order by created desc limit 1;;
+  select a_secret_hash = crypt(tfa_secret, a_secret_hash) into matched from users_tfa_secrets where user_id = u.id order by created desc limit 1;
   if not matched or matched is null then
-    raise 'Internal error. Invalid secret hash.';;
-  end if;;
+    raise 'Internal error. Invalid secret hash.';
+  end if;
 
   if user_totp_check(u.id, a_tfa_code) then
-    perform new_log(u.id, a_browser_headers, a_email, null, null, a_ip, 'login_success');;
-    return u;;
+    perform new_log(u.id, a_browser_headers, a_email, null, null, a_ip, 'login_success');
+    return u;
   else
-    perform new_log(u.id, a_browser_headers, a_email, null, null, a_ip, 'login_failure');;
-    return null;;
-  end if;;
-end;;
+    perform new_log(u.id, a_browser_headers, a_email, null, null, a_ip, 'login_failure');
+    return null;
+  end if;
+end;
 $$ language plpgsql volatile strict security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1213,11 +1214,11 @@ find_user_by_email_and_password (
 declare
 begin
   if user_has_totp(a_email) then
-    raise 'Internal error. Cannot find user by email and password if totp is enabled.';;
-  end if;;
+    raise 'Internal error. Cannot find user by email and password if totp is enabled.';
+  end if;
 
-  return find_user_by_email_and_password_invoker(a_email, a_password, a_browser_headers, a_ip, false);;
-end;;
+  return find_user_by_email_and_password_invoker(a_email, a_password, a_browser_headers, a_ip, false);
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1229,36 +1230,36 @@ find_user_by_email_and_password_invoker (
   a_totp_step1 boolean
 ) returns users as $$
 declare
-  u_pass text;;
-  u_id bigint;;
-  u_active boolean;;
-  u_record users%rowtype;;
+  u_pass text;
+  u_id bigint;
+  u_active boolean;
+  u_record users%rowtype;
 begin
   select u.id, u.active, p.password into u_id, u_active, u_pass from users u
     inner join users_passwords p on p.user_id = u.id
     where lower(u.email) = lower(a_email)
     order by p.created desc
-    limit 1;;
+    limit 1;
 
   if not found then
-    perform new_log(null, a_browser_headers, a_email, null, null, a_ip, 'login_failure');;
-    return null;;
-  end if;;
+    perform new_log(null, a_browser_headers, a_email, null, null, a_ip, 'login_failure');
+    return null;
+  end if;
 
   if u_active and u_pass = crypt(a_password, u_pass) then
     if a_totp_step1 then
-      perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_partial_success');;
+      perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_partial_success');
     else
-      perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_success');;
-    end if;;
+      perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_success');
+    end if;
 
-    select * into strict u_record from users where id = u_id;;
-    return u_record;;
-  end if;;
+    select * into strict u_record from users where id = u_id;
+    return u_record;
+  end if;
 
-  perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_failure');;
-  return null;;
-end;;
+  perform new_log(u_id, a_browser_headers, a_email, null, null, a_ip, 'login_failure');
+  return null;
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1266,21 +1267,21 @@ find_token (
   a_token varchar(256),
   out tokens
 ) returns setof tokens as $$
-  select token, email, creation, expiration, is_signup from tokens where token = a_token;;
+  select token, email, creation, expiration, is_signup from tokens where token = a_token;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 delete_token (
   a_token varchar(256)
 ) returns void as $$
-  delete from tokens where token = a_token;;
+  delete from tokens where token = a_token;
 $$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 delete_expired_tokens (
 ) returns void as $$
 declare
-  w withdrawals%rowtype;;
+  w withdrawals%rowtype;
 begin
   for w in select * from withdrawals ww
     where
@@ -1288,11 +1289,11 @@ begin
       ww.user_confirmed = false and
       ww.user_rejected = false
   loop
-    update withdrawals set user_rejected = true where id = w.id;;
-    perform withdrawal_refund(w.amount, w.user_id, w.currency, w.fee);;
-  end loop;;
-  delete from tokens where expiration < current_timestamp;;
-end;;
+    update withdrawals set user_rejected = true where id = w.id;
+    perform withdrawal_refund(w.amount, w.user_id, w.currency, w.fee);
+  end loop;
+  delete from tokens where expiration < current_timestamp;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1301,24 +1302,24 @@ totp_token_is_blacklisted (
   a_token bigint
 ) returns bool as $$
 declare
-  success boolean;;
+  success boolean;
 begin
   if a_user = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
-  select true into success from totp_tokens_blacklist where user_id = a_user and token = a_token and expiration >= current_timestamp;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
+  select true into success from totp_tokens_blacklist where user_id = a_user and token = a_token and expiration >= current_timestamp;
   if success then
-    return true;;
+    return true;
   else
-    return false;;
-  end if;;
-end;;
+    return false;
+  end if;
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
 
 create or replace function
 delete_expired_totp_blacklist_tokens (
 ) returns void as $$
-  delete from totp_tokens_blacklist where expiration < current_timestamp;;
+  delete from totp_tokens_blacklist where expiration < current_timestamp;
 $$ language sql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1333,12 +1334,12 @@ new_log (
 ) returns void as $$
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
   insert into event_log (user_id, email, ip, browser_headers, browser_id, ssl_info, type)
-  values (a_uid, a_email, a_ip, a_browser_headers, a_browser_id, a_ssl_info, a_type);;
-  return;;
-end;;
+  values (a_uid, a_email, a_ip, a_browser_headers, a_browser_id, a_ssl_info, a_type);
+  return;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1355,24 +1356,24 @@ login_log (
 ) returns setof record as $$
 begin
   if a_before is null then
-    a_before := current_timestamp;;
-  end if;;
+    a_before := current_timestamp;
+  end if;
 
   if a_limit is null or a_limit < 1 or a_limit > 100 then
-    a_limit := 20;;
-  end if;;
+    a_limit := 20;
+  end if;
 
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
   return query select e.id, e.email, host(e.ip), e.created, e.type
   from event_log e
   where e.type in ('login_success', 'login_failure', 'logout', 'session_expired')
     and e.user_id = a_uid
     and (e.created, e.id) < (a_before, a_last_id)
-  order by e.created desc, e.id desc limit a_limit;;
-end;;
+  order by e.created desc, e.id desc limit a_limit;
+end;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100 rows 100;
 
 create or replace function
@@ -1384,26 +1385,26 @@ balance (
   out hold numeric(23,8)
 ) returns setof record as $$
 declare
-  a_user_id bigint;;
+  a_user_id bigint;
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
   if a_api_key is not null then
     select user_id into a_user_id from users_api_keys
-    where api_key = a_api_key and active = true and list_balance = true;;
+    where api_key = a_api_key and active = true and list_balance = true;
   else
-    a_user_id := a_uid;;
-  end if;;
+    a_user_id := a_uid;
+  end if;
 
   if a_user_id is null then
-    return;;
-  end if;;
+    return;
+  end if;
 
   return query select c.currency, coalesce(b.balance, 0) as amount, b.hold from currencies c
-  left outer join balances b on c.currency = b.currency and user_id = a_user_id;;
-end;;
+  left outer join balances b on c.currency = b.currency and user_id = a_user_id;
+end;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1412,7 +1413,7 @@ get_required_confirmations (
   out min_deposit_confirmations integer
 ) returns setof record as $$
   select currency, min_deposit_confirmations
-  from currencies_crypto where active = true;;
+  from currencies_crypto where active = true;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1423,17 +1424,17 @@ get_addresses (
   out o_assigned timestamp(3)
 ) returns setof record as $$
 declare
-  enabled boolean;;
+  enabled boolean;
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
-  select active into strict enabled from currencies_crypto where currency = a_currency;;
+  select active into strict enabled from currencies_crypto where currency = a_currency;
 
   if enabled = false then
-    return;;
-  end if;;
+    return;
+  end if;
 
   update users_addresses set user_id = a_uid, assigned = current_timestamp
     where assigned is NULL and user_id = 0 and currency = a_currency and
@@ -1447,7 +1448,7 @@ begin
               where user_id = a_uid and currency = a_currency order by assigned desc limit 1
           ) a
           left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
-      );;
+      );
 
   return query select address, assigned from users_addresses
     where user_id = a_uid and currency = a_currency and node_id = any
@@ -1455,8 +1456,8 @@ begin
                                   select node_id from wallets_crypto
                                   where currency = a_currency and retired = false
                                 )
-    order by assigned desc;;
-end;;
+    order by assigned desc;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1468,8 +1469,8 @@ get_all_addresses (
 ) returns setof record as $$
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
   update users_addresses ua
     set user_id = a_uid, assigned = current_timestamp
@@ -1487,7 +1488,7 @@ begin
              ) a
         left join deposits_crypto dc on dc.address = a.address where dc.id is NULL
       ) and pg_try_advisory_xact_lock(id)
-    ) ua2 where ua.id = ua2.id;;
+    ) ua2 where ua.id = ua2.id;
 
   return query
     select currency, address, assigned from users_addresses
@@ -1498,8 +1499,8 @@ begin
                                   on currencies_crypto.currency = wallets_crypto.currency
                                   where active = true and retired = false
                                 )
-    order by assigned desc;;
-end;;
+    order by assigned desc;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1515,14 +1516,14 @@ user_pending_withdrawals (
 ) returns setof record as $$
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
   return query select w.id, w.currency, w.amount, w.fee, w.created, wc.address as info, w.user_confirmed
   from withdrawals_crypto wc
   inner join withdrawals w on w.id = wc.id
   where w.user_id = a_uid and withdrawals_crypto_tx_id is null and user_rejected = false
-  order by created desc;;
-end;;
+  order by created desc;
+end;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1537,14 +1538,14 @@ user_pending_deposits (
 ) returns setof record as $$
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
   return query select d.id, d.currency, d.amount, d.fee, d.created, dc.address as info
   from deposits_crypto dc
   inner join deposits d on d.id = dc.id
   where d.user_id = a_uid and dc.confirmed is null
-  order by created desc;;
-end;;
+  order by created desc;
+end;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1560,27 +1561,27 @@ user_pending_trades (
   out created timestamp(3)
 ) returns setof record as $$
 declare
-  a_user_id bigint;;
+  a_user_id bigint;
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
   if a_api_key is not null then
     select user_id into a_user_id from users_api_keys
-    where api_key = a_api_key and active = true and trading = true;;
+    where api_key = a_api_key and active = true and trading = true;
   else
-    a_user_id := a_uid;;
-  end if;;
+    a_user_id := a_uid;
+  end if;
 
   if a_user_id is null then
-    return;;
-  end if;;
+    return;
+  end if;
 
   return query select o.id, o.is_bid, o.remains as amount, o.price, o.base, o.counter, o.created from orders o
   where user_id = a_user_id and closed = false and o.remains > 0
-  order by created desc, id desc;;
-end;;
+  order by created desc, id desc;
+end;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1598,7 +1599,7 @@ recent_trades (
   from matches m
   where base = a_base and counter = a_counter
   order by created desc
-  limit 40;;
+  limit 40;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100 rows 40;
 
 create or replace function
@@ -1618,30 +1619,30 @@ trade_history (
   out fee numeric(23,8)
 ) returns setof record as $$
 declare
-  a_id bigint;;
+  a_id bigint;
 begin
   if a_before is null then
-    a_before := current_timestamp;;
-  end if;;
+    a_before := current_timestamp;
+  end if;
 
   if a_limit is null or a_limit < 1 or a_limit > 100 then
-    a_limit := 20;;
-  end if;;
+    a_limit := 20;
+  end if;
 
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
   if a_api_key is not null then
     select user_id into a_id from users_api_keys
-    where api_key = a_api_key and active = true and trade_history = true;;
+    where api_key = a_api_key and active = true and trade_history = true;
   else
-    a_id := a_uid;;
-  end if;;
+    a_id := a_uid;
+  end if;
 
   if a_id is null then
-    return;;
-  end if;;
+    return;
+  end if;
 
   return query select th.id, th.amount, th.created, th.price, th.base, th.counter, th.is_bid, th.fee from (
     (
@@ -1657,8 +1658,8 @@ begin
       and (m.created, m.id) < (a_before, a_last_id)
       order by m.created desc, m.id desc limit a_limit
     )
-  ) as th order by created desc, id desc limit a_limit;;
-end;;
+  ) as th order by created desc, id desc limit a_limit;
+end;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100 rows 100;
 
 create or replace function
@@ -1678,16 +1679,16 @@ deposit_withdraw_history (
 ) returns setof record as $$
 begin
   if a_before is null then
-    a_before := current_timestamp;;
-  end if;;
+    a_before := current_timestamp;
+  end if;
 
   if a_limit is null or a_limit < 1 or a_limit > 100 then
-    a_limit := 20;;
-  end if;;
+    a_limit := 20;
+  end if;
 
   if a_id = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
   return query select * from
   (
     (
@@ -1706,8 +1707,8 @@ begin
       order by d.created desc, d.id desc limit a_limit
     )
   ) as a
-  order by created desc, id desc limit a_limit;;
-end;;
+  order by created desc, id desc limit a_limit;
+end;
 $$ language plpgsql stable security definer set search_path = public, pg_temp cost 100 rows 100;
 
 create or replace function
@@ -1721,7 +1722,7 @@ open_asks (
 ) returns setof record as $$
   select sum(remains) as amount, price, base, counter from orders
   where not is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
-  group by price, base, counter order by price asc limit 40;;
+  group by price, base, counter order by price asc limit 40;
 $$ language sql stable security invoker set search_path = public, pg_temp cost 100 rows 40;
 
 create or replace function
@@ -1735,7 +1736,7 @@ open_bids (
 ) returns setof record as $$
   select sum(remains) as amount, price, base, counter from orders
   where is_bid and base = a_base and counter = a_counter and closed = false and remains > 0
-  group by price, base, counter order by price desc limit 40;;
+  group by price, base, counter order by price desc limit 40;
 $$ language sql stable security invoker set search_path = public, pg_temp cost 100 rows 40;
 
 create aggregate array_agg_mult (anyarray) (
@@ -1761,7 +1762,7 @@ orders_depth(
       total_base
     ), (
       total_counter
-    ) from markets where base = a_base and counter = a_counter;;
+    ) from markets where base = a_base and counter = a_counter;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1776,42 +1777,42 @@ get_recent_matches (
   select amount, m.created, m.price, m.base, m.counter
   from matches m
   where m.created > a_last_match
-  order by m.created desc;;
+  order by m.created desc;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_currencies (
   out currency varchar(4)
 ) returns setof varchar(4) as $$
-  select currency from currencies order by position;;
+  select currency from currencies order by position;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 dw_fees (
   out dw_fees
 ) returns setof dw_fees as $$
-  select * from dw_fees;;
+  select * from dw_fees;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 trade_fees (
   out trade_fees
 ) returns setof trade_fees as $$
-  select * from trade_fees;;
+  select * from trade_fees;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 dw_limits (
   out withdrawal_limits
 ) returns setof withdrawal_limits as $$
-  select * from withdrawal_limits;;
+  select * from withdrawal_limits;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
 get_pairs (
   out markets
 ) returns setof markets as $$
-  select * from markets order by position;;
+  select * from markets order by position;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100;
 
 create or replace function
@@ -1828,7 +1829,7 @@ chart_from_db (
   select s.start_of_period, s.volume, s.low, s.high, s.open, s.close
   from stats_30_min s
   where s.base = a_base and s.counter = a_counter and s.start_of_period > current_timestamp - interval '24 hours'
-  order by s.start_of_period ASC limit 48;;
+  order by s.start_of_period ASC limit 48;
 $$ language sql stable security definer set search_path = public, pg_temp cost 100 rows 48;
 
 create or replace function
@@ -1840,32 +1841,32 @@ withdraw_crypto (
   a_tfa_code int
 ) returns bigint as $$
 declare
-  w_id withdrawals.id%type;;
-  o_id withdrawals_crypto.id%type;;
-  enabled boolean;;
+  w_id withdrawals.id%type;
+  o_id withdrawals_crypto.id%type;
+  enabled boolean;
 begin
   if a_uid = 0 then
-    raise 'User id 0 is not allowed to use this function.';;
-  end if;;
+    raise 'User id 0 is not allowed to use this function.';
+  end if;
 
-  select tfa_enabled into enabled from users where id = a_uid;;
+  select tfa_enabled into enabled from users where id = a_uid;
 
   if enabled then
     if user_totp_check(a_uid, a_tfa_code) = false then
-      return -1;;
-    end if;;
-  end if;;
+      return -1;
+    end if;
+  end if;
 
   select withdrawal_insert(a_amount, a_uid, a_currency, (
       select withdraw_constant + a_amount * withdraw_linear from dw_fees where currency = a_currency and method = 'blockchain'
     ))
-    into strict w_id;;
+    into strict w_id;
 
   insert into withdrawals_crypto (id, address)
-    values (w_id, a_address) returning withdrawals_crypto.id into o_id;;
+    values (w_id, a_address) returning withdrawals_crypto.id into o_id;
 
-  return o_id;;
-end;;
+  return o_id;
+end;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
 -- when a new match is inserted, we update statistics for charts and tickers
@@ -1877,93 +1878,18 @@ stats_new(
   new_price numeric(23,8)
 ) returns void as $$
 declare
-  period timestamp(3);;
+  period timestamp(3);
 begin
-  period := date_trunc('hour', current_timestamp) + INTERVAL '30 min' * trunc(extract(minute from current_timestamp) / 30);;
+  period := date_trunc('hour', current_timestamp) + INTERVAL '30 min' * trunc(extract(minute from current_timestamp) / 30);
 
   update stats_30_min set volume = volume + new_amount,
   low = least(low, new_price), high = greatest(high, new_price), close = new_price
-  where base = new_base and counter = new_counter and start_of_period = period;;
+  where base = new_base and counter = new_counter and start_of_period = period;
 
   if not found then
     insert into stats_30_min (base, counter, start_of_period, volume, low, high, open, close)
-    values (new_base, new_counter, period, new_amount, new_price, new_price, new_price, new_price);;
-  end if;;
-end;;
+    values (new_base, new_counter, period, new_amount, new_price, new_price, new_price, new_price);
+  end if;
+end;
 $$ language plpgsql volatile security invoker set search_path = public, pg_temp cost 100;
-
-# --- !Downs
-
-drop function if exists create_user (varchar(256), text, bool) cascade;
-drop function if exists match_new(bigint, bigint, boolean, numeric(23,8), numeric(23,8), numeric(23,8), numeric(23,8)) cascade;
-drop function if exists stats_new(varchar(4), varchar(4), numeric(23,8), numeric(23,8)) cascade;
-drop function if exists transfer_funds(bigint, bigint, varchar(4), numeric(23,8)) cascade;
-drop function if exists wallets_crypto_retire(varchar(4), integer) cascade;
-drop function if exists currency_insert(varchar(4), integer) cascade;
-drop function if exists withdrawal_insert(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
-drop function if exists withdrawal_refund(numeric(23,8), bigint, varchar(4), numeric(23,8)) cascade;
-drop function if exists find_user_by_email_and_password_invoker(varchar(256), text, text, inet, bool) cascade;
-drop function if exists first_agg() cascade;
-drop function if exists last_agg() cascade;
-drop aggregate if exists first(anyelement);
-drop aggregate if exists last(anyelement);
-drop aggregate if exists array_agg_mult(anyarray);
-
--- security definer functions
-drop function if exists order_new (bigint, text, varchar(4), varchar(4), numeric(23,8), numeric(23,8), boolean) cascade;
-drop function if exists order_cancel (bigint, text, bigint) cascade;
-drop function if exists create_user_complete (varchar(256), text, bool, varchar(256)) cascade;
-drop function if exists update_user (bigint, varchar(256), bool) cascade;
-drop function if exists user_change_password (bigint, text, text) cascade;
-drop function if exists trusted_action_start (varchar(256)) cascade;
-drop function if exists user_reset_password_complete (varchar(256), varchar(256), text) cascade;
-drop function if exists add_api_key (bigint, text) cascade;
-drop function if exists update_api_key (bigint, int, text, text, bool, bool, bool) cascade;
-drop function if exists disable_api_key (bigint, int, text) cascade;
-drop function if exists get_api_keys (bigint) cascade;
-drop function if exists turnon_tfa (bigint, bigint, text) cascade;
-drop function if exists update_tfa_secret (bigint, varchar(256), varchar(6)) cascade;
-drop function if exists turnoff_tfa (bigint, text) cascade;
-drop function if exists user_totp_check (bigint, bigint) cascade;
-drop function if exists hotp (bytea, bigint) cascade;
-drop function if exists base32_decode (text) cascade;
-drop function if exists turnon_emails (bigint) cascade;
-drop function if exists turnoff_emails (bigint) cascade;
-drop function if exists add_fake_money (bigint, varchar(4), numeric(23,8)) cascade;
-drop function if exists remove_fake_money (bigint, varchar(4), numeric(23,8)) cascade;
-drop function if exists find_user_by_id (bigint) cascade;
-drop function if exists user_exists (bigint) cascade;
-drop function if exists user_has_totp (bigint) cascade;
-drop function if exists user_add_pgp (bigint, text, int, text) cascade;
-drop function if exists user_remove_pgp (bigint, text, int) cascade;
-drop function if exists totp_login_step1 (varchar(256), text, text, inet) cascade;
-drop function if exists totp_login_step2 (varchar(256), text, int, text, inet) cascade;
-drop function if exists find_user_by_email_and_password (varchar(256), text, text, inet) cascade;
-drop function if exists find_token (varchar(256)) cascade;
-drop function if exists delete_token (varchar(256)) cascade;
-drop function if exists delete_expired_tokens () cascade;
-drop function if exists totp_token_is_blacklisted (bigint, bigint) cascade;
-drop function if exists delete_expired_totp_blacklist_tokens () cascade;
-drop function if exists new_log (bigint, text, varchar(256), text, text, inet, text) cascade;
-drop function if exists login_log (bigint, timestamp(3), integer, bigint) cascade;
-drop function if exists balance (bigint, text) cascade;
-drop function if exists get_required_confirmations () cascade;
-drop function if exists get_addresses (bigint, varchar(4)) cascade;
-drop function if exists get_all_addresses (bigint) cascade;
-drop function if exists user_pending_withdrawals (bigint) cascade;
-drop function if exists user_pending_deposits (bigint) cascade;
-drop function if exists user_pending_trades (bigint, text) cascade;
-drop function if exists recent_trades (varchar(4), varchar(4)) cascade;
-drop function if exists trade_history (bigint, text, timestamp(3), integer, bigint) cascade;
-drop function if exists deposit_withdraw_history (bigint, timestamp(3), integer, bigint) cascade;
-drop function if exists open_asks (varchar(4), varchar(4)) cascade;
-drop function if exists open_bids (varchar(4), varchar(4)) cascade;
-drop function if exists orders_depth (varchar(4), varchar(4)) cascade;
-drop function if exists get_recent_matches (timestamp(3)) cascade;
-drop function if exists get_currencies () cascade;
-drop function if exists dw_fees () cascade;
-drop function if exists trade_fees () cascade;
-drop function if exists dw_limits () cascade;
-drop function if exists get_pairs () cascade;
-drop function if exists chart_from_db (varchar(4), varchar(4)) cascade;
-drop function if exists withdraw_crypto (bigint, numeric(23,8), varchar(35), varchar(4)) cascade;
+COMMIT;

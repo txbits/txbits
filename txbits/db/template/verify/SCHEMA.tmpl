@@ -1,0 +1,12 @@
+-- Verify [% project %]:[% change %] on [% engine %]
+
+BEGIN;
+SET ROLE su;
+
+SELECT 1/CASE WHEN has_schema_privilege('txbits__owner', '[% schema %]', 'create') THEN 1 ELSE 0 END;
+SELECT 1/CASE WHEN has_schema_privilege('[% read_role %]', '[% schema %]', 'create') THEN 0 ELSE 1 END;
+SELECT 1/CASE WHEN has_schema_privilege('[% read_role %]', '[% schema %]', 'usage') THEN 1 ELSE 0 END;
+
+ROLLBACK;
+
+-- vi: expandtab ts=2 sw=2

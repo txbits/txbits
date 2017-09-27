@@ -1,0 +1,41 @@
+-- Deploy [% project %]:[% change %] to [% engine %]
+[% FOREACH item IN requires -%]
+-- requires: [% item %]
+[% END -%]
+[% FOREACH item IN conflicts -%]
+-- conflicts: [% item %]
+[% END -%]
+
+BEGIN;
+SET ROLE txbits__owner;
+
+CREATE OR REPLACE FUNCTION [% function %](
+) RETURNS LANGUAGE plpgsql AS $body$
+DECLARE
+BEGIN
+END
+$body$;
+
+COMMENT ON FUNCTION [% function %](
+) IS $$ $$;
+
+SELECT ddl_tools.test_function(
+  '_test_[% function %]'
+  , $body$
+  s CONSTANT name = bs;
+  f CONSTANT name = fn;
+  sf CONSTANT text := bs || '.' || fn;
+BEGIN
+  RETURN NEXT function_owner_is(
+    s, f
+    -- TODO: use cat_tools.function__arg_types()
+    , '{}'::regtype[]::name[] -- regtype is to ensure we get canonical names
+    , 'txbits__owner'::name
+  );
+END
+$body$
+);
+
+COMMIT;
+
+-- vi: expandtab ts=2 sw=2
