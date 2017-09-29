@@ -50,19 +50,17 @@ create_user (
   a_password text,
   a_onMailingList bool,
   a_pgp text,
-  a_language varchar(10),
-  a_username varchar(256)
+  a_language varchar(10)
 ) returns bigint as $$
 declare
   new_user_id bigint;;
 begin
-  insert into users(id, email, on_mailing_list, pgp, language, username) values (
+  insert into users(id, email, on_mailing_list, pgp, language) values (
       generate_random_user_id(),
       a_email,
       a_onMailingList,
       a_pgp,
-      a_language,
-      a_username
+      a_language
     ) returning id into new_user_id;;
   -- create balances associated with users
   insert into balances (user_id, currency) select new_user_id, currency from currencies;;
@@ -80,8 +78,7 @@ create_user_complete (
   a_password text,
   a_onMailingList bool,
   a_pgp text,
-  a_token varchar(256),
-  a_username varchar(256)
+  a_token varchar(256)
 ) returns bigint as $$
 declare
   valid_token boolean;;
@@ -95,7 +92,7 @@ begin
     return null;;
   end if;;
   delete from tokens where lower(email) = lower(a_email) and is_signup = true;;
-  return create_user(a_email, a_password, a_onMailingList, a_pgp, token_language, a_username);;
+  return create_user(a_email, a_password, a_onMailingList, a_pgp, token_language);;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
 
@@ -104,14 +101,13 @@ update_user (
   a_id bigint,
   a_email varchar(256),
   a_onMailingList bool,
-  a_language varchar(10),
-  a_username varchar(256)
+  a_language varchar(10)
 ) returns void as $$
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  update users set email=a_email, on_mailing_list=a_onMailingList, "language"=a_language, username=a_username where id=a_id;;
+  update users set email=a_email, on_mailing_list=a_onMailingList, "language"=a_language where id=a_id;;
   return;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
@@ -214,14 +210,13 @@ create or replace function
 update_user (
   a_id bigint,
   a_email varchar(256),
-  a_onMailingList bool,
-  a_username varchar(256)
+  a_onMailingList bool
 ) returns void as $$
 begin
   if a_id = 0 then
     raise 'User id 0 is not allowed to use this function.';;
   end if;;
-  update users set email=a_email, on_mailing_list=a_onMailingList, username=a_username where id=a_id;;
+  update users set email=a_email, on_mailing_list=a_onMailingList where id=a_id;;
   return;;
 end;;
 $$ language plpgsql volatile security definer set search_path = public, pg_temp cost 100;
