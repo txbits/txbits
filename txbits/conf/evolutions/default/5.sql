@@ -14,10 +14,16 @@
 -- You should have received a copy of the GNU Affero General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-BEGIN;
---SET ROLE txbits__owner;
+# Fillfactor
+
+# --- !Ups
 
 alter table orders set (fillfactor='90');
 alter table balances set (fillfactor='70');
-COMMIT;
+
+
+# --- !Downs
+
+alter table balances reset (fillfactor);
+alter table orders reset (fillfactor);
 
