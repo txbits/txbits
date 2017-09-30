@@ -4,15 +4,12 @@ $(function(){
     var totp_secret_template = Handlebars.compile($("#totp-secret-template").html());
     var totp_otps_template = Handlebars.compile($("#totp-otps-template").html());
     var turnofftfa_template = Handlebars.compile($("#turn-off-tfa-template").html());
-    var change_username_template = Handlebars.compile($('#change-username-template').html());
-    
+
     function reload(){
         API.user().success(function(user){
             var verificationText = "";
             $('#acct-info').html(info_template(user));
-            var change_username_template = Handlebars.compile($('#change-username-template').html());
-            $('#uname-info-insertion-point').html(change_username_template(user));
-            
+
             //TODO: internationalize javascript messages
             $('#turnoff-emails').click(function(e){
                 API.turnoff_emails().success(function(){
@@ -95,18 +92,6 @@ $(function(){
                 $("#pgp-remove-modal").modal().find('.btn-primary').off('click').click(remove);
             });
 
-            $('#change-username').click(function(e) {
-                $('#change-username-dialog').modal();
-            });
-            $('#change-username-dialog .btn-primary').click(function(e) {
-                API.change_username($('#username-input-val').val()).success(function(data){
-                    var change_username_template = Handlebars.compile($('#change-username-template').html());
-                    $('#uname-info-insertion-point').html(change_username_template(user));
-
-                    reload();
-                });
-            });
-            
             $('#turnon-tfa').click(function(e){
                 API.gen_totp_secret().success(function(data){
                     function show_otps() {
@@ -177,7 +162,6 @@ $(function(){
                 });
             });
 
-           
             var api_keys_template = Handlebars.compile($("#api-keys-template").html());
             API.get_api_keys().success(function(api_keys){
                 var i;

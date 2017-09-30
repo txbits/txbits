@@ -160,14 +160,13 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
             BadRequest(views.html.auth.Registration.signUp(errors, t.uuid))
           },
           info => {
-            var username = createDefaultUsername(t.email)
             val user = txbitsUserService.create(SocialUser(
               -1, // this is a placeholder
               t.email,
               0, //not verified
               t.language,
               info.mailingList
-            ), info.password, token, info.pgp, username)
+            ), info.password, token, info.pgp)
             txbitsUserService.deleteToken(t.uuid)
             if (UsernamePasswordProvider.sendWelcomeEmail) {
               Mailer.sendWelcomeEmail(user)
@@ -182,15 +181,6 @@ class Registration @Inject() (val messagesApi: MessagesApi) extends Controller w
         )
       })
     } else NotFound
-  }
-
-  def createDefaultUsername(email: String): String = {
-    val r = scala.util.Random;
-
-    var usernameBase: String = email.split("@")(0)
-    var usernameAppend: String = r.nextInt(16384).toString // 2^14
-
-    usernameBase + usernameAppend
   }
 
   def startResetPassword = Action { implicit request =>
